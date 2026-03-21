@@ -344,3 +344,217 @@ body {
     height: 300px;
   }
 }
+
+/* Form Rows */
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* Autocomplete */
+.autocomplete-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  max-height: 250px;
+  overflow-y: auto;
+  z-index: 100;
+  margin-top: 4px;
+}
+
+.autocomplete-item {
+  padding: 12px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.2s;
+}
+
+.autocomplete-item:hover {
+  background: rgba(124, 58, 237, 0.2);
+}
+
+.autocomplete-item:last-child {
+  border-bottom: none;
+}
+
+.autocomplete-name {
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.autocomplete-details {
+  color: var(--text-secondary);
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+/* Results */
+.results {
+  padding: 40px 0;
+}
+
+.results h2 {
+  font-size: 2rem;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.main-signs {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 40px;
+}
+
+.sign-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 30px;
+  background: var(--bg-card);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  min-width: 140px;
+}
+
+.sign-label {
+  color: var(--text-secondary);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+
+.sign-value {
+  font-size: 24px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #ffd700, #ff6b6b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.result-card {
+  background: var(--bg-card);
+  border-radius: 12px;
+  padding: 24px;
+  border: 1px solid var(--border);
+}
+
+.result-card h3 {
+  color: var(--accent-glow);
+  font-size: 14px;
+  margin-bottom: 16px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Planet List */
+.planets-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.planet-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: rgba(255,255,255,0.03);
+  border-radius: 6px;
+}
+
+.planet-name {
+  color: var(--text-primary);
+  font-weight: 500;
+  min-width: 80px;
+}
+
+.planet-pos {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.planet-house {
+  font-size: 11px;
+  padding: 2px 8px;
+  background: rgba(124, 58, 237, 0.3);
+  border-radius: 4px;
+  color: #c084fc;
+}
+
+/* Houses Grid */
+.houses-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.house-item {
+  padding: 10px;
+  background: rgba(255,255,255,0.03);
+  border-radius: 6px;
+  text-align: center;
+}
+
+.house-num {
+  color: var(--text-secondary);
+  font-size: 11px;
+  display: block;
+}
+
+.house-sign {
+  color: var(--text-primary);
+  font-size: 13px;
+  display: block;
+  margin-top: 4px;
+}
+
+.house-degree {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+/* Aspects */
+.aspects-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.aspect-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: rgba(255,255,255,0.03);
+  border-radius: 6px;
+}
+
+.aspect-planets {
+  color: var(--text-primary);
+  font-size: 13px;
+  flex: 1;
+}
+
+.aspect-type {
+  color: #ffd700;
+  font-size: 12px;
+}
+
+.aspect-orb {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
