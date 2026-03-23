@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { geocodeAPI, astrologyAPI } from '../services/api'
 import LocationInput from '../components/LocationInput'
 import TimezoneDisplay from '../components/TimezoneDisplay'
+import D3NatalChartWheel from '../components/D3NatalChartWheel'
+import PlanetTable from '../components/PlanetTable'
+import AspectGrid from '../components/AspectGrid'
 
 function Home() {
   const navigate = useNavigate()
@@ -127,7 +130,7 @@ function Home() {
       
       // Вызываем API для расчета карты
       const result = await astrologyAPI.calculateChart(chartData)
-      setChartData(result)
+      setChartData(parseChartData(result))
       
       // Прокручиваем к результатам
       setTimeout(() => {
@@ -155,6 +158,45 @@ function Home() {
       setLoading(false)
     }
   }
+
+  // Функция парсинга данных карты (как в Chart.jsx)
+  const parseChartData = (chart) => {
+    if (!chart) return null;
+    
+    const parsedChart = { ...chart };
+    
+    // Парсим планеты если они в строковом формате
+    if (typeof chart.planets === 'string') {
+      try {
+        parsedChart.planets = JSON.parse(chart.planets);
+      } catch (e) {
+        console.error('Error parsing planets:', e);
+        parsedChart.planets = {};
+      }
+    }
+    
+    // Парсим дома если они в строковом формате
+    if (typeof chart.houses === 'string') {
+      try {
+        parsedChart.houses = JSON.parse(chart.houses);
+      } catch (e) {
+        console.error('Error parsing houses:', e);
+        parsedChart.houses = {};
+      }
+    }
+    
+    // Парсим аспекты если они в строковом формате
+    if (typeof chart.aspects === 'string') {
+      try {
+        parsedChart.aspects = JSON.parse(chart.aspects);
+      } catch (e) {
+        console.error('Error parsing aspects:', e);
+        parsedChart.aspects = [];
+      }
+    }
+    
+    return parsedChart;
+  };
 
   return (
     <div className="home">
@@ -452,6 +494,35 @@ function Home() {
                     </div>
                   ))}
                 </div>
+              </div>
+
+              {/* Профессиональное колесо */}
+              <div style={{ margin: '40px 0', textAlign: 'center' }}>
+                <h3 style={{ marginBottom: '20px', color: 'var(--text-primary)' }}>
+                  Колесо Натальной Карты
+                </h3>
+                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                  <D3NatalChartWheel 
+                    chartData={chartData}
+                    size={600}
+                  />
+                </div>
+              </div>
+
+              {/* Таблица планет */}
+              <div style={{ margin: '40px 0' }}>
+                <PlanetTable 
+                  planets={chartData.planets}
+                  houses={chartData.houses}
+                />
+              </div>
+
+              {/* Сетка аспектов */}
+              <div style={{ margin: '40px 0' }}>
+                <AspectGrid 
+                  aspects={chartData.aspects}
+                  planets={chartData.planets}
+                />
               </div>
             </div>
           </div>
