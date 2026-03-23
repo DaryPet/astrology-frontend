@@ -58,12 +58,28 @@ const TimezoneDisplay = ({
       <div style={{
         marginTop: '4px',
         fontSize: '11px',
-        color: 'var(--text-secondary)'
+        color: 'var(--text-secondary)',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center'
       }}>
-        {hasCoordinates 
-          ? `Определено по координатам: ${formatCoordinates()}`
-          : 'Часовой пояс будет определен автоматически после выбора города'
-        }
+        <span>
+          {hasCoordinates 
+            ? `Координаты: ${formatCoordinates()}`
+            : 'Часовой пояс будет определен автоматически после выбора города'
+          }
+        </span>
+        {hasCoordinates && (
+          <span style={{
+            fontSize: '10px',
+            padding: '2px 6px',
+            background: 'rgba(124, 58, 237, 0.2)',
+            borderRadius: '4px',
+            color: 'var(--accent-glow)'
+          }}>
+            ✓ Готово для расчета
+          </span>
+        )}
       </div>
     </div>
   )

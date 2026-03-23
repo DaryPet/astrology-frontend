@@ -1,19 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import api from '../services/api'
-
-const PLANET_COLORS = {
-  Sun: '#FFD700',
-  Moon: '#C0C0C0',
-  Mercury: '#B8860B',
-  Venus: '#FF69B4',
-  Mars: '#FF4500',
-  Jupiter: '#FFA500',
-  Saturn: '#DAA520',
-  Uranus: '#00CED1',
-  Neptune: '#4169E1',
-  Pluto: '#8B008B'
-}
+import D3NatalChartWheel from '../components/D3NatalChartWheel'
+import PlanetTable from '../components/PlanetTable'
+import AspectGrid from '../components/AspectGrid'
 
 function Chart() {
   const { id } = useParams()
@@ -48,73 +38,44 @@ function Chart() {
     }
   }
 
-  const getPlanetPosition = (planet, degree) => {
-    // Convert degree (0-360) to position on circle
-    const radians = (degree - 90) * (Math.PI / 180)
-    const radius = 140 // half of wheel size
-    const x = 200 + radius * Math.cos(radians)
-    const y = 200 + radius * Math.sin(radians)
-    return { x, y }
-  }
-
-  const renderZodiacWheel = () => {
-    if (!chart || !chart.planets) return null
+  // Парсим данные планет и аспектов если они в строковом формате
+  const parseChartData = (chart) => {
+    if (!chart) return null;
     
-    const planets = JSON.parse(chart.planets)
+    const parsedChart = { ...chart };
     
-    return (
-      <div className="wheel-container">
-        <svg width="400" height="400" viewBox="0 0 400 400">
-          {/* Zodiac circle */}
-          <circle cx="200" cy="200" r="160" fill="none" stroke="#2d2d3a" strokeWidth="1" />
-          <circle cx="200" cy="200" r="120" fill="none" stroke="#2d2d3a" strokeWidth="1" />
-          <circle cx="200" cy="200" r="80" fill="none" stroke="#2d2d3a" strokeWidth="1" />
-          
-          {/* Zodiac signs markers */}
-          {['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 
-            'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'].map((sign, i) => {
-            const degree = i * 30 + 15
-            const radians = (degree - 90) * (Math.PI / 180)
-            const x = 200 + 170 * Math.cos(radians)
-            const y = 200 + 170 * Math.sin(radians)
-            return (
-              <text key={sign} x={x} y={y} textAnchor="middle" fill="#94a3b8" fontSize="10">
-                {sign.substring(0, 3)}
-              </text>
-            )
-          })}
-          
-          {/* Planets */}
-          {Object.entries(planets).map(([name, data]) => {
-            if (!data.raw_degree) return null
-            const pos = getPlanetPosition(name, data.raw_degree)
-            return (
-              <g key={name}>
-                <circle 
-                  cx={pos.x} 
-                  cy={pos.y} 
-                  r="12" 
-                  fill={PLANET_COLORS[name] || '#7c3aed'}
-                  stroke="#fff"
-                  strokeWidth="2"
-                />
-                <text 
-                  x={pos.x} 
-                  y={pos.y + 4} 
-                  textAnchor="middle" 
-                  fill="#fff" 
-                  fontSize="8"
-                  fontWeight="bold"
-                >
-                  {name.substring(0, 2)}
-                </text>
-              </g>
-            )
-          })}
-        </svg>
-      </div>
-    )
-  }
+    // Парсим планеты если они в строковом формате
+    if (typeof chart.planets === 'string') {
+      try {
+        parsedChart.planets = JSON.parse(chart.planets);
+      } catch (e) {
+        console.error('Error parsing planets:', e);
+        parsedChart.planets = {};
+      }
+    }
+    
+    // Парсим дома если они в строковом формате
+    if (typeof chart.houses === 'string') {
+      try {
+        parsedChart.houses = JSON.parse(chart.houses);
+      } catch (e) {
+        console.error('Error parsing houses:', e);
+        parsedChart.houses = {};
+      }
+    }
+    
+    // Парсим аспекты если они в строковом формате
+    if (typeof chart.aspects === 'string') {
+      try {
+        parsedChart.aspects = JSON.parse(chart.aspects);
+      } catch (e) {
+        console.error('Error parsing aspects:', e);
+        parsedChart.aspects = [];
+      }
+    }
+    
+    return parsedChart;
+  };
 
   if (loading) {
     return (
@@ -159,36 +120,155 @@ function Chart() {
           </p>
         </div>
 
-        <div className="zodiac-wheel">
-          {renderZodiacWheel()}
+        {/* Профессиональное колесо с d3.js */}
+        <div style={{
+          margin: '40px 0',
+          display: 'flex',
+          justifyContent: 'center'
+        }}>
+          <D3NatalChartWheel 
+            chartData={parseChartData(chart)}
+            size={800}
+          />
         </div>
 
-        <div className="chart-info">
-          <div className="info-card">
-            <h3>Солнце</h3>
-            <div className="value">{chart.sun_sign}</div>
+        {/* Основная информация */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: '20px',
+          margin: '40px 0'
+        }}>
+          <div style={{
+            background: 'var(--bg-secondary)',
+            borderRadius: '12px',
+            padding: '20px',
+            border: '1px solid var(--border)',
+            textAlign: 'center'
+          }}>
+            <h3 style={{ marginTop: 0, marginBottom: '10px', color: 'var(--text-primary)' }}>
+              Солнце
+            </h3>
+            <div style={{
+              fontSize: '24px',
+              fontWeight: 'bold',
+              color: '#FFD700'
+            }}>
+              {chart.sun_sign}
+            </div>
+            <div style={{
+              fontSize: '14px',
+              color: 'var(--text-secondary)',
+              marginTop: '8px'
+            }}>
+              {chart.sun_sign_ru || chart.sun_sign}
+            </div>
           </div>
-          <div className="info-card">
-            <h3>Луна</h3>
-            <div className="value">{chart.moon_sign}</div>
+
+          <div style={{
+            background: 'var(--bg-secondary)',
+            borderRadius: '12px',
+            padding: '20px',
+            border: '1px solid var(--border)',
+            textAlign: 'center'
+          }}>
+            <h3 style={{ marginTop: 0, marginBottom: '10px', color: 'var(--text-primary)' }}>
+              Луна
+            </h3>
+            <div style={{
+              fontSize: '24px',
+              fontWeight: 'bold',
+              color: '#C0C0C0'
+            }}>
+              {chart.moon_sign}
+            </div>
+            <div style={{
+              fontSize: '14px',
+              color: 'var(--text-secondary)',
+              marginTop: '8px'
+            }}>
+              {chart.moon_sign_ru || chart.moon_sign}
+            </div>
           </div>
-          <div className="info-card">
-            <h3>Асцендент</h3>
-            <div className="value">{chart.ascendant}</div>
+
+          <div style={{
+            background: 'var(--bg-secondary)',
+            borderRadius: '12px',
+            padding: '20px',
+            border: '1px solid var(--border)',
+            textAlign: 'center'
+          }}>
+            <h3 style={{ marginTop: 0, marginBottom: '10px', color: 'var(--text-primary)' }}>
+              Асцендент
+            </h3>
+            <div style={{
+              fontSize: '24px',
+              fontWeight: 'bold',
+              color: '#FF1493'
+            }}>
+              {chart.ascendant}
+            </div>
+            <div style={{
+              fontSize: '14px',
+              color: 'var(--text-secondary)',
+              marginTop: '8px'
+            }}>
+              {chart.ascendant_ru || chart.ascendant}
+              {chart.ascendant_degree && (
+                <div style={{ marginTop: '4px' }}>
+                  {chart.ascendant_degree.toFixed(1)}°
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div style={{
+            background: 'var(--bg-secondary)',
+            borderRadius: '12px',
+            padding: '20px',
+            border: '1px solid var(--border)',
+            textAlign: 'center'
+          }}>
+            <h3 style={{ marginTop: 0, marginBottom: '10px', color: 'var(--text-primary)' }}>
+              Середина неба
+            </h3>
+            <div style={{
+              fontSize: '24px',
+              fontWeight: 'bold',
+              color: '#00BFFF'
+            }}>
+              {chart.mc || '—'}
+            </div>
+            <div style={{
+              fontSize: '14px',
+              color: 'var(--text-secondary)',
+              marginTop: '8px'
+            }}>
+              {chart.mc_ru || chart.mc || 'Не определено'}
+              {chart.mc_degree && (
+                <div style={{ marginTop: '4px' }}>
+                  {chart.mc_degree.toFixed(1)}°
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        {chart.aspects && (
-          <div className="aspects-list">
-            <h2>Аспекты планет</h2>
-            {JSON.parse(chart.aspects).map((aspect, idx) => (
-              <div key={idx} className="aspect-item">
-                <span className="aspect-name">{aspect.planet1} — {aspect.planet2}</span>
-                <span className="aspect-type">{aspect.aspect}</span>
-              </div>
-            ))}
-          </div>
-        )}
+        {/* Таблица планет */}
+        <div style={{ margin: '40px 0' }}>
+          <PlanetTable 
+            planets={parseChartData(chart)?.planets}
+            houses={parseChartData(chart)?.houses}
+          />
+        </div>
+
+        {/* Сетка аспектов */}
+        <div style={{ margin: '40px 0' }}>
+          <AspectGrid 
+            aspects={parseChartData(chart)?.aspects}
+            planets={parseChartData(chart)?.planets}
+          />
+        </div>
 
         <div style={{ marginTop: '40px', textAlign: 'center' }}>
           {!interpretation && (
