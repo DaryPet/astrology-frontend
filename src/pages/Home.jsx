@@ -28,11 +28,19 @@ function Home() {
       return
     }
     try {
-      const response = await api.get(`/geocode/search?q=${encodeURIComponent(query)}`)
-      setLocations(response.data.slice(0, 8))
-      setShowLocations(true)
+      const response = await api.get(`/geocode/autocomplete?q=${encodeURIComponent(query)}`)
+      // Проверка на null и пустой массив
+      if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+        setLocations(response.data.slice(0, 8))
+        setShowLocations(true)
+      } else {
+        setLocations([])
+        setShowLocations(false)
+      }
     } catch (err) {
       console.error('Geocode error:', err)
+      setLocations([])
+      setShowLocations(false)
     }
   }
 
@@ -45,7 +53,7 @@ function Home() {
   }
 
   const selectLocation = (loc) => {
-    const name = loc.display_name.split(',')[0]
+    const name = loc.display_name || loc.name || loc.display_name?.split(',')[0] || loc.name
     setFormData({
       ...formData,
       birth_place: name,
@@ -55,14 +63,16 @@ function Home() {
     setShowLocations(false)
     setLocations([])
     
-    detectTimezone(parseFloat(loc.lat), parseFloat(loc.lon))
+    if (loc.lat && loc.lon) {
+      detectTimezone(parseFloat(loc.lat), parseFloat(loc.lon))
+    }
   }
 
   const detectTimezone = async (lat, lon) => {
     try {
       const response = await api.get(`/geocode/coordinates?lat=${lat}&lon=${lon}`)
       if (response.data.timezone) {
-        setFormData({...formData, timezone: response.data.timezone})
+        setFormData(prev => ({...prev, timezone: response.data.timezone}))
       }
     } catch (err) {
       console.error('Timezone detection error:', err)
@@ -170,13 +180,13 @@ function Home() {
                 />
                 {showLocations && locations.length > 0 && (
                   <div className="autocomplete-dropdown">
-                    {locations.map(loc => (
+                    {locations.map((loc, idx) => (
                       <div 
-                        key={loc.place_id} 
+                        key={idx} 
                         className="autocomplete-item"
                         onClick={() => selectLocation(loc)}
                       >
-                        <div className="autocomplete-name">{loc.display_name.split(',')[0]}</div>
+                        <div className="autocomplete-name">{loc.display_name || loc.name}</div>
                         <div className="autocomplete-details">{loc.lat}, {loc.lon}</div>
                       </div>
                     ))}
