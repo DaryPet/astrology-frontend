@@ -4,6 +4,9 @@ const api = axios.create({
   baseURL: '/api',
   headers: {
     'Content-Type': 'application/json'
+  },
+  validateStatus: function (status) {
+    return status >= 200 && status < 300 // Бросать исключения для не-2xx
   }
 })
 
