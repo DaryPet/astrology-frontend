@@ -10,15 +10,25 @@ import AspectGrid from '../components/AspectGrid'
 function Home() {
   const navigate = useNavigate()
   
+  // const [formData, setFormData] = useState({
+  //   name: '',
+  //   birth_date: '',
+  //   birth_time: '',
+  //   city: '',
+  //   latitude: '',
+  //   longitude: '',
+  //   timezone: ''
+  // })
+
   const [formData, setFormData] = useState({
-    name: '',
-    birth_date: '',
-    birth_time: '',
-    city: '',
-    latitude: '',
-    longitude: '',
-    timezone: ''
-  })
+  name: '',
+  birth_date: '',
+  birth_time: '12:00',  // ← дефолтное время
+  city: '',
+  latitude: null,       // ← null вместо строки!
+  longitude: null,      // ← null вместо строки!
+  timezone: 'UTC'
+})
   
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -29,31 +39,97 @@ function Home() {
     setFormData(prev => ({ ...prev, [name]: value }))
   }
 
-  const handleLocationSelect = (location) => {
-    setFormData(prev => ({
-      ...prev,
-      city: location.display_name,
-      latitude: location.lat,
-      longitude: location.lon,
-      timezone: location.timezone || ''
-    }))
-  }
+  // const handleLocationSelect = (location) => {
+  //   setFormData(prev => ({
+  //     ...prev,
+  //     city: location.display_name,
+  //     latitude: location.lat,
+  //     longitude: location.lon,
+  //     timezone: location.timezone || ''
+  //   }))
+  // }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-    
+  const handleLocationSelect = async (location) => {
+  // Сохраняем координаты (скрыто от пользователя)
+  const lat = parseFloat(location.lat)
+  const lon = parseFloat(location.lon)
+
+  // Устанавливаем таймзону из ответа API
+  let timezone = location.timezone || 'UTC'
+
+  // Дополнительная проверка таймзоны через reverse geocoding для точности
+  if (lat && lon) {
     try {
-      const response = await astrologyAPI.calculateChart(formData)
-      setChartData(response.data)
+      const detectedTimezone = await geocodeAPI.detectTimezone(lat, lon)
+      if (detectedTimezone && detectedTimezone !== 'UTC') {
+        timezone = detectedTimezone
+      }
     } catch (err) {
-      setError(err.response?.data?.detail || 'Ошибка при расчете карты')
-    } finally {
-      setLoading(false)
+      console.warn('Timezone detection warning:', err)
+      // Не критично - используем таймзону из автокомплита
     }
   }
 
+  setFormData(prev => ({
+    ...prev,
+    city: location.display_name,
+    latitude: lat,      // ← ЧИСЛО!
+    longitude: lon,     // ← ЧИСЛО!
+    timezone: timezone
+  }))
+}
+
+//   const handleSubmit = async (e) => {
+//     e.preventDefault()
+//     setLoading(true)
+//     setError('')
+//       // 👇 ВРЕМЕННО: посмотрим, что отправляем
+//   console.log('Отправляемые данные:', formData)
+    
+//     try {
+//       const apiData = {
+//   birth_datetime: `${formData.birth_date}T${formData.birth_time}:00`,
+//   birth_place: formData.city,
+//   latitude: formData.latitude,
+//   longitude: formData.longitude,
+//   timezone: formData.timezone,
+//   name: formData.name
+// }
+// const response = await astrologyAPI.calculateChart(apiData)
+//       // const response = await astrologyAPI.calculateChart(formData)
+//       setChartData(response)
+//     } catch (err) {
+//        console.error('Ошибка API:', err.response?.data)  // 👈 Увидим детали ошибки
+//       setError(err.response?.data?.detail || 'Ошибка при расчете карты')
+//     } finally {
+//       setLoading(false)
+//     }
+//   }
+const handleSubmit = async (e) => {
+  e.preventDefault()
+  setLoading(true)
+  setError('')
+  
+const apiData = {
+  birth_date: `${formData.birth_date}T${formData.birth_time}:00`,
+  birth_place: formData.city,
+  latitude: formData.latitude,
+  longitude: formData.longitude,
+  timezone: formData.timezone,
+  name: formData.name
+}
+  console.log('Отправляем apiData:', apiData) // 👈 ДОБАВЬТЕ ЭТО
+  
+  try {
+    const response = await astrologyAPI.calculateChart(apiData)
+    setChartData(response.data) // 👈 ИСПРАВЬТЕ: было response, а нужно response.data
+  } catch (err) {
+    console.error('Ошибка API:', err.response?.data)
+    setError(err.response?.data?.detail || 'Ошибка при расчете карты')
+  } finally {
+    setLoading(false)
+  }
+}
   return (
     <div className="home">
       <header className="header">
@@ -72,8 +148,14 @@ function Home() {
           <p>Профессиональный расчет астрологической карты рождения с использованием Swiss Ephemeris</p>
           
           <div className="form-card">
-            {error && <div className="error">{error}</div>}
-            
+            {/* {error && <div className="error">{error}</div>} */}
+            {error && (
+  <div className="error">
+    {typeof error === 'object' 
+      ? error.msg || error.message || 'Произошла ошибка при расчете' 
+      : error}
+  </div>
+)}
             <form onSubmit={handleSubmit}>
               <div className="form-group">
                 <label>Имя (опционально)</label>
@@ -114,7 +196,7 @@ function Home() {
                 <label>Место рождения *</label>
                 <LocationInput
                   value={formData.city}
-                  onSelect={handleLocationSelect}
+                  onLocationSelect={handleLocationSelect}
                   placeholder="Начните вводить название города..."
                 />
               </div>
