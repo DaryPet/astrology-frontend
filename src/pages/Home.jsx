@@ -122,7 +122,7 @@ const apiData = {
   
   try {
     const response = await astrologyAPI.calculateChart(apiData)
-    setChartData(response.data) // 👈 ИСПРАВЬТЕ: было response, а нужно response.data
+    setChartData(response) // 👈 ИСПРАВЬТЕ: было response, а нужно response.data
   } catch (err) {
     console.error('Ошибка API:', err.response?.data)
     setError(err.response?.data?.detail || 'Ошибка при расчете карты')
