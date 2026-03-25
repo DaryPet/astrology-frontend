@@ -6,6 +6,7 @@ import TimezoneDisplay from '../components/TimezoneDisplay'
 import SwissEphemerisChartWheel from '../components/SwissEphemerisChartWheel'
 import PlanetTable from '../components/PlanetTable'
 import AspectGrid from '../components/AspectGrid'
+import AstroChartComponent from '../components/AstroChartComponent'
 
 function Home() {
   const navigate = useNavigate()
@@ -233,6 +234,10 @@ const apiData = {
               chartData={chartData}
               size={700}
             />
+              <AstroChartComponent  
+              chartData={chartData}
+              size={700}
+            />
             <div style={{ 
               marginTop: '30px', 
               color: 'var(--text-secondary)',
@@ -269,10 +274,14 @@ const apiData = {
 
             {/* Сетка аспектов */}
             <div>
-              <AspectGrid 
+              {/* <AspectGrid 
                 aspects={chartData.aspects}
                 planets={chartData.planets}
-              />
+              /> */}
+               <AstroChartComponent
+              chartData={chartData}
+              size={700}
+            />
             </div>
            {/* Планеты в домах */}
             <div style={{ marginTop: '40px' }}>

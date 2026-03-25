@@ -1,0 +1,68 @@
+
+import React, { useEffect, useRef } from 'react';
+
+const AstroChartComponent = ({ chartData, size = 700 }) => {
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !chartData || !containerRef.current) return;
+
+    import('@astrodraw/astrochart').then(module => {
+      const Chart = module.Chart;
+      
+      containerRef.current.innerHTML = '';
+      const containerId = `astrochart-${Date.now()}`;
+      containerRef.current.id = containerId;
+
+      try {
+        const chart = new Chart(containerId, size, size);
+        const radixData = convertToRadixFormat(chartData);
+        if (!radixData) return;
+        
+        const radix = chart.radix(radixData);
+        radix.aspects();
+        
+      } catch (error) {
+        console.error('Ошибка:', error);
+      }
+    });
+  }, [chartData, size]);
+
+  const convertToRadixFormat = (data) => {
+    if (!data || !data.planets || !data.houses) return null;
+
+    const planets = {};
+    const cusps = new Array(12);
+
+    const planetMapping = {
+      'Sun': 'Sun', 'Moon': 'Moon', 'Mercury': 'Mercury',
+      'Venus': 'Venus', 'Mars': 'Mars', 'Jupiter': 'Jupiter',
+      'Saturn': 'Saturn', 'Uranus': 'Uranus', 'Neptune': 'Neptune',
+      'Pluto': 'Pluto'
+    };
+
+    Object.entries(data.planets).forEach(([name, p]) => {
+      const key = planetMapping[name];
+      if (key && p?.full_degree !== undefined) {
+        planets[key] = [p.full_degree % 360];
+      }
+    });
+
+    for (let i = 1; i <= 12; i++) {
+      const house = data.houses[i];
+    //   cusps[i-1] = house?.degree !== undefined 
+    //     ? house.degree % 360 
+    //     : ((i-1) * 30) % 360;
+    cusps[i-1] = house?.cusp_longitude !== undefined 
+  ? house.cusp_longitude % 360 
+  : ((i-1) * 30) % 360;
+    }
+
+    return { planets, cusps };
+  };
+
+  return <div ref={containerRef} style={{ width: size, height: size }} />;
+};
+
+export default AstroChartComponent;
+
