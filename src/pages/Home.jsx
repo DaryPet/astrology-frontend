@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { geocodeAPI, astrologyAPI } from '../services/api'
+import Header from '../components/Header'
 import LocationInput from '../components/LocationInput'
 import TimezoneDisplay from '../components/TimezoneDisplay'
 import SwissEphemerisChartWheel from '../components/SwissEphemerisChartWheel'
@@ -133,15 +134,7 @@ const apiData = {
 }
   return (
     <div className="home">
-      <header className="header">
-        <div className="container header-content">
-          <div className="logo">Астрология</div>
-          <nav className="nav">
-            <button className="nav-link" onClick={() => navigate('/chart')}>Карта</button>
-            <button className="nav-link" onClick={() => navigate('/about')}>О проекте</button>
-          </nav>
-        </div>
-      </header>
+      <Header />
 
       <section className="hero">
         <div className="container">
