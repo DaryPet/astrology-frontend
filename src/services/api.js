@@ -7,6 +7,30 @@ const api = axios.create({
   }
 })
 
+// Добавляем токен из localStorage если есть
+const token = localStorage.getItem('token')
+if (token) {
+  api.defaults.headers.common['Authorization'] = `Bearer ${token}`
+}
+
+// Интерцептор для обработки ошибок 401 (Unauthorized)
+api.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response && error.response.status === 401) {
+      // Если токен невалидный, удаляем его
+      localStorage.removeItem('token')
+      delete api.defaults.headers.common['Authorization']
+      
+      // Перенаправляем на страницу входа если не на странице логина
+      if (!window.location.pathname.includes('/login')) {
+        window.location.href = '/login'
+      }
+    }
+    return Promise.reject(error)
+  }
+)
+
 // Геокодинг API методы
 export const geocodeAPI = {
   /**

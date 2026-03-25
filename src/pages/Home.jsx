@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import { geocodeAPI, astrologyAPI } from '../services/api'
 import LocationInput from '../components/LocationInput'
 import TimezoneDisplay from '../components/TimezoneDisplay'
@@ -10,6 +11,7 @@ import AstroChartComponent from '../components/AstroChartComponent'
 
 function Home() {
   const navigate = useNavigate()
+  const { user } = useAuth()
   
   // const [formData, setFormData] = useState({
   //   name: '',
