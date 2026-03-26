@@ -6,7 +6,8 @@ import Dashboard from './pages/Dashboard'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Logout from './pages/Logout'
-
+import ConfirmEmail from './pages/ConfirmEmail'
+ 
 function App() {
   return (
     <div className="app">
@@ -18,9 +19,10 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/logout" element={<Logout />} />
+        <Route path="/confirm" element={<ConfirmEmail />} />
       </Routes>
     </div>
   )
 }
-
+ 
 export default App

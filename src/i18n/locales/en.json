@@ -1,0 +1,150 @@
+{
+  "nav": {
+    "home": "Home",
+    "synastry": "Synastry",
+    "dashboard": "Dashboard",
+    "login": "Login",
+    "register": "Register",
+    "logout": "Logout"
+  },
+  "header": {
+    "greeting": "Hello, {{name}}"
+  },
+  "home": {
+    "title": "Natal Chart Calculator",
+    "subtitle": "Professional astrological birth chart calculation using Swiss Ephemeris",
+    "form": {
+      "name": "Name (optional)",
+      "namePlaceholder": "Enter your name",
+      "birthDate": "Date of birth *",
+      "birthTime": "Time of birth *",
+      "birthPlace": "Place of birth *",
+      "cityPlaceholder": "Start typing a city name...",
+      "submit": "Calculate chart",
+      "submitting": "Calculating..."
+    },
+    "chart": {
+      "title": "Natal Chart (Swiss Ephemeris)",
+      "sun": "Sun",
+      "moon": "Moon",
+      "ascendant": "Ascendant",
+      "mc": "MC",
+      "planetsInHouses": "Planets in Houses",
+      "house": "House",
+      "sign": "Sign",
+      "degree": "Degree"
+    },
+    "errors": {
+      "calcError": "Error calculating chart"
+    }
+  },
+  "login": {
+    "title": "Sign In",
+    "subtitle": "Enter your credentials to log in",
+    "email": "Email",
+    "emailPlaceholder": "Enter email",
+    "password": "Password",
+    "passwordPlaceholder": "Enter password",
+    "submit": "Sign In",
+    "submitting": "Signing in...",
+    "noAccount": "Don't have an account?",
+    "registerLink": "Register",
+    "backHome": "Back to home",
+    "errors": {
+      "loginError": "Login failed. Please check your email and password."
+    }
+  },
+  "register": {
+    "title": "Register",
+    "subtitle": "Create a new account",
+    "name": "Name (optional)",
+    "namePlaceholder": "Enter your name",
+    "email": "Email *",
+    "emailPlaceholder": "Enter email",
+    "password": "Password *",
+    "passwordPlaceholder": "At least 8 characters, letters and numbers",
+    "confirmPassword": "Confirm password *",
+    "confirmPasswordPlaceholder": "Repeat password",
+    "submit": "Create account",
+    "submitting": "Registering...",
+    "hasAccount": "Already have an account?",
+    "loginLink": "Sign in",
+    "backHome": "Back to home",
+    "confirmEmail": {
+      "title": "Confirm your email",
+      "text1": "We sent a confirmation link to your email address.",
+      "text2": "Click the link in the email to complete registration.",
+      "loginAfter": "Sign in after confirmation"
+    },
+    "errors": {
+      "registerError": "Registration failed. Please try a different email."
+    },
+    "validation": {
+      "nameTooLong": "Name must be 50 characters or less",
+      "emailInvalid": "Invalid email address",
+      "emailRequired": "Email is required",
+      "passwordMin": "Password must be at least 8 characters",
+      "passwordLetters": "Password must contain letters",
+      "passwordDigits": "Password must contain numbers",
+      "passwordRequired": "Password is required",
+      "confirmRequired": "Password confirmation is required",
+      "passwordsMismatch": "Passwords must match"
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "Welcome to your personal account",
+    "userInfo": {
+      "title": "User Information",
+      "email": "Email",
+      "name": "Name",
+      "createdAt": "Registration date",
+      "notSpecified": "Not specified",
+      "unknown": "Unknown"
+    },
+    "features": {
+      "title": "Coming Soon",
+      "history": {
+        "title": "Calculation History",
+        "desc": "View all your previous astrological chart calculations"
+      },
+      "favorites": {
+        "title": "Favorites",
+        "desc": "Save your favorite charts and interpretations"
+      },
+      "notifications": {
+        "title": "Notifications",
+        "desc": "Alerts for important transits and astrological events"
+      },
+      "compare": {
+        "title": "Chart Comparison",
+        "desc": "Compare your chart with other users"
+      }
+    },
+    "actions": {
+      "newChart": "Calculate new chart",
+      "synastry": "Calculate synastry",
+      "logout": "Sign out"
+    },
+    "errors": {
+      "loadError": "Error loading dashboard data"
+    }
+  },
+  "confirm": {
+    "pending": "Confirming email...",
+    "success": "Email confirmed! Redirecting...",
+    "error": "Confirmation failed. The link is invalid or has expired.",
+    "tryAgain": "Please try registering again or sign in.",
+    "registerLink": "Register",
+    "loginLink": "Sign in"
+  },
+  "logout": {
+    "title": "Signing Out",
+    "text": "You are being signed out..."
+  },
+  "common": {
+    "loading": "Loading...",
+    "backHome": "Go to home",
+    "email": "Email"
+  }
+}

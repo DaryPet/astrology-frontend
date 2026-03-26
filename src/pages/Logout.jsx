@@ -1,30 +1,25 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { authAPI } from '../services/authApi';
+import { useAuth } from '../context/AuthContext';
 import Header from '../components/Header';
 
 const Logout = () => {
   const navigate = useNavigate();
+  const { signOut } = useAuth();
 
   useEffect(() => {
     const performLogout = async () => {
       try {
-        // Пытаемся вызвать logout на сервере
-        await authAPI.logout();
+        await signOut();
       } catch (error) {
-        console.log('Logout API error:', error);
-        // Не критично - продолжаем локальный logout
+        console.log('Logout error:', error);
       } finally {
-        // Всегда очищаем локальное хранилище
-        localStorage.removeItem('auth_token');
-        
-        // Перенаправляем на главную страницу
         navigate('/');
       }
     };
 
     performLogout();
-  }, [navigate]);
+  }, [navigate, signOut]);
 
   return (
     <div className="logout-page">

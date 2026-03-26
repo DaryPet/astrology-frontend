@@ -2,13 +2,15 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
-import { authAPI } from '../services/authApi';
+import { useAuth } from '../context/AuthContext';
 import Header from '../components/Header';
 
 const Register = () => {
   const navigate = useNavigate();
+  const { signUp } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [emailSent, setEmailSent] = useState(false);
 
   const initialValues = {
     name: '',
@@ -37,23 +39,49 @@ const Register = () => {
     setLoading(true);
     setError('');
     try {
-      const response = await authAPI.register(values.email, values.password, values.name);
-      localStorage.setItem('auth_token', response.access_token);
-      
-      // Перенаправляем на dashboard после успешной регистрации
-      navigate('/dashboard');
+      const data = await signUp(values.email, values.password, values.name);
+
+      // Если session есть — email подтверждение отключено в Supabase, сразу на dashboard
+      if (data.session) {
+        navigate('/dashboard');
+      } else {
+        // Supabase отправил письмо подтверждения — показываем сообщение
+        setEmailSent(true);
+      }
     } catch (err) {
-      setError(err.response?.data?.detail || 'Ошибка при регистрации. Попробуйте другой email.');
+      setError(err.message || 'Ошибка при регистрации. Попробуйте другой email.');
     } finally {
       setLoading(false);
       setSubmitting(false);
     }
   };
 
+  if (emailSent) {
+    return (
+      <div className="auth-page">
+        <Header />
+        <div className="container">
+          <div className="auth-card">
+            <div className="auth-header">
+              <h1>Подтвердите email</h1>
+              <p>Мы отправили письмо с ссылкой подтверждения на вашу почту.</p>
+              <p>Перейдите по ссылке в письме, чтобы завершить регистрацию.</p>
+            </div>
+            <div className="auth-footer">
+              <p>
+                <Link to="/login" className="auth-link">Войти после подтверждения</Link>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="auth-page">
       <Header />
-      
+
       <div className="container">
         <div className="auth-card">
           <div className="auth-header">
@@ -122,9 +150,9 @@ const Register = () => {
                   <ErrorMessage name="confirmPassword" component="div" className="field-error" />
                 </div>
 
-                <button 
-                  type="submit" 
-                  className="btn-primary btn-auth" 
+                <button
+                  type="submit"
+                  className="btn-primary btn-auth"
                   disabled={loading || isSubmitting}
                 >
                   {loading ? 'Регистрация...' : 'Зарегистрироваться'}

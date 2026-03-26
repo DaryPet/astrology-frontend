@@ -1,108 +1,62 @@
 import axios from 'axios';
+import { supabase } from '../lib/supabase';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8010/api';
 
 const api = axios.create({
-  baseURL: '/api',
-  headers: {
-    'Content-Type': 'application/json'
-  }
+  baseURL: API_URL,
+  headers: { 'Content-Type': 'application/json' }
 });
 
-// Добавляем интерцептор для добавления токена к запросам
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('auth_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('auth_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
-);
+  return config;
+});
 
-// API методы для аутентификации
 export const authAPI = {
-  /**
-   * Регистрация пользователя
-   * @param {string} email - Email пользователя
-   * @param {string} password - Пароль
-   * @param {string} name - Имя пользователя (опционально)
-   * @returns {Promise<Object>} Токен доступа
-   */
   register: async (email, password, name = '') => {
-    try {
-      const response = await api.post('/auth/register', {
-        email,
-        password,
-        name
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Registration error:', error);
-      throw error;
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { name } }
+    });
+    if (error) throw error;
+    
+    if (data.session?.access_token) {
+      localStorage.setItem('auth_token', data.session.access_token);
     }
+    
+    return { access_token: data.session?.access_token, user: data.user };
   },
 
-  /**
-   * Вход пользователя
-   * @param {string} email - Email пользователя
-   * @param {string} password - Пароль
-   * @returns {Promise<Object>} Токен доступа
-   */
   login: async (email, password) => {
-    try {
-      const response = await api.post('/auth/login', {
-        email,
-        password
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Login error:', error);
-      throw error;
-    }
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+    if (error) throw error;
+    
+    localStorage.setItem('auth_token', data.session.access_token);
+    return { access_token: data.session.access_token, user: data.user };
   },
 
-  /**
-   * Получение информации о текущем пользователе
-   * @returns {Promise<Object>} Данные пользователя
-   */
   getCurrentUser: async () => {
-    try {
-      const response = await api.get('/auth/me');
-      return response.data;
-    } catch (error) {
-      console.error('Get current user error:', error);
-      throw error;
-    }
+    const response = await api.get('/auth/me');
+    return response.data;
   },
 
-  /**
-   * Выход пользователя
-   * @returns {Promise<Object>} Результат выхода
-   */
   logout: async () => {
-    try {
-      const response = await api.post('/auth/logout');
-      return response.data;
-    } catch (error) {
-      console.error('Logout error:', error);
-      throw error;
-    }
+    await supabase.auth.signOut();
+    localStorage.removeItem('auth_token');
+    return { message: 'Logged out' };
   },
 
-  /**
-   * Получение данных dashboard (требует аутентификации)
-   * @returns {Promise<Object>} Данные dashboard
-   */
   getDashboard: async () => {
-    try {
-      const response = await api.get('/dashboard');
-      return response.data;
-    } catch (error) {
-      console.error('Get dashboard error:', error);
-      throw error;
-    }
+    const response = await api.get('/auth/me');
+    return response.data;
   }
 };
 

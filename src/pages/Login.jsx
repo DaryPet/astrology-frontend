@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
-import { authAPI } from '../services/authApi';
+import { useAuth } from '../context/AuthContext';
 import Header from '../components/Header';
 
 const Login = () => {
   const navigate = useNavigate();
+  const { signIn } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -28,13 +29,10 @@ const Login = () => {
     setLoading(true);
     setError('');
     try {
-      const response = await authAPI.login(values.email, values.password);
-      localStorage.setItem('auth_token', response.access_token);
-      
-      // Перенаправляем на главную страницу после успешного входа
-      navigate('/');
+      await signIn(values.email, values.password);
+      navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.detail || 'Ошибка при входе. Проверьте email и пароль.');
+      setError(err.message || 'Ошибка при входе. Проверьте email и пароль.');
     } finally {
       setLoading(false);
       setSubmitting(false);
@@ -44,7 +42,7 @@ const Login = () => {
   return (
     <div className="auth-page">
       <Header />
-      
+
       <div className="container">
         <div className="auth-card">
           <div className="auth-header">
@@ -87,9 +85,9 @@ const Login = () => {
                   <ErrorMessage name="password" component="div" className="field-error" />
                 </div>
 
-                <button 
-                  type="submit" 
-                  className="btn-primary btn-auth" 
+                <button
+                  type="submit"
+                  className="btn-primary btn-auth"
                   disabled={loading || isSubmitting}
                 >
                   {loading ? 'Вход...' : 'Войти'}
