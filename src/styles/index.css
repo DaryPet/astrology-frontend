@@ -747,6 +747,24 @@ body {
   text-decoration: underline;
 }
 
+.forgot-password-link {
+  text-align: right;
+  margin-top: -15px;
+  margin-bottom: 20px;
+}
+
+.forgot-password-link a {
+  color: var(--text-secondary);
+  font-size: 14px;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.forgot-password-link a:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
 /* Стили для Formik ошибок */
 .field-error {
   color: #ff6b6b;

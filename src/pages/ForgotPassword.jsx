@@ -1,53 +1,70 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import { useAuth } from '../context/AuthContext';
 import Header from '../components/Header';
 
-const Login = () => {
-  const navigate = useNavigate();
-  const { signIn } = useAuth();
+const ForgotPassword = () => {
+  const { resetPassword } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [emailSent, setEmailSent] = useState(false);
 
   const initialValues = {
-    email: '',
-    password: ''
+    email: ''
   };
 
   const validationSchema = Yup.object({
     email: Yup.string()
       .email('Некорректный email адрес')
-      .required('Email обязателен для заполнения'),
-    password: Yup.string()
-      .min(8, 'Пароль должен содержать минимум 8 символов')
-      .required('Пароль обязателен для заполнения')
+      .required('Email обязателен для заполнения')
   });
 
   const handleSubmit = async (values, { setSubmitting }) => {
     setLoading(true);
     setError('');
     try {
-      await signIn(values.email, values.password);
-      navigate('/dashboard');
+      await resetPassword(values.email);
+      setEmailSent(true);
     } catch (err) {
-      setError(err.message || 'Ошибка при входе. Проверьте email и пароль.');
+      setError(err.message || 'Ошибка при отправке. Проверьте email.');
     } finally {
       setLoading(false);
       setSubmitting(false);
     }
   };
 
+  if (emailSent) {
+    return (
+      <div className="auth-page">
+        <Header />
+        <div className="container">
+          <div className="auth-card">
+            <div className="auth-header">
+              <h1>Проверьте почту</h1>
+              <p>Мы отправили инструкции по сбросу пароля на ваш email.</p>
+              <p>Перейдите по ссылке в письме, чтобы создать новый пароль.</p>
+            </div>
+            <div className="auth-footer">
+              <p>
+                <Link to="/login" className="auth-link">Вернуться ко входу</Link>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="auth-page">
       <Header />
-
       <div className="container">
         <div className="auth-card">
           <div className="auth-header">
-            <h1>Вход в систему</h1>
-            <p>Введите ваши учетные данные для входа</p>
+            <h1>Забыли пароль?</h1>
+            <p>Введите email, указанный при регистрации</p>
           </div>
 
           {error && <div className="error-message">{error}</div>}
@@ -60,7 +77,7 @@ const Login = () => {
             {({ isSubmitting, errors, touched }) => (
               <Form className="auth-form">
                 <div className="form-group">
-                  <label htmlFor="email">Email</label>
+                  <label htmlFor="email">Email *</label>
                   <Field
                     type="email"
                     name="email"
@@ -72,29 +89,12 @@ const Login = () => {
                   <ErrorMessage name="email" component="div" className="field-error" />
                 </div>
 
-                <div className="form-group">
-                  <label htmlFor="password">Пароль</label>
-                  <Field
-                    type="password"
-                    name="password"
-                    id="password"
-                    placeholder="Введите пароль"
-                    className={`form-input ${errors.password && touched.password ? 'error' : ''}`}
-                    disabled={loading}
-                  />
-                  <ErrorMessage name="password" component="div" className="field-error" />
-                </div>
-
-                <div className="forgot-password-link">
-                  <Link to="/forgot-password">Забыли пароль?</Link>
-                </div>
-
                 <button
                   type="submit"
                   className="btn-primary btn-auth"
                   disabled={loading || isSubmitting}
                 >
-                  {loading ? 'Вход...' : 'Войти'}
+                  {loading ? 'Отправка...' : 'Отправить инструкции'}
                 </button>
               </Form>
             )}
@@ -102,7 +102,7 @@ const Login = () => {
 
           <div className="auth-footer">
             <p>
-              Нет аккаунта? <Link to="/register" className="auth-link">Зарегистрироваться</Link>
+              Вспомнили пароль? <Link to="/login" className="auth-link">Войти</Link>
             </p>
             <p>
               <Link to="/" className="auth-link">Вернуться на главную</Link>
@@ -114,4 +114,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default ForgotPassword;
