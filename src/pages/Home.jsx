@@ -11,16 +11,6 @@ import AstroChartComponent from '../components/AstroChartComponent'
 
 function Home() {
   const navigate = useNavigate()
-  
-  // const [formData, setFormData] = useState({
-  //   name: '',
-  //   birth_date: '',
-  //   birth_time: '',
-  //   city: '',
-  //   latitude: '',
-  //   longitude: '',
-  //   timezone: ''
-  // })
 
   const [formData, setFormData] = useState({
   name: '',
@@ -41,15 +31,6 @@ function Home() {
     setFormData(prev => ({ ...prev, [name]: value }))
   }
 
-  // const handleLocationSelect = (location) => {
-  //   setFormData(prev => ({
-  //     ...prev,
-  //     city: location.display_name,
-  //     latitude: location.lat,
-  //     longitude: location.lon,
-  //     timezone: location.timezone || ''
-  //   }))
-  // }
 
   const handleLocationSelect = async (location) => {
   // Сохраняем координаты (скрыто от пользователя)
@@ -81,32 +62,6 @@ function Home() {
   }))
 }
 
-//   const handleSubmit = async (e) => {
-//     e.preventDefault()
-//     setLoading(true)
-//     setError('')
-//       // 👇 ВРЕМЕННО: посмотрим, что отправляем
-//   console.log('Отправляемые данные:', formData)
-    
-//     try {
-//       const apiData = {
-//   birth_datetime: `${formData.birth_date}T${formData.birth_time}:00`,
-//   birth_place: formData.city,
-//   latitude: formData.latitude,
-//   longitude: formData.longitude,
-//   timezone: formData.timezone,
-//   name: formData.name
-// }
-// const response = await astrologyAPI.calculateChart(apiData)
-//       // const response = await astrologyAPI.calculateChart(formData)
-//       setChartData(response)
-//     } catch (err) {
-//        console.error('Ошибка API:', err.response?.data)  // 👈 Увидим детали ошибки
-//       setError(err.response?.data?.detail || 'Ошибка при расчете карты')
-//     } finally {
-//       setLoading(false)
-//     }
-//   }
 const handleSubmit = async (e) => {
   e.preventDefault()
   setLoading(true)
@@ -267,10 +222,6 @@ const apiData = {
 
             {/* Сетка аспектов */}
             <div>
-              {/* <AspectGrid 
-                aspects={chartData.aspects}
-                planets={chartData.planets}
-              /> */}
                <AstroChartComponent
               chartData={chartData}
               size={700}
