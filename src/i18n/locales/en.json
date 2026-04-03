@@ -50,8 +50,15 @@
     "noAccount": "Don't have an account?",
     "registerLink": "Register",
     "backHome": "Back to home",
+    "forgotPassword": "Forgot password?",
     "errors": {
       "loginError": "Login failed. Please check your email and password."
+    },
+    "validation": {
+      "emailInvalid": "Invalid email address",
+      "emailRequired": "Email is required",
+      "passwordMin": "Password must be at least 8 characters",
+      "passwordRequired": "Password is required"
     }
   },
   "register": {
@@ -146,5 +153,96 @@
     "loading": "Loading...",
     "backHome": "Go to home",
     "email": "Email"
+  },
+  "forgotPassword": {
+    "title": "Forgot Password?",
+    "subtitle": "Enter the email you used during registration",
+    "email": "Email *",
+    "emailPlaceholder": "Enter email",
+    "submit": "Send instructions",
+    "submitting": "Sending...",
+    "successTitle": "Check your email",
+    "successText1": "We sent password reset instructions to your email.",
+    "successText2": "Click the link in the email to create a new password.",
+    "backToLogin": "Back to login",
+    "rememberPassword": "Remembered your password?",
+    "loginLink": "Sign in",
+    "backHome": "Back to home",
+    "errors": {
+      "sendError": "Error sending. Please check your email."
+    },
+    "validation": {
+      "emailInvalid": "Invalid email address",
+      "emailRequired": "Email is required"
+    }
+  },
+  "resetPassword": {
+    "invalidLink": {
+      "title": "Invalid Link",
+      "text": "The password reset link has expired or is invalid.",
+      "requestNew": "Request new link",
+      "login": "Sign in"
+    },
+    "success": {
+      "title": "Password Updated",
+      "text": "Your password has been changed successfully.",
+      "login": "Sign in with new password"
+    },
+    "form": {
+      "title": "New Password",
+      "subtitle": "Enter a new password",
+      "password": "New password *",
+      "passwordPlaceholder": "At least 8 characters, letters and numbers",
+      "confirmPassword": "Confirm password *",
+      "confirmPasswordPlaceholder": "Repeat password",
+      "submit": "Save password",
+      "submitting": "Saving...",
+      "backToLogin": "Back to login"
+    },
+    "errors": {
+      "updateError": "Error updating password."
+    },
+    "validation": {
+      "passwordMin": "Password must be at least 8 characters",
+      "passwordLetters": "Password must contain letters",
+      "passwordDigits": "Password must contain numbers",
+      "passwordRequired": "Password is required",
+      "confirmRequired": "Password confirmation is required",
+      "passwordsMismatch": "Passwords must match"
+    }
+  },
+  "chart": {
+    "title": "Your Natal Chart",
+    "sun": "Sun",
+    "moon": "Moon",
+    "ascendant": "Ascendant",
+    "midheaven": "Midheaven",
+    "getInterpretation": "Get AI Interpretation",
+    "interpretation": "Interpretation",
+    "error": "Error loading chart",
+    "nav": {
+      "home": "Home",
+      "synastry": "Synastry"
+    },
+    "logo": "Astrology",
+    "notDetermined": "Not determined"
+  },
+  "synastry": {
+    "title": "Synastry",
+    "subtitle": "Relationship Compatibility",
+    "person1": "Person 1",
+    "person2": "Person 2",
+    "form": {
+      "name": "Name",
+      "birthDate": "Birth Date",
+      "birthTime": "Birth Time",
+      "birthPlace": "Birth Place",
+      "birthPlacePlaceholder": "Enter city",
+      "timezone": "Timezone"
+    },
+    "calculate": "Calculate Compatibility",
+    "calculating": "Calculating...",
+    "calculateAgain": "Calculate Again",
+    "aspects": "Aspects"
   }
 }

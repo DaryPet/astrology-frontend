@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import Header from '../components/Header';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
 const ConfirmEmail = () => {
   const navigate = useNavigate();
-  const [status, setStatus] = useState('Подтверждение email...');
+  const { t } = useTranslation();
+  const [status, setStatus] = useState('');
   const [isError, setIsError] = useState(false);
 
   useEffect(() => {
@@ -14,13 +17,13 @@ const ConfirmEmail = () => {
 
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
-        setStatus('Email успешно подтверждён! Перенаправление...');
+        setStatus(t('confirm.success'));
         setTimeout(() => navigate('/dashboard'), 2000);
       }
 
       if (event === 'TOKEN_REFRESHED') {
         // тоже считаем успехом
-        setStatus('Email успешно подтверждён! Перенаправление...');
+        setStatus(t('confirm.success'));
         setTimeout(() => navigate('/dashboard'), 2000);
       }
     });
@@ -29,7 +32,7 @@ const ConfirmEmail = () => {
     // пользователь уже был залогинен до перехода по ссылке
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        setStatus('Email успешно подтверждён! Перенаправление...');
+        setStatus(t('confirm.success'));
         setTimeout(() => navigate('/dashboard'), 2000);
       } else {
         // Если через 5 секунд сессии нет — ссылка невалидна
@@ -37,7 +40,7 @@ const ConfirmEmail = () => {
           supabase.auth.getSession().then(({ data: { session: s } }) => {
             if (!s) {
               setIsError(true);
-              setStatus('Ошибка подтверждения. Ссылка недействительна или истекла.');
+              setStatus(t('confirm.error'));
             }
           });
         }, 5000);
@@ -47,21 +50,29 @@ const ConfirmEmail = () => {
     return () => {
       listener?.subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, [navigate, t]);
+
+  // Set initial status on mount
+  useEffect(() => {
+    setStatus(t('confirm.pending'));
+  }, [t]);
 
   return (
-    <div style={{ textAlign: 'center', marginTop: '100px', padding: '20px' }}>
+    <>
+      <Header />
+      <div style={{ textAlign: 'center', marginTop: '40px', padding: '20px' }}>
       <h2 style={{ color: isError ? '#e53e3e' : 'inherit' }}>{status}</h2>
       {isError && (
         <div style={{ marginTop: '20px' }}>
-          <p>Попробуйте зарегистрироваться заново или войти в систему.</p>
+          <p>{t('confirm.tryAgain')}</p>
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '16px' }}>
-            <a href="/register" style={{ color: 'var(--accent)' }}>Регистрация</a>
-            <a href="/login" style={{ color: 'var(--accent)' }}>Войти</a>
+            <a href="/register" style={{ color: 'var(--accent)' }}>{t('confirm.registerLink')}</a>
+            <a href="/login" style={{ color: 'var(--accent)' }}>{t('confirm.loginLink')}</a>
           </div>
         </div>
       )}
     </div>
+      </>
   );
 };
 

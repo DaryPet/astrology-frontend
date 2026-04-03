@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import api from '../services/api'
+import Header from '../components/Header'
 import D3NatalChartWheel from '../components/D3NatalChartWheel'
 import PlanetTable from '../components/PlanetTable'
 import AspectGrid from '../components/AspectGrid'
 
 function Chart() {
   const { id } = useParams()
+  const { t } = useTranslation()
   const [chart, setChart] = useState(null)
   const [interpretation, setInterpretation] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -22,7 +25,7 @@ function Chart() {
       setChart(response.data)
       setLoading(false)
     } catch (err) {
-      setError('Ошибка загрузки карты')
+      setError(t('chart.error'))
       setLoading(false)
     }
   }
@@ -94,7 +97,7 @@ function Chart() {
       <div className="chart-page">
         <div className="container">
           <div className="error">{error}</div>
-          <Link to="/" className="btn btn-primary">На главную</Link>
+          <Link to="/" className="btn btn-primary">{t('common.backHome')}</Link>
         </div>
       </div>
     )
@@ -102,19 +105,11 @@ function Chart() {
 
   return (
     <div className="chart-page">
-      <header className="header">
-        <div className="container header-content">
-          <div className="logo">✨ Астрология</div>
-          <nav className="nav">
-            <Link to="/">Главная</Link>
-            <Link to="/synastry">Синастрия</Link>
-          </nav>
-        </div>
-      </header>
+      <Header />
 
       <div className="container">
         <div className="chart-header">
-          <h1>Ваша натальная карта</h1>
+          <h1>{t('chart.title')}</h1>
           <p className="chart-subtitle">
             {chart.sun_sign} • {chart.moon_sign} • ASC {chart.ascendant}
           </p>
@@ -147,7 +142,7 @@ function Chart() {
             textAlign: 'center'
           }}>
             <h3 style={{ marginTop: 0, marginBottom: '10px', color: 'var(--text-primary)' }}>
-              Солнце
+              {t('chart.sun')}
             </h3>
             <div style={{
               fontSize: '24px',
@@ -173,7 +168,7 @@ function Chart() {
             textAlign: 'center'
           }}>
             <h3 style={{ marginTop: 0, marginBottom: '10px', color: 'var(--text-primary)' }}>
-              Луна
+              {t('chart.moon')}
             </h3>
             <div style={{
               fontSize: '24px',
@@ -199,7 +194,7 @@ function Chart() {
             textAlign: 'center'
           }}>
             <h3 style={{ marginTop: 0, marginBottom: '10px', color: 'var(--text-primary)' }}>
-              Асцендент
+              {t('chart.ascendant')}
             </h3>
             <div style={{
               fontSize: '24px',
@@ -230,7 +225,7 @@ function Chart() {
             textAlign: 'center'
           }}>
             <h3 style={{ marginTop: 0, marginBottom: '10px', color: 'var(--text-primary)' }}>
-              Середина неба
+              {t('chart.midheaven')}
             </h3>
             <div style={{
               fontSize: '24px',
@@ -244,7 +239,7 @@ function Chart() {
               color: 'var(--text-secondary)',
               marginTop: '8px'
             }}>
-              {chart.mc_ru || chart.mc || 'Не определено'}
+              {chart.mc_ru || chart.mc || t('chart.notDetermined')}
               {chart.mc_degree && (
                 <div style={{ marginTop: '4px' }}>
                   {chart.mc_degree.toFixed(1)}°
@@ -273,12 +268,12 @@ function Chart() {
         <div style={{ marginTop: '40px', textAlign: 'center' }}>
           {!interpretation && (
             <button onClick={getInterpretation} className="btn btn-primary" style={{ maxWidth: '300px' }}>
-              Получить AI интерпретацию
+              t('chart.getInterpretation')
             </button>
           )}
           {interpretation && (
             <div className="info-card" style={{ textAlign: 'left', marginTop: '20px' }}>
-              <h3>Интерпретация</h3>
+              <h3>t('chart.interpretation')</h3>
               <p style={{ marginTop: '10px', lineHeight: '1.8' }}>{interpretation}</p>
             </div>
           )}

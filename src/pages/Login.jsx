@@ -3,11 +3,13 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 import Header from '../components/Header';
 
 const Login = () => {
   const navigate = useNavigate();
   const { signIn } = useAuth();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -18,11 +20,11 @@ const Login = () => {
 
   const validationSchema = Yup.object({
     email: Yup.string()
-      .email('Некорректный email адрес')
-      .required('Email обязателен для заполнения'),
+      .email(t('login.validation.emailInvalid'))
+      .required(t('login.validation.emailRequired')),
     password: Yup.string()
-      .min(8, 'Пароль должен содержать минимум 8 символов')
-      .required('Пароль обязателен для заполнения')
+      .min(8, t('login.validation.passwordMin'))
+      .required(t('login.validation.passwordRequired'))
   });
 
   const handleSubmit = async (values, { setSubmitting }) => {
@@ -32,7 +34,7 @@ const Login = () => {
       await signIn(values.email, values.password);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.message || 'Ошибка при входе. Проверьте email и пароль.');
+      setError(err.message || t('login.errors.loginError'));
     } finally {
       setLoading(false);
       setSubmitting(false);
@@ -46,8 +48,8 @@ const Login = () => {
       <div className="container">
         <div className="auth-card">
           <div className="auth-header">
-            <h1>Вход в систему</h1>
-            <p>Введите ваши учетные данные для входа</p>
+            <h1>{t('login.title')}</h1>
+            <p>{t('login.subtitle')}</p>
           </div>
 
           {error && <div className="error-message">{error}</div>}
@@ -60,12 +62,12 @@ const Login = () => {
             {({ isSubmitting, errors, touched }) => (
               <Form className="auth-form">
                 <div className="form-group">
-                  <label htmlFor="email">Email</label>
+                  <label htmlFor="email">{t('login.email')}</label>
                   <Field
                     type="email"
                     name="email"
                     id="email"
-                    placeholder="Введите email"
+                    placeholder={t('login.emailPlaceholder')}
                     className={`form-input ${errors.email && touched.email ? 'error' : ''}`}
                     disabled={loading}
                   />
@@ -73,12 +75,12 @@ const Login = () => {
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="password">Пароль</label>
+                  <label htmlFor="password">{t('login.password')}</label>
                   <Field
                     type="password"
                     name="password"
                     id="password"
-                    placeholder="Введите пароль"
+                    placeholder={t('login.passwordPlaceholder')}
                     className={`form-input ${errors.password && touched.password ? 'error' : ''}`}
                     disabled={loading}
                   />
@@ -86,7 +88,7 @@ const Login = () => {
                 </div>
 
                 <div className="forgot-password-link">
-                  <Link to="/forgot-password">Забыли пароль?</Link>
+                  <Link to="/forgot-password">{t('login.forgotPassword')}</Link>
                 </div>
 
                 <button
@@ -94,7 +96,7 @@ const Login = () => {
                   className="btn-primary btn-auth"
                   disabled={loading || isSubmitting}
                 >
-                  {loading ? 'Вход...' : 'Войти'}
+                  {loading ? t('login.submitting') : t('login.submit')}
                 </button>
               </Form>
             )}
@@ -102,10 +104,10 @@ const Login = () => {
 
           <div className="auth-footer">
             <p>
-              Нет аккаунта? <Link to="/register" className="auth-link">Зарегистрироваться</Link>
+              {t('login.noAccount')} <Link to="/register" className="auth-link">{t('login.registerLink')}</Link>
             </p>
             <p>
-              <Link to="/" className="auth-link">Вернуться на главную</Link>
+              <Link to="/" className="auth-link">{t('login.backHome')}</Link>
             </p>
           </div>
         </div>
