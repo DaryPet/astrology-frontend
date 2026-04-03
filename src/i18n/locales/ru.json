@@ -50,8 +50,15 @@
     "noAccount": "Нет аккаунта?",
     "registerLink": "Зарегистрироваться",
     "backHome": "Вернуться на главную",
+    "forgotPassword": "Забыли пароль?",
     "errors": {
       "loginError": "Ошибка при входе. Проверьте email и пароль."
+    },
+    "validation": {
+      "emailInvalid": "Некорректный email адрес",
+      "emailRequired": "Email обязателен для заполнения",
+      "passwordMin": "Пароль должен содержать минимум 8 символов",
+      "passwordRequired": "Пароль обязателен для заполнения"
     }
   },
   "register": {
@@ -146,5 +153,96 @@
     "loading": "Загрузка...",
     "backHome": "На главную",
     "email": "Email"
+  },
+  "forgotPassword": {
+    "title": "Забыли пароль?",
+    "subtitle": "Введите email, указанный при регистрации",
+    "email": "Email *",
+    "emailPlaceholder": "Введите email",
+    "submit": "Отправить инструкции",
+    "submitting": "Отправка...",
+    "successTitle": "Проверьте почту",
+    "successText1": "Мы отправили инструкции по сбросу пароля на ваш email.",
+    "successText2": "Перейдите по ссылке в письме, чтобы создать новый пароль.",
+    "backToLogin": "Вернуться ко входу",
+    "rememberPassword": "Вспомнили пароль?",
+    "loginLink": "Войти",
+    "backHome": "Вернуться на главную",
+    "errors": {
+      "sendError": "Ошибка при отправке. Проверьте email."
+    },
+    "validation": {
+      "emailInvalid": "Некорректный email адрес",
+      "emailRequired": "Email обязателен для заполнения"
+    }
+  },
+  "resetPassword": {
+    "invalidLink": {
+      "title": "Недействительная ссылка",
+      "text": "Ссылка для сброса пароля истекла или недействительна.",
+      "requestNew": "Запросить новую ссылку",
+      "login": "Войти"
+    },
+    "success": {
+      "title": "Пароль обновлён",
+      "text": "Ваш пароль успешно изменён.",
+      "login": "Войти с новым паролем"
+    },
+    "form": {
+      "title": "Новый пароль",
+      "subtitle": "Введите новый пароль",
+      "password": "Новый пароль *",
+      "passwordPlaceholder": "Минимум 8 символов, буквы и цифры",
+      "confirmPassword": "Подтвердите пароль *",
+      "confirmPasswordPlaceholder": "Повторите пароль",
+      "submit": "Сохранить пароль",
+      "submitting": "Сохранение...",
+      "backToLogin": "Вернуться ко входу"
+    },
+    "errors": {
+      "updateError": "Ошибка при обновлении пароля."
+    },
+    "validation": {
+      "passwordMin": "Пароль должен содержать минимум 8 символов",
+      "passwordLetters": "Пароль должен содержать буквы",
+      "passwordDigits": "Пароль должен содержать цифры",
+      "passwordRequired": "Пароль обязателен для заполнения",
+      "confirmRequired": "Подтверждение пароля обязательно",
+      "passwordsMismatch": "Пароли должны с��впадать"
+    }
+  },
+  "chart": {
+    "title": "Ваша натальная карта",
+    "sun": "Солнце",
+    "moon": "Луна",
+    "ascendant": "Асцендент",
+    "midheaven": "Середина неба",
+    "getInterpretation": "Получить AI интерпретацию",
+    "interpretation": "Интерпретация",
+    "error": "Ошибка загрузки карты",
+    "nav": {
+      "home": "Главная",
+      "synastry": "Синастрия"
+    },
+    "logo": "Астрология",
+    "notDetermined": "Не определено"
+  },
+  "synastry": {
+    "title": "Синастрия",
+    "subtitle": "Совместимость отношений",
+    "person1": "Человек 1",
+    "person2": "Человек 2",
+    "form": {
+      "name": "Имя",
+      "birthDate": "Дата рождения",
+      "birthTime": "Время рождения",
+      "birthPlace": "Место рождения",
+      "birthPlacePlaceholder": "Введите город",
+      "timezone": "Часовой пояс"
+    },
+    "calculate": "Рассчитать совместимость",
+    "calculating": "Расчёт...",
+    "calculateAgain": "Рассчитать снова",
+    "aspects": "Аспекты"
   }
 }

@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { geocodeAPI, astrologyAPI } from '../services/api'
+import { useTranslation } from 'react-i18next'
 import Header from '../components/Header'
 import LocationInput from '../components/LocationInput'
 import TimezoneDisplay from '../components/TimezoneDisplay'
@@ -11,16 +12,17 @@ import AstroChartComponent from '../components/AstroChartComponent'
 
 function Home() {
   const navigate = useNavigate()
+  const { t } = useTranslation()
 
   const [formData, setFormData] = useState({
-  name: '',
-  birth_date: '',
-  birth_time: '12:00',  // ← дефолтное время
-  city: '',
-  latitude: null,       // ← null вместо строки!
-  longitude: null,      // ← null вместо строки!
-  timezone: 'UTC'
-})
+    name: '',
+    birth_date: '',
+    birth_time: '12:00',
+    city: '',
+    latitude: null,
+    longitude: null,
+    timezone: 'UTC'
+  })
   
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -33,34 +35,30 @@ function Home() {
 
 
   const handleLocationSelect = async (location) => {
-  // Сохраняем координаты (скрыто от пользователя)
-  const lat = parseFloat(location.lat)
-  const lon = parseFloat(location.lon)
+    const lat = parseFloat(location.lat)
+    const lon = parseFloat(location.lon)
 
-  // Устанавливаем таймзону из ответа API
-  let timezone = location.timezone || 'UTC'
+    let timezone = location.timezone || 'UTC'
 
-  // Дополнительная проверка таймзоны через reverse geocoding для точности
-  if (lat && lon) {
-    try {
-      const detectedTimezone = await geocodeAPI.detectTimezone(lat, lon)
-      if (detectedTimezone && detectedTimezone !== 'UTC') {
-        timezone = detectedTimezone
+    if (lat && lon) {
+      try {
+        const detectedTimezone = await geocodeAPI.detectTimezone(lat, lon)
+        if (detectedTimezone && detectedTimezone !== 'UTC') {
+          timezone = detectedTimezone
+        }
+      } catch (err) {
+        console.warn('Timezone detection warning:', err)
       }
-    } catch (err) {
-      console.warn('Timezone detection warning:', err)
-      // Не критично - используем таймзону из автокомплита
     }
-  }
 
-  setFormData(prev => ({
-    ...prev,
-    city: location.display_name,
-    latitude: lat,      // ← ЧИСЛО!
-    longitude: lon,     // ← ЧИСЛО!
-    timezone: timezone
-  }))
-}
+    setFormData(prev => ({
+      ...prev,
+      city: location.display_name,
+      latitude: lat,
+      longitude: lon,
+      timezone: timezone
+    }))
+  }
 
 const handleSubmit = async (e) => {
   e.preventDefault()
@@ -75,14 +73,14 @@ const apiData = {
   timezone: formData.timezone,
   name: formData.name
 }
-  console.log('Отправляем apiData:', apiData) // 👈 ДОБАВЬТЕ ЭТО
+  console.log('Отправляем apiData:', apiData)
   
   try {
     const response = await astrologyAPI.calculateChart(apiData)
-    setChartData(response) // 👈 ИСПРАВЬТЕ: было response, а нужно response.data
+    setChartData(response)
   } catch (err) {
     console.error('Ошибка API:', err.response?.data)
-    setError(err.response?.data?.detail || 'Ошибка при расчете карты')
+    setError(err.response?.data?.detail || t('home.errors.calcError'))
   } finally {
     setLoading(false)
   }
@@ -93,33 +91,32 @@ const apiData = {
 
       <section className="hero">
         <div className="container">
-          <h1>Расчет Натальной Карты</h1>
-          <p>Профессиональный расчет астрологической карты рождения с использованием Swiss Ephemeris</p>
+          <h1>{t('home.title')}</h1>
+          <p>{t('home.subtitle')}</p>
           
           <div className="form-card">
-            {/* {error && <div className="error">{error}</div>} */}
             {error && (
   <div className="error">
     {typeof error === 'object' 
-      ? error.msg || error.message || 'Произошла ошибка при расчете' 
+      ? error.msg || error.message || t('home.errors.calcError')
       : error}
   </div>
 )}
             <form onSubmit={handleSubmit}>
               <div className="form-group">
-                <label>Имя (опционально)</label>
+                <label>{t('home.form.name')}</label>
                 <input
                   type="text"
                   name="name"
                   value={formData.name}
                   onChange={handleInputChange}
-                  placeholder="Введите ваше имя"
+                  placeholder={t('home.form.namePlaceholder')}
                 />
               </div>
 
               <div className="form-row">
                 <div className="form-group">
-                  <label>Дата рождения *</label>
+                  <label>{t('home.form.birthDate')}</label>
                   <input
                     type="date"
                     name="birth_date"
@@ -130,7 +127,7 @@ const apiData = {
                 </div>
 
                 <div className="form-group">
-                  <label>Время рождения *</label>
+                  <label>{t('home.form.birthTime')}</label>
                   <input
                     type="time"
                     name="birth_time"
@@ -142,11 +139,11 @@ const apiData = {
               </div>
 
               <div className="form-group">
-                <label>Место рождения *</label>
+                <label>{t('home.form.birthPlace')}</label>
                 <LocationInput
                   value={formData.city}
                   onLocationSelect={handleLocationSelect}
-                  placeholder="Начните вводить название города..."
+                  placeholder={t('home.form.cityPlaceholder')}
                 />
               </div>
 
@@ -157,7 +154,7 @@ const apiData = {
               />
 
               <button type="submit" className="btn-primary" disabled={loading}>
-                {loading ? 'Расчет...' : 'Рассчитать карту'}
+                {loading ? t('home.form.submitting') : t('home.form.submit')}
               </button>
             </form>
           </div>
@@ -166,7 +163,6 @@ const apiData = {
 
       {chartData && (
         <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
-          {/* КАРТА ПО ЦЕНТРУ */}
           <div style={{ 
             textAlign: 'center',
             margin: '40px 0',
@@ -176,7 +172,7 @@ const apiData = {
             border: '1px solid var(--border)'
           }}>
             <h2 style={{ marginBottom: '30px', color: 'var(--text-primary)' }}>
-              Натальная Карта (Swiss Ephemeris)
+              {t('home.chart.title')}
             </h2>
             <SwissEphemerisChartWheel 
               chartData={chartData}
@@ -192,15 +188,14 @@ const apiData = {
               fontSize: '14px'
             }}>
               <div style={{ display: 'flex', justifyContent: 'center', gap: '30px', flexWrap: 'wrap' }}>
-                <div><strong>Солнце:</strong> {chartData.sun_sign || '—'}</div>
-                <div><strong>Луна:</strong> {chartData.moon_sign || '—'}</div>
-                <div><strong>Асцендент:</strong> {chartData.ascendant || '—'}</div>
-                <div><strong>MC:</strong> {chartData.mc || '—'}</div>
+                <div><strong>{t('home.chart.sun')}:</strong> {chartData.sun_sign || '—'}</div>
+                <div><strong>{t('home.chart.moon')}:</strong> {chartData.moon_sign || '—'}</div>
+                <div><strong>{t('home.chart.ascendant')}:</strong> {chartData.ascendant || '—'}</div>
+                <div><strong>{t('home.chart.mc')}:</strong> {chartData.mc || '—'}</div>
               </div>
             </div>
           </div>
 
-          {/* ИНФОРМАЦИЯ ПОД КАРТОЙ */}
           <div style={{ 
             background: 'var(--bg-card)',
             borderRadius: '12px',
@@ -209,10 +204,9 @@ const apiData = {
             marginTop: '30px'
           }}>
             <h3 style={{ marginBottom: '20px', color: 'var(--text-primary)' }}>
-              Детальная Информация
+              {t('home.chart.title')}
             </h3>
             
-            {/* Таблица планет */}
             <div style={{ marginBottom: '40px' }}>
               <PlanetTable 
                 planets={chartData.planets}
@@ -220,17 +214,15 @@ const apiData = {
               />
             </div>
 
-            {/* Сетка аспектов */}
             <div>
                <AstroChartComponent
               chartData={chartData}
               size={700}
             />
             </div>
-           {/* Планеты в домах */}
             <div style={{ marginTop: '40px' }}>
               <h4 style={{ marginBottom: '20px', color: 'var(--text-primary)' }}>
-                Планеты в Домах
+                {t('home.chart.planetsInHouses')}
               </h4>
               <div style={{ 
                 display: 'grid', 
@@ -249,9 +241,9 @@ const apiData = {
                         {planet}
                       </div>
                       <div style={{ marginTop: '5px', fontSize: '14px' }}>
-                        <div>Дом: <strong>{data.house}</strong></div>
-                        <div>Знак: {data.sign || '—'}</div>
-                        <div>Градус: {data.degree?.toFixed(2) || '—'}°</div>
+                        <div>{t('home.chart.house')}: <strong>{data.house}</strong></div>
+                        <div>{t('home.chart.sign')}: {data.sign || '—'}</div>
+                        <div>{t('home.chart.degree')}: {data.degree?.toFixed(2) || '—'}°</div>
                       </div>
                     </div>
                   )

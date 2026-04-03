@@ -4,11 +4,13 @@ import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { useTranslation } from 'react-i18next';
 import Header from '../components/Header';
 
 const ResetPassword = () => {
   const navigate = useNavigate();
   const { updatePassword } = useAuth();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [isValidToken, setIsValidToken] = useState(false);
@@ -34,13 +36,13 @@ const ResetPassword = () => {
 
   const validationSchema = Yup.object({
     password: Yup.string()
-      .min(8, 'Пароль должен содержать минимум 8 символов')
-      .matches(/[A-Za-z]/, 'Пароль должен содержать буквы')
-      .matches(/\d/, 'Пароль должен содержать цифры')
-      .required('Пароль обязателен для заполнения'),
+      .min(8, t('resetPassword.validation.passwordMin'))
+      .matches(/[A-Za-z]/, t('resetPassword.validation.passwordLetters'))
+      .matches(/\d/, t('resetPassword.validation.passwordDigits'))
+      .required(t('resetPassword.validation.passwordRequired')),
     confirmPassword: Yup.string()
-      .oneOf([Yup.ref('password'), null], 'Пароли должны совпадать')
-      .required('Подтверждение пароля обязательно')
+      .oneOf([Yup.ref('password'), null], t('resetPassword.validation.passwordsMismatch'))
+      .required(t('resetPassword.validation.confirmRequired'))
   });
 
   const handleSubmit = async (values, { setSubmitting }) => {
@@ -50,7 +52,7 @@ const ResetPassword = () => {
       await updatePassword(values.password);
       setPasswordUpdated(true);
     } catch (err) {
-      setError(err.message || 'Ошибка при обновлении пароля.');
+      setError(err.message || t('resetPassword.errors.updateError'));
     } finally {
       setLoading(false);
       setSubmitting(false);
@@ -64,15 +66,15 @@ const ResetPassword = () => {
         <div className="container">
           <div className="auth-card">
             <div className="auth-header">
-              <h1>Недействительная ссылка</h1>
-              <p>Ссылка для сброса пароля истекла или недействительна.</p>
+              <h1>{t('resetPassword.invalidLink.title')}</h1>
+              <p>{t('resetPassword.invalidLink.text')}</p>
             </div>
             <div className="auth-footer">
               <p>
-                <Link to="/forgot-password" className="auth-link">Запросить новую ссылку</Link>
+                <Link to="/forgot-password" className="auth-link">{t('resetPassword.invalidLink.requestNew')}</Link>
               </p>
               <p>
-                <Link to="/login" className="auth-link">Войти</Link>
+                <Link to="/login" className="auth-link">{t('resetPassword.invalidLink.login')}</Link>
               </p>
             </div>
           </div>
@@ -88,12 +90,12 @@ const ResetPassword = () => {
         <div className="container">
           <div className="auth-card">
             <div className="auth-header">
-              <h1>Пароль обновлён</h1>
-              <p>Ваш пароль успешно изменён.</p>
+              <h1>{t('resetPassword.success.title')}</h1>
+              <p>{t('resetPassword.success.text')}</p>
             </div>
             <div className="auth-footer">
               <p>
-                <Link to="/login" className="auth-link">Войти с новым паролем</Link>
+                <Link to="/login" className="auth-link">{t('resetPassword.success.login')}</Link>
               </p>
             </div>
           </div>
@@ -108,8 +110,8 @@ const ResetPassword = () => {
       <div className="container">
         <div className="auth-card">
           <div className="auth-header">
-            <h1>Новый пароль</h1>
-            <p>Введите новый пароль</p>
+            <h1>{t('resetPassword.form.title')}</h1>
+            <p>{t('resetPassword.form.subtitle')}</p>
           </div>
 
           {error && <div className="error-message">{error}</div>}
@@ -122,12 +124,12 @@ const ResetPassword = () => {
             {({ isSubmitting, errors, touched }) => (
               <Form className="auth-form">
                 <div className="form-group">
-                  <label htmlFor="password">Новый пароль *</label>
+                  <label htmlFor="password">{t('resetPassword.form.password')}</label>
                   <Field
                     type="password"
                     name="password"
                     id="password"
-                    placeholder="Минимум 8 символов, буквы и цифры"
+                    placeholder={t('resetPassword.form.passwordPlaceholder')}
                     className={`form-input ${errors.password && touched.password ? 'error' : ''}`}
                     disabled={loading}
                   />
@@ -135,12 +137,12 @@ const ResetPassword = () => {
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="confirmPassword">Подтвердите пароль *</label>
+                  <label htmlFor="confirmPassword">{t('resetPassword.form.confirmPassword')}</label>
                   <Field
                     type="password"
                     name="confirmPassword"
                     id="confirmPassword"
-                    placeholder="Повторите пароль"
+                    placeholder={t('resetPassword.form.confirmPasswordPlaceholder')}
                     className={`form-input ${errors.confirmPassword && touched.confirmPassword ? 'error' : ''}`}
                     disabled={loading}
                   />
@@ -152,7 +154,7 @@ const ResetPassword = () => {
                   className="btn-primary btn-auth"
                   disabled={loading || isSubmitting}
                 >
-                  {loading ? 'Сохранение...' : 'Сохранить пароль'}
+                  {loading ? t('resetPassword.form.submitting') : t('resetPassword.form.submit')}
                 </button>
               </Form>
             )}
@@ -160,7 +162,7 @@ const ResetPassword = () => {
 
           <div className="auth-footer">
             <p>
-              <Link to="/login" className="auth-link">Вернуться ко входу</Link>
+              <Link to="/login" className="auth-link">{t('resetPassword.form.backToLogin')}</Link>
             </p>
           </div>
         </div>

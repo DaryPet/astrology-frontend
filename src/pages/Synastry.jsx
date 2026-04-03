@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import api from '../services/api'
+import Header from '../components/Header'
 
 function Synastry() {
+  const { t } = useTranslation()
   const [formData, setFormData] = useState({
     person1: { name: '', birth_date: '', birth_time: '12:00', birth_place: '', latitude: null, longitude: null, timezone: 'Europe/Moscow' },
     person2: { name: '', birth_date: '', birth_time: '12:00', birth_place: '', latitude: null, longitude: null, timezone: 'Europe/Moscow' }
@@ -77,7 +79,7 @@ function Synastry() {
       })
       setSynastry(res.data)
     } catch (err) {
-      setError(err.response?.data?.detail || err.message || 'Error')
+      setError(err.response?.data?.detail || err.message || t('home.errors.calcError'))
     } finally {
       setLoading(false)
     }
@@ -85,18 +87,10 @@ function Synastry() {
 
   return (
     <div className="synastry-page">
-      <header className="header">
-        <div className="container header-content">
-          <div className="logo">Astrology</div>
-          <nav className="nav">
-            <Link to="/">Home</Link>
-            <Link to="/synastry">Synastry</Link>
-          </nav>
-        </div>
-      </header>
+      <Header />
 
       <div className="container" style={{ padding: '40px 0' }}>
-        <h1 style={{ textAlign: 'center', marginBottom: '40px' }}>Synastry - Relationship Compatibility</h1>
+        <h1 style={{ textAlign: 'center', marginBottom: '40px' }}>{t('synastry.title')}</h1>
 
         {error && <div className="error">{error}</div>}
 
@@ -104,28 +98,28 @@ function Synastry() {
           <form onSubmit={handleSubmit}>
             <div className="synastry-form">
               <div className="form-card">
-                <h3 style={{ marginBottom: '20px', color: '#ffd700' }}>Person 1</h3>
+                <h3 style={{ marginBottom: '20px', color: '#ffd700' }}>{t('synastry.person1')}</h3>
                 <div className="form-group">
-                  <label>Name</label>
+                  <label>{t('synastry.form.name')}</label>
                   <input type="text" value={formData.person1.name} onChange={(e) => setFormData({...formData, person1: {...formData.person1, name: e.target.value}})} required />
                 </div>
                 <div className="form-row">
                   <div className="form-group">
-                    <label>Birth Date</label>
+                    <label>{t('synastry.form.birthDate')}</label>
                     <input type="date" value={formData.person1.birth_date} onChange={(e) => setFormData({...formData, person1: {...formData.person1, birth_date: e.target.value}})} required />
                   </div>
                   <div className="form-group">
-                    <label>Birth Time</label>
+                    <label>{t('synastry.form.birthTime')}</label>
                     <input type="time" value={formData.person1.birth_time} onChange={(e) => setFormData({...formData, person1: {...formData.person1, birth_time: e.target.value}})} />
                   </div>
                 </div>
                 <div className="form-group" ref={loc1Ref} style={{position: 'relative'}}>
-                  <label>Birth Place</label>
+                  <label>{t('synastry.form.birthPlace')}</label>
                   <input type="text" value={formData.person1.birth_place} onChange={(e) => {
                     setFormData({...formData, person1: {...formData.person1, birth_place: e.target.value}})
                     searchLocation(e.target.value, setLocations1)
                     setShowLoc1(true)
-                  }} placeholder="Enter city" required />
+                  }} placeholder={t('synastry.form.birthPlacePlaceholder')} required />
                   {showLoc1 && locations1.length > 0 && (
                     <div className="autocomplete-dropdown">
                       {locations1.map(loc => (
@@ -138,7 +132,7 @@ function Synastry() {
                 </div>
                 <div className="form-row">
                   <div className="form-group">
-                    <label>Timezone</label>
+                    <label>{t('synastry.form.timezone')}</label>
                     <select value={formData.person1.timezone} onChange={(e) => setFormData({...formData, person1: {...formData.person1, timezone: e.target.value}})}>
                       <option value="Europe/Moscow">Moscow</option>
                       <option value="Europe/Kiev">Kiev</option>
@@ -150,28 +144,28 @@ function Synastry() {
               </div>
 
               <div className="form-card">
-                <h3 style={{ marginBottom: '20px', color: '#ff6b6b' }}>Person 2</h3>
+                <h3 style={{ marginBottom: '20px', color: '#ff6b6b' }}>{t('synastry.person2')}</h3>
                 <div className="form-group">
-                  <label>Name</label>
+                  <label>{t('synastry.form.name')}</label>
                   <input type="text" value={formData.person2.name} onChange={(e) => setFormData({...formData, person2: {...formData.person2, name: e.target.value}})} required />
                 </div>
                 <div className="form-row">
                   <div className="form-group">
-                    <label>Birth Date</label>
+                    <label>{t('synastry.form.birthDate')}</label>
                     <input type="date" value={formData.person2.birth_date} onChange={(e) => setFormData({...formData, person2: {...formData.person2, birth_date: e.target.value}})} required />
                   </div>
                   <div className="form-group">
-                    <label>Birth Time</label>
+                    <label>{t('synastry.form.birthTime')}</label>
                     <input type="time" value={formData.person2.birth_time} onChange={(e) => setFormData({...formData, person2: {...formData.person2, birth_time: e.target.value}})} />
                   </div>
                 </div>
                 <div className="form-group" ref={loc2Ref} style={{position: 'relative'}}>
-                  <label>Birth Place</label>
+                  <label>{t('synastry.form.birthPlace')}</label>
                   <input type="text" value={formData.person2.birth_place} onChange={(e) => {
                     setFormData({...formData, person2: {...formData.person2, birth_place: e.target.value}})
                     searchLocation(e.target.value, setLocations2)
                     setShowLoc2(true)
-                  }} placeholder="Enter city" required />
+                  }} placeholder={t('synastry.form.birthPlacePlaceholder')} required />
                   {showLoc2 && locations2.length > 0 && (
                     <div className="autocomplete-dropdown">
                       {locations2.map(loc => (
@@ -184,7 +178,7 @@ function Synastry() {
                 </div>
                 <div className="form-row">
                   <div className="form-group">
-                    <label>Timezone</label>
+                    <label>{t('synastry.form.timezone')}</label>
                     <select value={formData.person2.timezone} onChange={(e) => setFormData({...formData, person2: {...formData.person2, timezone: e.target.value}})}>
                       <option value="Europe/Moscow">Moscow</option>
                       <option value="Europe/Kiev">Kiev</option>
@@ -197,28 +191,28 @@ function Synastry() {
             </div>
 
             <button type="submit" className="btn btn-primary" disabled={loading} style={{ maxWidth: '300px', margin: '0 auto', display: 'block' }}>
-              {loading ? 'Calculating...' : 'Calculate Compatibility'}
+              {loading ? t('synastry.calculating') : t('synastry.calculate')}
             </button>
           </form>
         ) : (
           <div>
             <div className="results-grid">
               <div className="result-card">
-                <h3>Person 1</h3>
-                <p>Sun: {synastry.chart1.sun_sign}</p>
-                <p>Moon: {synastry.chart1.moon_sign}</p>
-                <p>Ascendant: {synastry.chart1.ascendant}</p>
+                <h3>{t('synastry.person1')}</h3>
+                <p>{t('chart.sun')}: {synastry.chart1.sun_sign}</p>
+                <p>{t('chart.moon')}: {synastry.chart1.moon_sign}</p>
+                <p>{t('chart.ascendant')}: {synastry.chart1.ascendant}</p>
               </div>
               <div className="result-card">
-                <h3>Person 2</h3>
-                <p>Sun: {synastry.chart2.sun_sign}</p>
-                <p>Moon: {synastry.chart2.moon_sign}</p>
-                <p>Ascendant: {synastry.chart2.ascendant}</p>
+                <h3>{t('synastry.person2')}</h3>
+                <p>{t('chart.sun')}: {synastry.chart2.sun_sign}</p>
+                <p>{t('chart.moon')}: {synastry.chart2.moon_sign}</p>
+                <p>{t('chart.ascendant')}: {synastry.chart2.ascendant}</p>
               </div>
             </div>
             
             <div className="result-card" style={{marginTop: '20px'}}>
-              <h3>Synastry Aspects ({synastry.total_aspects})</h3>
+              <h3>{t('synastry.aspects')} ({synastry.total_aspects})</h3>
               <div className="aspects-list">
                 {synastry.aspects && synastry.aspects.map((aspect, idx) => (
                   <div key={idx} className="aspect-item">
@@ -231,7 +225,7 @@ function Synastry() {
             </div>
 
             <button onClick={() => setSynastry(null)} className="btn btn-primary" style={{ maxWidth: '300px', margin: '40px auto 0', display: 'block' }}>
-              Calculate Again
+              {t('synastry.calculateAgain')}
             </button>
           </div>
         )}
