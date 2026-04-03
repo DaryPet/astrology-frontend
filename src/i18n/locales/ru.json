@@ -152,7 +152,9 @@
   "common": {
     "loading": "Загрузка...",
     "backHome": "На главную",
-    "email": "Email"
+    "email": "Email",
+    "googleSignIn": "Войти через Google",
+    "or": "или"
   },
   "forgotPassword": {
     "title": "Забыли пароль?",

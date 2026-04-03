@@ -152,7 +152,9 @@
   "common": {
     "loading": "Loading...",
     "backHome": "Go to home",
-    "email": "Email"
+    "email": "Email",
+    "googleSignIn": "Sign in with Google",
+    "or": "or"
   },
   "forgotPassword": {
     "title": "Forgot Password?",
