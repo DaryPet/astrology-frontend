@@ -15,7 +15,9 @@ const AstroChartComponent = ({ chartData, size = 700 }) => {
       containerRef.current.id = containerId;
 
       try {
-        const chart = new Chart(containerId, size, size);
+        const chart = new Chart(containerId, size, size, {
+          SHOW_DIGNITIES_TEXT: false
+        });
         const radixData = convertToRadixFormat(chartData);
         if (!radixData) return;
         
@@ -38,24 +40,32 @@ const AstroChartComponent = ({ chartData, size = 700 }) => {
       'Sun': 'Sun', 'Moon': 'Moon', 'Mercury': 'Mercury',
       'Venus': 'Venus', 'Mars': 'Mars', 'Jupiter': 'Jupiter',
       'Saturn': 'Saturn', 'Uranus': 'Uranus', 'Neptune': 'Neptune',
-      'Pluto': 'Pluto'
+      'Pluto': 'Pluto', 'Chiron': 'Chiron', 'Lilith': 'Lilith',
+      'NorthNode': 'NNode', 'SouthNode': 'SNode'
     };
+
+    console.log('=== DEBUG AstroChartComponent ===');
+    console.log('planets keys:', Object.keys(data.planets));
+    console.log('Has Chiron?', 'Chiron' in data.planets);
+    console.log('Chiron data:', data.planets['Chiron']);
 
     Object.entries(data.planets).forEach(([name, p]) => {
       const key = planetMapping[name];
+      console.log(`  ${name} -> key: ${key}, full_degree: ${p?.full_degree}, speed: ${p?.speed}`);
       if (key && p?.full_degree !== undefined) {
-        planets[key] = [p.full_degree % 360];
+        // Формат: [degree, speed]
+        // speed - скорость планеты (градусы/день). Если < 0, планета ретроградна
+        planets[key] = [p.full_degree % 360, p.speed ?? 0];
       }
     });
 
+    console.log('result planets:', Object.keys(planets));
+
     for (let i = 1; i <= 12; i++) {
       const house = data.houses[i];
-    //   cusps[i-1] = house?.degree !== undefined 
-    //     ? house.degree % 360 
-    //     : ((i-1) * 30) % 360;
-    cusps[i-1] = house?.cusp_longitude !== undefined 
-  ? house.cusp_longitude % 360 
-  : ((i-1) * 30) % 360;
+      cusps[i-1] = house?.cusp_longitude !== undefined 
+        ? house.cusp_longitude % 360 
+        : ((i-1) * 30) % 360;
     }
 
     return { planets, cusps };
@@ -65,4 +75,3 @@ const AstroChartComponent = ({ chartData, size = 700 }) => {
 };
 
 export default AstroChartComponent;
-

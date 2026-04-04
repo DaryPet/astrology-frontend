@@ -4,7 +4,6 @@ import { geocodeAPI, astrologyAPI } from '../services/api'
 import { useTranslation } from 'react-i18next'
 import Header from '../components/Header'
 import LocationInput from '../components/LocationInput'
-import SwissEphemerisChartWheel from '../components/SwissEphemerisChartWheel'
 import PlanetTable from '../components/PlanetTable'
 import AspectGrid from '../components/AspectGrid'
 import AstroChartComponent from '../components/AstroChartComponent'
@@ -167,10 +166,6 @@ const apiData = {
             <h2 style={{ marginBottom: '30px', color: 'var(--text-primary)' }}>
               {t('home.chart.title')}
             </h2>
-            <SwissEphemerisChartWheel 
-              chartData={chartData}
-              size={700}
-            />
               <AstroChartComponent  
               chartData={chartData}
               size={700}
