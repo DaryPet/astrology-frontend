@@ -21,7 +21,15 @@
       "birthPlace": "Place of birth *",
       "cityPlaceholder": "Start typing a city name...",
       "submit": "Calculate chart",
-      "submitting": "Calculating..."
+      "submitting": "Calculating...",
+      "locationPlaceholder": "Start typing a city name...",
+      "locationErrorNotFound": "City not found. Try entering the name in English or selecting a nearby major city.",
+      "locationErrorService": "City search service is temporarily unavailable. Please try again later.",
+      "locationHint": "💡 Enter at least 2 letters to search for a city",
+      "locationNoResults": "City not found. Try:",
+      "locationNoResultsTip1": "Enter the name in English",
+      "locationNoResultsTip2": "Select a nearby major city",
+      "locationNoResultsTip3": "Specify the name (e.g., 'Moscow, Russia')"
     },
     "chart": {
       "title": "Natal Chart (Swiss Ephemeris)",
