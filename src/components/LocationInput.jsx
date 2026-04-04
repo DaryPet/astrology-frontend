@@ -141,7 +141,7 @@ const LocationInput = ({
           onFocus={() => locations.length > 0 && setShowLocations(true)}
           placeholder={placeholder}
           required={required}
-          disabled={disabled || searchLoading}
+          disabled={disabled}
           style={{ width: '100%' }}
         />
       
