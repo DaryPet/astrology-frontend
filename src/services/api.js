@@ -1,4 +1,5 @@
 import axios from 'axios'
+import i18n from '../i18n'
 
 const api = axios.create({
   baseURL: '/api',
@@ -19,8 +20,12 @@ export const geocodeAPI = {
       return []
     }
     
+    const currentLang = i18n.language || 'en'
+    
     try {
-      const response = await api.get(`/geocode/autocomplete?q=${encodeURIComponent(query.trim())}`)
+      const response = await api.get(
+        `/geocode/autocomplete?q=${encodeURIComponent(query.trim())}&lang=${currentLang}`
+      )
       return response.data || []
     } catch (error) {
       console.error('Geocode autocomplete error:', error)
