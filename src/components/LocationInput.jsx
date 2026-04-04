@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { geocodeAPI } from '../services/api'
+import { useTranslation } from 'react-i18next'
 
 /**
  * Компонент для ввода города с автокомплитом
@@ -17,12 +18,13 @@ const LocationInput = ({
   value,
   onChange,
   onLocationSelect,
-  placeholder = 'Начните вводить название города...',
+  placeholder,
   required = false,
-  label = 'Место',
+  label,
   style = {},
   disabled = false
 }) => {
+  const { t } = useTranslation()
   const [locations, setLocations] = useState([])
   const [showLocations, setShowLocations] = useState(false)
   const [searchLoading, setSearchLoading] = useState(false)
@@ -37,34 +39,34 @@ const LocationInput = ({
     setInternalValue(value || '')
   }, [value])
 
-  // Дебаунс поиска городов
-  const searchLocation = useCallback(async (query) => {
-    if (!query || query.trim().length < 2) {
-      setLocations([])
-      setSearchError('')
-      return
-    }
-    
-    setSearchLoading(true)
-    setSearchError('')
-    
-    try {
-      const results = await geocodeAPI.autocomplete(query)
-      
-      if (results.length === 0) {
-        setSearchError('Город не найден. Попробуйте ввести название на английском или выберите ближайший крупный город.')
+    // Дебаунс поиска городов
+    const searchLocation = useCallback(async (query) => {
+      if (!query || query.trim().length < 2) {
+        setLocations([])
+        setSearchError('')
+        return
       }
       
-      setLocations(results.slice(0, 8))
-      setShowLocations(true)
-    } catch (err) {
-      console.error('Geocode autocomplete error:', err)
-      setSearchError('Сервис поиска городов временно недоступен. Пожалуйста, попробуйте позже.')
-      setLocations([])
-    } finally {
-      setSearchLoading(false)
-    }
-  }, [])
+      setSearchLoading(true)
+      setSearchError('')
+      
+      try {
+        const results = await geocodeAPI.autocomplete(query)
+        
+        if (results.length === 0) {
+          setSearchError(t('home.form.locationErrorNotFound'))
+        }
+        
+        setLocations(results.slice(0, 8))
+        setShowLocations(true)
+      } catch (err) {
+        console.error('Geocode autocomplete error:', err)
+        setSearchError(t('home.form.locationErrorService'))
+        setLocations([])
+      } finally {
+        setSearchLoading(false)
+      }
+    }, [t])
 
   // Обработчик изменения значения
   const handleChange = (e) => {
@@ -132,29 +134,29 @@ const LocationInput = ({
     <div className="form-group" ref={containerRef} style={{ position: 'relative', ...style }}>
       {label && <label>{label}{required && ' *'}</label>}
       
-      <input
-        type="text"
-        value={internalValue}
-        onChange={handleChange}
-        onFocus={() => locations.length > 0 && setShowLocations(true)}
-        placeholder={placeholder}
-        required={required}
-        disabled={disabled || searchLoading}
-        style={{ width: '100%' }}
-      />
+        <input
+          type="text"
+          value={internalValue}
+          onChange={handleChange}
+          onFocus={() => locations.length > 0 && setShowLocations(true)}
+          placeholder={placeholder}
+          required={required}
+          disabled={disabled || searchLoading}
+          style={{ width: '100%' }}
+        />
       
-      {/* Индикатор загрузки поиска */}
-      {searchLoading && (
-        <div style={{
-          position: 'absolute',
-          right: '12px',
-          top: label ? '38px' : '12px',
-          fontSize: '12px',
-          color: 'var(--text-secondary)'
-        }}>
-          Поиск...
-        </div>
-      )}
+        {/* Индикатор загрузки поиска */}
+        {searchLoading && (
+          <div style={{
+            position: 'absolute',
+            right: '12px',
+            top: label ? '38px' : '12px',
+            fontSize: '12px',
+            color: 'var(--text-secondary)'
+          }}>
+            {t('common.loading')}
+          </div>
+        )}
       
       {/* Сообщения об ошибках поиска */}
       {searchError && !showLocations && (
@@ -171,16 +173,16 @@ const LocationInput = ({
         </div>
       )}
       
-      {/* Подсказка для пользователя */}
-      {!internalValue && !searchLoading && (
-        <div style={{
-          marginTop: '8px',
-          color: 'var(--text-secondary)',
-          fontSize: '12px'
-        }}>
-          💡 Введите хотя бы 2 буквы для поиска города
-        </div>
-      )}
+        {/* Подсказка для пользователя */}
+        {!internalValue && !searchLoading && (
+          <div style={{
+            marginTop: '8px',
+            color: 'var(--text-secondary)',
+            fontSize: '12px'
+          }}>
+            {t('home.form.locationHint')}
+          </div>
+        )}
       
       {/* Список найденных городов */}
       {showLocations && locations.length > 0 && (
@@ -207,19 +209,19 @@ const LocationInput = ({
         </div>
       )}
       
-      {/* Сообщение "ничего не найдено" */}
-      {showLocations && locations.length === 0 && !searchLoading && (
-        <div className="autocomplete-dropdown" style={{ padding: '16px', textAlign: 'center' }}>
-          <div style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
-            Город не найден. Попробуйте:
-            <ul style={{ marginTop: '8px', paddingLeft: '20px', textAlign: 'left' }}>
-              <li>Ввести название на английском</li>
-              <li>Выбрать ближайший крупный город</li>
-              <li>Уточнить название (например, "Москва, Россия")</li>
-            </ul>
+        {/* Сообщение "ничего не найдено" */}
+        {showLocations && locations.length === 0 && !searchLoading && (
+          <div className="autocomplete-dropdown" style={{ padding: '16px', textAlign: 'center' }}>
+            <div style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
+              {t('home.form.locationNoResults')}
+              <ul style={{ marginTop: '8px', paddingLeft: '20px', textAlign: 'left' }}>
+                <li>{t('home.form.locationNoResultsTip1')}</li>
+                <li>{t('home.form.locationNoResultsTip2')}</li>
+                <li>{t('home.form.locationNoResultsTip3')}</li>
+              </ul>
+            </div>
           </div>
-        </div>
-      )}
+        )}
     </div>
   )
 }

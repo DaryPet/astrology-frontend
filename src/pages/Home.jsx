@@ -4,7 +4,6 @@ import { geocodeAPI, astrologyAPI } from '../services/api'
 import { useTranslation } from 'react-i18next'
 import Header from '../components/Header'
 import LocationInput from '../components/LocationInput'
-import TimezoneDisplay from '../components/TimezoneDisplay'
 import SwissEphemerisChartWheel from '../components/SwissEphemerisChartWheel'
 import PlanetTable from '../components/PlanetTable'
 import AspectGrid from '../components/AspectGrid'
@@ -147,13 +146,7 @@ const apiData = {
                 />
               </div>
 
-              <TimezoneDisplay 
-                latitude={formData.latitude}
-                longitude={formData.longitude}
-                timezone={formData.timezone}
-              />
-
-              <button type="submit" className="btn-primary" disabled={loading}>
+              <button type="submit" className="btn-register" disabled={loading}>
                 {loading ? t('home.form.submitting') : t('home.form.submit')}
               </button>
             </form>
