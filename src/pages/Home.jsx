@@ -201,43 +201,6 @@ const apiData = {
                 houses={chartData.houses}
               />
             </div>
-
-            <div>
-               <AstroChartComponent
-              chartData={chartData}
-              size={700}
-            />
-            </div>
-            <div style={{ marginTop: '40px' }}>
-              <h4 style={{ marginBottom: '20px', color: 'var(--text-primary)' }}>
-                {t('home.chart.planetsInHouses')}
-              </h4>
-              <div style={{ 
-                display: 'grid', 
-                gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-                gap: '15px'
-              }}>
-                {chartData.planets && Object.entries(chartData.planets).map(([planet, data]) => (
-                  data && data.house && (
-                    <div key={planet} style={{
-                      background: 'var(--bg-secondary)',
-                      padding: '15px',
-                      borderRadius: '8px',
-                      border: '1px solid var(--border)'
-                    }}>
-                      <div style={{ fontWeight: 'bold', color: 'var(--accent)' }}>
-                        {planet}
-                      </div>
-                      <div style={{ marginTop: '5px', fontSize: '14px' }}>
-                        <div>{t('home.chart.house')}: <strong>{data.house}</strong></div>
-                        <div>{t('home.chart.sign')}: {data.sign || '—'}</div>
-                        <div>{t('home.chart.degree')}: {data.degree?.toFixed(2) || '—'}°</div>
-                      </div>
-                    </div>
-                  )
-                ))}
-              </div>
-            </div>
           </div>
         </div>
       )}
