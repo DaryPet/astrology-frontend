@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
+import { useTranslation } from 'react-i18next';
 
 // Профессиональные цвета как на astro.com
 const ZODIAC_COLORS = [
@@ -16,11 +17,14 @@ const PLANET_COLORS = {
 };
 
 const ZODIAC_SYMBOLS = ['♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓'];
-const ZODIAC_NAMES_RU = ['Овен', 'Телец', 'Близнецы', 'Рак', 'Лев', 'Дева', 'Весы', 'Скорпион', 'Стрелец', 'Козерог', 'Водолей', 'Рыбы'];
 
 const D3NatalChartWheel = ({ chartData, size = 800 }) => {
+  const { t } = useTranslation();
   const svgRef = useRef(null);
   const [hoveredElement, setHoveredElement] = useState(null);
+
+  // Ключи знаков для переводов
+  const zodiacKeys = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
 
   useEffect(() => {
     if (!chartData || !svgRef.current) return;
@@ -102,7 +106,7 @@ const D3NatalChartWheel = ({ chartData, size = 800 }) => {
       .attr('fill', (d, i) => ZODIAC_COLORS[i])
       .attr('font-size', size * 0.015)
       .attr('font-weight', 'bold')
-      .text((d, i) => ZODIAC_NAMES_RU[i]);
+      .text((d, i) => t(`planets.signs.${zodiacKeys[i]}`, zodiacKeys[i]));
 
     // 5. Градусная сетка
     const gridGroup = svg.append('g').attr('class', 'grid');
@@ -250,11 +254,11 @@ const D3NatalChartWheel = ({ chartData, size = 800 }) => {
           </div>
           <div style={{ marginBottom: '4px' }}>
             <span style={{ color: ZODIAC_COLORS[signIndex] }}>
-              {ZODIAC_NAMES_RU[signIndex]} {degrees}°{minutes}′
+              {t(`planets.signs.${zodiacKeys[signIndex]}`, zodiacKeys[signIndex])} {degrees}°{minutes}′
             </span>
           </div>
           <div style={{ fontSize: '12px', color: '#94a3b8' }}>
-            Знак: {ZODIAC_NAMES_RU[signIndex]} ({ZODIAC_SYMBOLS[signIndex]})
+            {t('planets.sign', 'Sign')}: {t(`planets.signs.${zodiacKeys[signIndex]}`, zodiacKeys[signIndex])} ({ZODIAC_SYMBOLS[signIndex]})
           </div>
         </div>
       );
@@ -298,10 +302,10 @@ const D3NatalChartWheel = ({ chartData, size = 800 }) => {
             </strong>
           </div>
           <div style={{ marginBottom: '4px' }}>
-            Аспект: <span style={{ color: aspectColor }}>{aspect.aspect}</span>
+            {t('planets.aspect', 'Aspect')}: <span style={{ color: aspectColor }}>{aspect.aspect}</span>
           </div>
           <div style={{ fontSize: '12px', color: '#94a3b8' }}>
-            Орбис: {aspect.orb}°
+            {t('planets.orb', 'Orb')}: {aspect.orb}°
           </div>
         </div>
       );
@@ -323,7 +327,7 @@ const D3NatalChartWheel = ({ chartData, size = 800 }) => {
         border: '2px dashed var(--border)'
       }}>
         <div style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
-          Загрузка карты...
+          {t('common.loading', 'Loading...')}
         </div>
       </div>
     );

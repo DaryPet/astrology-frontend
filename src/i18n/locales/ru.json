@@ -254,5 +254,55 @@
     "calculating": "Расчёт...",
     "calculateAgain": "Рассчитать снова",
     "aspects": "Аспекты"
+  },
+  "planets": {
+    "title": "Планеты в знаках",
+    "legend": "Легенда стихий",
+    "house": "Дом",
+    "degree": "Градус",
+    "sign": "Знак",
+    "names": {
+      "Sun": "Солнце",
+      "Moon": "Луна",
+      "Mercury": "Меркурий",
+      "Venus": "Венера",
+      "Mars": "Марс",
+      "Jupiter": "Юпитер",
+      "Saturn": "Сатурн",
+      "Uranus": "Уран",
+      "Neptune": "Нептун",
+      "Pluto": "Плутон",
+      "Chiron": "Хирон",
+      "NorthNode": "Северный узел",
+      "SouthNode": "Южный узел"
+    },
+    "signs": {
+      "Aries": "Овен",
+      "Taurus": "Телец",
+      "Gemini": "Близнецы",
+      "Cancer": "Рак",
+      "Leo": "Лев",
+      "Virgo": "Дева",
+      "Libra": "Весы",
+      "Scorpio": "Скорпион",
+      "Sagittarius": "Стрелец",
+      "Capricorn": "Козерог",
+      "Aquarius": "Водолей",
+      "Pisces": "Рыбы"
+    },
+    "elements": {
+      "fire": "Огонь",
+      "earth": "Земля",
+      "air": "Воздух",
+      "water": "Вода"
+    },
+    "aspect": "Аспект",
+    "orb": "Орбис",
+    "planets": "планет",
+    "aspects": {
+      "title": "Аспекты планет",
+      "notFound": "Аспекты не найдены",
+      "notFoundDesc": "В этой карте нет значимых аспектов между планетами"
+    }
   }
 }

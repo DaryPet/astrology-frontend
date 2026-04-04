@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const ASPECT_COLORS = {
   'Conjunction': '#FFD700', 'Opposition': '#FF4500', 'Trine': '#32CD32',
@@ -6,6 +7,7 @@ const ASPECT_COLORS = {
 };
 
 const AspectGrid = ({ aspects, planets }) => {
+  const { t } = useTranslation();
   const [selectedAspect, setSelectedAspect] = useState(null);
 
   if (!aspects || aspects.length === 0) {
@@ -21,10 +23,10 @@ const AspectGrid = ({ aspects, planets }) => {
           ☊
         </div>
         <h3 style={{ marginTop: 0, marginBottom: '8px', color: 'var(--text-primary)' }}>
-          Аспекты не найдены
+          {t('planets.aspects.notFound')}
         </h3>
         <p style={{ color: 'var(--text-secondary)', fontSize: '14px', margin: 0 }}>
-          В этой карте нет значимых аспектов между планетами
+          {t('planets.aspects.notFoundDesc')}
         </p>
       </div>
     );
@@ -61,7 +63,7 @@ const AspectGrid = ({ aspects, planets }) => {
         }}>
           △
         </span>
-        Аспекты планет ({aspects.length})
+        {t('planets.aspects.title')} ({aspects.length})
       </h3>
 
       <div style={{
@@ -134,7 +136,7 @@ const AspectGrid = ({ aspects, planets }) => {
                       fontSize: '12px',
                       color: 'var(--text-secondary)'
                     }}>
-                      Орбис: <span style={{ fontWeight: 'bold', color: aspectColor }}>{aspect.orb}°</span>
+                      {t('planets.orb')}: <span style={{ fontWeight: 'bold', color: aspectColor }}>{aspect.orb}°</span>
                     </div>
                   </div>
                 </div>
