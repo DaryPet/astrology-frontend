@@ -16,13 +16,55 @@ const AstroChartComponent = ({ chartData, size = 700 }) => {
 
       try {
         const chart = new Chart(containerId, size, size, {
-          SHOW_DIGNITIES_TEXT: false
+          SHOW_DIGNITIES_TEXT: false,
+          CUSTOM_SYMBOL_FN: (name, x, y, context) => {
+            if (name === 'Vx') {
+              const g = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+              const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
+              circle.setAttribute('cx', x)
+              circle.setAttribute('cy', y)
+              circle.setAttribute('r', '8')
+              circle.setAttribute('fill', 'none')
+              circle.setAttribute('stroke', '#000')
+              circle.setAttribute('stroke-width', '2')
+              g.appendChild(circle)
+              const text = document.createElementNS('http://www.w3.org/2000/svg', 'text')
+              text.setAttribute('x', x)
+              text.setAttribute('y', y + 4)
+              text.setAttribute('text-anchor', 'middle')
+              text.setAttribute('fill', '#000')
+              text.setAttribute('font-size', '10')
+              text.setAttribute('font-weight', 'bold')
+              text.textContent = 'Vx'
+              g.appendChild(text)
+              return g
+            }
+            return null
+          }
         });
         const radixData = convertToRadixFormat(chartData);
         if (!radixData) return;
         
         const radix = chart.radix(radixData);
-        radix.aspects();
+        
+        // Настройки аспектов с sextile
+        const aspectsSettings = {
+          ASPECTS: {
+            conjunction: { degree: 0, orbit: 12, color: 'transparent' },
+            sextile: { degree: 60, orbit: 8, color: '#1E90FF' },
+            square: { degree: 90, orbit: 10, color: '#FF4500' },
+            trine: { degree: 120, orbit: 10, color: '#27AE60' },
+            opposition: { degree: 180, orbit: 12, color: '#27AE60' }
+          }
+        };
+        
+        // Создать AspectCalculator явно с sextile
+        const aspectCalc = new module.AspectCalculator(radixData.planets, aspectsSettings);
+        const calculatedAspects = aspectCalc.radix(radixData.planets);
+        
+        // Добавить все точки и отрисовать аспекты
+        radix.addPointsOfInterest(radixData.planets);
+        radix.aspects(calculatedAspects);
       } catch (error) {
         console.error('Ошибка:', error);
       }
@@ -72,7 +114,7 @@ const AstroChartComponent = ({ chartData, size = 700 }) => {
       if (data.houses_meta && data.houses_meta.pars_fortuna) {
         const pf = data.houses_meta.pars_fortuna;
         const longitude = pf.longitude % 360;
-        planets['Ft'] = [longitude, 0]; // speed = 0 (вычисленная точка)
+        planets['Fortune'] = [longitude, 0];
       }
 
     for (let i = 1; i <= 12; i++) {
