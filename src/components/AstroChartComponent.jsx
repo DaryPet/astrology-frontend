@@ -22,7 +22,25 @@ const AstroChartComponent = ({ chartData, size = 700 }) => {
         if (!radixData) return;
         
         const radix = chart.radix(radixData);
-        radix.aspects();
+        
+        // Настройки аспектов с sextile
+        const aspectsSettings = {
+          ASPECTS: {
+            conjunction: { degree: 0, orbit: 12, color: 'transparent' },
+            sextile: { degree: 60, orbit: 8, color: '#1E90FF' },
+            square: { degree: 90, orbit: 10, color: '#FF4500' },
+            trine: { degree: 120, orbit: 10, color: '#27AE60' },
+            opposition: { degree: 180, orbit: 12, color: '#27AE60' }
+          }
+        };
+        
+        // Создать AspectCalculator явно с sextile
+        const aspectCalc = new module.AspectCalculator(radixData.planets, aspectsSettings);
+        const calculatedAspects = aspectCalc.radix(radixData.planets);
+        
+        // Добавить все точки и отрисовать аспекты
+        radix.addPointsOfInterest(radixData.planets);
+        radix.aspects(calculatedAspects);
       } catch (error) {
         console.error('Ошибка:', error);
       }

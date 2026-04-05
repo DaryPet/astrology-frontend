@@ -1,3 +1,6 @@
+# Build output
+dist/
+
 # Dependencies
 /node_modules
 /.pnp
@@ -9,7 +12,6 @@
 
 # Production
 /build
-/dist
 
 # Misc
 .DS_Store
@@ -39,5 +41,3 @@ yarn-error.log*
 
 # Vite cache
 .vite/
-
-.dist/
