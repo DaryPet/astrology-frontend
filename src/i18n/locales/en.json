@@ -307,5 +307,11 @@
       "notFound": "No aspects found",
       "notFoundDesc": "This chart has no significant aspects between planets"
     }
+  },
+  "analysis": {
+    "planetAnalysis": "Planet Analysis",
+    "loading": "Loading analysis...",
+    "error": "Error loading analysis",
+    "noData": "No data available for this planet"
   }
 }

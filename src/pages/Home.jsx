@@ -2,9 +2,11 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { geocodeAPI, astrologyAPI } from '../services/api'
 import { useTranslation } from 'react-i18next'
+import i18n from '../i18n'
 import Header from '../components/Header'
 import LocationInput from '../components/LocationInput'
 import PlanetTable from '../components/PlanetTable'
+import PlanetAnalysisModal from '../components/PlanetAnalysisModal'
 import AspectGrid from '../components/AspectGrid'
 import AstroChartComponent from '../components/AstroChartComponent'
 
@@ -25,6 +27,10 @@ function Home() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [chartData, setChartData] = useState(null)
+  const [selectedPlanet, setSelectedPlanet] = useState(null)
+  const [planetAnalysis, setPlanetAnalysis] = useState(null)
+  const [analysisLoading, setAnalysisLoading] = useState(false)
+  const [analysisError, setAnalysisError] = useState('')
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -56,6 +62,48 @@ function Home() {
       longitude: lon,
       timezone: timezone
     }))
+  }
+
+  const handlePlanetClick = async (planetData) => {
+    setSelectedPlanet(planetData)
+    setPlanetAnalysis(null)
+    setAnalysisError('')
+    setAnalysisLoading(true)
+
+    try {
+      console.log('=== PLANET ANALYSIS REQUEST ===', planetData)
+      const result = await astrologyAPI.getPlanetAnalysis({
+        planet: planetData.name,
+        sign: planetData.sign,
+        degree: planetData.degree,
+        house: planetData.house,
+        house_sign: planetData.house_sign,
+        aspects: planetData.aspects,
+        language: i18n.language
+      })
+      console.log('=== PLANET ANALYSIS RESPONSE ===', result)
+      setPlanetAnalysis(result.analysis)
+    } catch (err) {
+      console.error('Planet analysis error:', err)
+      const errorDetail = err.response?.data?.detail
+      if (typeof errorDetail === 'string') {
+        setAnalysisError(errorDetail)
+      } else if (Array.isArray(errorDetail)) {
+        setAnalysisError(errorDetail.map(e => e.msg || JSON.stringify(e)).join(', '))
+      } else if (errorDetail?.msg) {
+        setAnalysisError(errorDetail.msg)
+      } else {
+        setAnalysisError('Failed to load planet analysis')
+      }
+    } finally {
+      setAnalysisLoading(false)
+    }
+  }
+
+  const handleCloseAnalysis = () => {
+    setSelectedPlanet(null)
+    setPlanetAnalysis(null)
+    setAnalysisError('')
   }
 
 const handleSubmit = async (e) => {
@@ -237,9 +285,19 @@ const apiData = {
               <PlanetTable 
                 planets={chartData.planets}
                 houses={chartData.houses}
+                onPlanetClick={handlePlanetClick}
               />
             </div>
           </div>
+
+          <PlanetAnalysisModal
+            planet={selectedPlanet}
+            analysis={planetAnalysis}
+            isOpen={!!selectedPlanet}
+            onClose={handleCloseAnalysis}
+            loading={analysisLoading}
+            error={analysisError}
+          />
         </div>
       )}
     </div>
