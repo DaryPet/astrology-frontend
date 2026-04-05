@@ -115,6 +115,16 @@ export const astrologyAPI = {
       console.error('Synastry calculation error:', error)
       throw error
     }
+  },
+
+  getPlanetAnalysis: async (planetData) => {
+    try {
+      const response = await api.post('/analysis/planet', planetData)
+      return response.data
+    } catch (error) {
+      console.error('Planet analysis error:', error)
+      throw error
+    }
   }
 }
 

@@ -35,7 +35,7 @@ const PLANET_COLORS = {
   Vertex: '#FF69B4'
 };
 
-const PlanetTable = ({ planets, houses }) => {
+const PlanetTable = ({ planets, houses, onPlanetClick }) => {
   const { t } = useTranslation();
 
   if (!planets) return null;
@@ -90,9 +90,12 @@ const PlanetTable = ({ planets, houses }) => {
         degrees,
         minutes,
         house,
+        houseSign: data.house_sign || null,
+        aspects: data.aspects || [],
         color: PLANET_COLORS[name] || '#7c3aed',
         element: SIGN_ELEMENTS[signName] || SIGN_ELEMENTS[zodiacSigns[signIndex]],
-        translatedSign: signTranslated
+        translatedSign: signTranslated,
+        sign: signName // English sign name for API
       };
     })
     .filter(Boolean) // Убираем null значения
@@ -156,6 +159,14 @@ const PlanetTable = ({ planets, houses }) => {
               position: 'relative',
               overflow: 'hidden'
             }}
+            onClick={() => onPlanetClick && onPlanetClick({
+              name: planet.name,
+              sign: planet.sign, // English sign name for API
+              degree: planet.degrees + (planet.minutes / 60), // Degree within sign (0-30)
+              house: planet.house,
+              house_sign: planet.houseSign,
+              aspects: planet.aspects
+            })}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = 'translateY(-2px)';
               e.currentTarget.style.boxShadow = `0 6px 16px ${planet.color}30`;
