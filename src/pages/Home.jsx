@@ -75,10 +75,43 @@ const apiData = {
   
   try {
     const response = await astrologyAPI.calculateChart(apiData)
+    
+    // Добавляем Pars Fortuna и Vertex в planets для отображения в PlanetTable
+    const enhancedPlanets = {
+      ...response.planets,
+      ...(response.houses_meta?.pars_fortuna && {
+        Ft: { 
+          full_degree: response.houses_meta.pars_fortuna.longitude,
+          sign: response.houses_meta.pars_fortuna.sign,
+          sign_ru: response.houses_meta.pars_fortuna.sign_ru,
+          degree: response.houses_meta.pars_fortuna.degree,
+          house: response.houses_meta.pars_fortuna.house,
+          speed: 0
+        }
+      }),
+      ...(response.houses_meta?.vertex && {
+        Vertex: (() => {
+          const vertex = response.houses_meta.vertex;
+          const longitude = vertex.longitude;
+          const signIndex = Math.floor(longitude / 30) % 12;
+          const zodiacSigns = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
+          return {
+            full_degree: longitude,
+            sign: vertex.sign || zodiacSigns[signIndex],
+            sign_ru: vertex.sign_ru,
+            degree: vertex.degree !== undefined ? vertex.degree : longitude % 30,
+            house: vertex.house,
+            speed: 0
+          };
+        })()
+      })
+    };
+    
     setChartData({
       ...response,
+      planets: enhancedPlanets,
       vertex: response.houses_meta?.vertex !== undefined 
-        ? { longitude: response.houses_meta.vertex } 
+        ? { longitude: response.houses_meta.vertex.longitude } 
         : null
     })
   } catch (err) {

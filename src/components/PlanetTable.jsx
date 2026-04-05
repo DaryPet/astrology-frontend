@@ -30,7 +30,9 @@ const PLANET_COLORS = {
   Pluto: '#8B008B',
   Chiron: '#32CD32',
   NorthNode: '#9370DB',
-  SouthNode: '#9370DB'
+  SouthNode: '#9370DB',
+  Ft: '#00CED1',
+  Vertex: '#FF69B4'
 };
 
 const PlanetTable = ({ planets, houses }) => {
@@ -46,11 +48,22 @@ const PlanetTable = ({ planets, houses }) => {
   const planetList = Object.entries(planets)
     .filter(([name, data]) => data && data.full_degree !== undefined)
     .map(([name, data]) => {
-      const degree = data.full_degree;
+      const degree = parseFloat(data.full_degree);
+      
+      // Защита от NaN
+      if (isNaN(degree)) {
+        console.warn(`Invalid degree for planet ${name}:`, data.full_degree);
+        return null;
+      }
+      
       const signIndex = Math.floor(degree / 30) % 12;
       const signDegree = degree % 30;
       const degrees = Math.floor(signDegree);
       const minutes = Math.floor((signDegree - degrees) * 60);
+      
+      // Используем sign из данных, если есть, иначе вычисляем
+      const signName = data.sign || zodiacSigns[signIndex];
+      const signTranslated = t(`planets.signs.${signName}`);
 
       // Определяем дом планеты - сначала проверяем, есть ли в данных, иначе вычисляем
       let house = data.house || null;
@@ -78,10 +91,11 @@ const PlanetTable = ({ planets, houses }) => {
         minutes,
         house,
         color: PLANET_COLORS[name] || '#7c3aed',
-        element: SIGN_ELEMENTS[zodiacSigns[signIndex]],
-        translatedSign: t(`planets.signs.${zodiacSigns[signIndex]}`, zodiacSigns[signIndex])
+        element: SIGN_ELEMENTS[signName] || SIGN_ELEMENTS[zodiacSigns[signIndex]],
+        translatedSign: signTranslated
       };
     })
+    .filter(Boolean) // Убираем null значения
     .sort((a, b) => a.degree - b.degree); // Сортируем по градусам
 
   // Подсчет количества планет по стихиям
@@ -255,7 +269,7 @@ const PlanetTable = ({ planets, houses }) => {
               <div style={{ textAlign: 'right' }}>
                 <span style={{ marginRight: '4px' }}>{t('planets.degree')}:</span>
                 <span style={{ fontWeight: 'bold', color: 'var(--text-primary)' }}>
-                  {planet.degree.toFixed(2)}°
+                  {typeof planet.degree === 'number' ? planet.degree.toFixed(2) : planet.degree}°
                 </span>
               </div>
             </div>
