@@ -274,7 +274,9 @@
       "Pluto": "Плутон",
       "Chiron": "Хирон",
       "NorthNode": "Северный узел",
-      "SouthNode": "Южный узел"
+      "SouthNode": "Южный узел",
+      "Vertex": "Вертекс",
+      "PartOfFortune": "Колесо Фортуны"
     },
     "signs": {
       "Aries": "Овен",

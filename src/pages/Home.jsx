@@ -75,7 +75,12 @@ const apiData = {
   
   try {
     const response = await astrologyAPI.calculateChart(apiData)
-    setChartData(response)
+    setChartData({
+      ...response,
+      vertex: response.houses_meta?.vertex !== undefined 
+        ? { longitude: response.houses_meta.vertex } 
+        : null
+    })
   } catch (err) {
     console.error('Ошибка API:', err.response?.data)
     setError(err.response?.data?.detail || t('home.errors.calcError'))

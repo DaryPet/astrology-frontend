@@ -274,7 +274,9 @@
       "Pluto": "Pluto",
       "Chiron": "Chiron",
       "NorthNode": "North Node",
-      "SouthNode": "South Node"
+      "SouthNode": "South Node",
+      "Vertex": "Vertex",
+      "PartOfFortune": "Part of Fortune"
     },
     "signs": {
       "Aries": "Aries",
