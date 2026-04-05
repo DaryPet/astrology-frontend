@@ -49,22 +49,31 @@ const AstroChartComponent = ({ chartData, size = 700 }) => {
     console.log('Has Chiron?', 'Chiron' in data.planets);
     console.log('Chiron data:', data.planets['Chiron']);
     console.log('Vertex data:', data.vertex);
+    console.log('Fortune data:', data.houses_meta?.pars_fortuna);
 
     Object.entries(data.planets).forEach(([name, p]) => {
       const key = planetMapping[name];
       console.log(`  ${name} -> key: ${key}, full_degree: ${p?.full_degree}, speed: ${p?.speed}`);
-      if (key && p?.full_degree !== undefined) {
-        // Формат: [degree, speed]
-        // speed - скорость планеты (градусы/день). Если < 0, планета ретроградна
-        planets[key] = [p.full_degree % 360, p.speed ?? 0];
+        if (key && p?.full_degree !== undefined) {
+          // Формат: [degree, speed]
+          // speed - скорость планеты (градусы/день). Если < 0, планета ретроградна
+          planets[key] = [p.full_degree % 360, p.speed ?? 0];
+        }
+      });
+      
+      console.log('result planets:', Object.keys(planets));
+
+      // Вершина (Vertex)
+      if (data.vertex && data.vertex.longitude !== undefined) {
+        planets['Vx'] = [data.vertex.longitude % 360, 0];
       }
-    });
 
-    console.log('result planets:', Object.keys(planets));
-
-    if (data.vertex && data.vertex.longitude !== undefined) {
-      planets['Vx'] = [data.vertex.longitude % 360, 0];
-    }
+      // Парта Фортуны (pars_fortuna) из houses_meta
+      if (data.houses_meta && data.houses_meta.pars_fortuna) {
+        const pf = data.houses_meta.pars_fortuna;
+        const longitude = pf.longitude % 360;
+        planets['Ft'] = [longitude, 0]; // speed = 0 (вычисленная точка)
+      }
 
     for (let i = 1; i <= 12; i++) {
       const house = data.houses[i];
