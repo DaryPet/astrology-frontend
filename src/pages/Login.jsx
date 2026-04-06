@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import { useAuth } from '../context/AuthContext';
@@ -8,11 +8,14 @@ import Header from '../components/Header';
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { signIn, signInWithGoogle } = useAuth();
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [googleLoading, setGoogleLoading] = useState(false);
+
+  const chartDataFromHome = location.state?.chartDataForAnalysis;
 
   const initialValues = {
     email: '',
@@ -33,7 +36,11 @@ const Login = () => {
     setError('');
     try {
       await signIn(values.email, values.password);
-      navigate('/dashboard');
+      if (chartDataFromHome) {
+        navigate('/dashboard', { state: { showFullAnalysis: true, chartDataForAnalysis: chartDataFromHome }, replace: true });
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err) {
       setError(err.message || t('login.errors.loginError'));
     } finally {

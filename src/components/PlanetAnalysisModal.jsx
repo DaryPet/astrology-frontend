@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import ProcessingMessage from './ProcessingMessage';
 
 const PlanetAnalysisModal = ({ planet, analysis, isOpen, onClose, loading, error }) => {
   const { t } = useTranslation();
@@ -112,22 +113,7 @@ const PlanetAnalysisModal = ({ planet, analysis, isOpen, onClose, loading, error
         )}
 
         {loading && (
-          <div style={{
-            textAlign: 'center',
-            padding: '40px',
-            color: 'var(--text-secondary)'
-          }}>
-            <div style={{
-              width: '40px',
-              height: '40px',
-              border: '3px solid var(--border)',
-              borderTop: '3px solid #7c3aed',
-              borderRadius: '50%',
-              animation: 'spin 1s linear infinite',
-              margin: '0 auto 16px'
-            }} />
-            {t('analysis.loading', 'Загрузка анализа...')}
-          </div>
+          <ProcessingMessage />
         )}
 
         {error && (
