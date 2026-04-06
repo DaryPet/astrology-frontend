@@ -92,6 +92,7 @@ const PlanetTable = ({ planets, houses, onPlanetClick }) => {
         house,
         houseSign: data.house_sign || null,
         aspects: data.aspects || [],
+        speed: data.speed || 0, // Скорость планеты (для определения ретроградности)
         color: PLANET_COLORS[name] || '#7c3aed',
         element: SIGN_ELEMENTS[signName] || SIGN_ELEMENTS[zodiacSigns[signIndex]],
         translatedSign: signTranslated,
@@ -165,7 +166,8 @@ const PlanetTable = ({ planets, houses, onPlanetClick }) => {
               degree: planet.degrees + (planet.minutes / 60), // Degree within sign (0-30)
               house: planet.house,
               house_sign: planet.houseSign,
-              aspects: planet.aspects
+              aspects: planet.aspects,
+              is_retrograde: planet.speed < 0
             })}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = 'translateY(-2px)';
@@ -222,6 +224,14 @@ const PlanetTable = ({ planets, houses, onPlanetClick }) => {
                     fontWeight: 'bold'
                   }}>
                     {planet.translatedName}
+                    {planet.speed < 0 && (
+                      <span style={{
+                        marginLeft: '6px',
+                        color: '#ff6b6b',
+                        fontWeight: 'bold',
+                        fontSize: '14px'
+                      }}>R</span>
+                    )}
                   </span>
                 </div>
                 
