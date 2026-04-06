@@ -3,6 +3,7 @@ import i18n from '../i18n'
 
 const api = axios.create({
   baseURL: '/api',
+  timeout: 120000,
   headers: {
     'Content-Type': 'application/json'
   }
@@ -123,6 +124,20 @@ export const astrologyAPI = {
       return response.data
     } catch (error) {
       console.error('Planet analysis error:', error)
+      throw error
+    }
+  },
+
+  getFullChartAnalysis: async (chartData, language = 'ru', topBooks = 5) => {
+    try {
+      const response = await api.post('/analysis/full', {
+        chart_data: chartData,
+        language,
+        top_books: topBooks
+      })
+      return response.data
+    } catch (error) {
+      console.error('Full chart analysis error:', error)
       throw error
     }
   }

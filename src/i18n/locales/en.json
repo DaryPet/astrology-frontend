@@ -44,7 +44,8 @@
     },
     "errors": {
       "calcError": "Error calculating chart"
-    }
+    },
+    "getFullAnalysis": "Get Full Chart Analysis"
   },
   "login": {
     "title": "Sign In",
@@ -142,7 +143,11 @@
       "logout": "Sign out"
     },
     "errors": {
-      "loadError": "Error loading dashboard data"
+      "loadError": "Error loading dashboard data",
+      "analysisError": "Error loading analysis"
+    },
+    "fullAnalysis": {
+      "title": "Full Astrological Analysis"
     }
   },
   "confirm": {
@@ -308,10 +313,12 @@
       "notFoundDesc": "This chart has no significant aspects between planets"
     }
   },
-  "analysis": {
-    "planetAnalysis": "Planet Analysis",
-    "loading": "Loading analysis...",
-    "error": "Error loading analysis",
-    "noData": "No data available for this planet"
-  }
+"analysis": {
+     "planetAnalysis": "Planet Analysis",
+     "loading": "Loading analysis...",
+     "processing": "Your analysis is being processed",
+     "processingHint": "This may take 2-5 minutes. Please wait...",
+     "error": "Error loading analysis",
+     "noData": "No data available for this planet"
+   }
 }

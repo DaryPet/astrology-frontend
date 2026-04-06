@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { geocodeAPI, astrologyAPI } from '../services/api'
 import { useTranslation } from 'react-i18next'
+import { useAuth } from '../context/AuthContext'
 import i18n from '../i18n'
 import Header from '../components/Header'
 import LocationInput from '../components/LocationInput'
@@ -9,10 +10,12 @@ import PlanetTable from '../components/PlanetTable'
 import PlanetAnalysisModal from '../components/PlanetAnalysisModal'
 import AspectGrid from '../components/AspectGrid'
 import AstroChartComponent from '../components/AstroChartComponent'
+import ProcessingMessage from '../components/ProcessingMessage'
 
 function Home() {
   const navigate = useNavigate()
   const { t, i18n: i18nInstance } = useTranslation()
+  const { isAuthenticated } = useAuth()
 
   const [formData, setFormData] = useState({
     name: '',
@@ -31,6 +34,7 @@ function Home() {
   const [planetAnalysis, setPlanetAnalysis] = useState(null)
   const [analysisLoading, setAnalysisLoading] = useState(false)
   const [analysisError, setAnalysisError] = useState('')
+  const [fullAnalysisLoading, setFullAnalysisLoading] = useState(false)
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -109,6 +113,101 @@ function Home() {
     setAnalysisError('')
   }
 
+  const prepareChartDataForAnalysis = (chartData) => {
+    const zodiacSigns = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces']
+    const zodiacSignsRu = ['Овен', 'Телец', 'Близнецы', 'Рак', 'Лев', 'Дева', 'Весы', 'Скорпион', 'Стрелец', 'Козерог', 'Водолей', 'Рыбы']
+    const planetNamesEn = {
+      Sun: 'Sun', Moon: 'Moon', Mercury: 'Mercury', Venus: 'Venus', Mars: 'Mars',
+      Jupiter: 'Jupiter', Saturn: 'Saturn', Uranus: 'Uranus', Neptune: 'Neptune',
+      Pluto: 'Pluto', NorthNode: 'NorthNode', SouthNode: 'SouthNode', Chiron: 'Chiron',
+      Lilith: 'Lilith', Ft: 'PartOfFortune', Vertex: 'Vertex'
+    }
+
+    const planets = {}
+    Object.entries(chartData.planets).forEach(([name, p]) => {
+      if (p && p.full_degree !== undefined) {
+        const signIndex = Math.floor(p.full_degree / 30) % 12
+        planets[name] = {
+          planet: planetNamesEn[name] || name,
+          sign: p.sign || zodiacSigns[signIndex],
+          sign_ru: p.sign_ru || zodiacSignsRu[signIndex],
+          degree: p.degree !== undefined ? p.degree : p.full_degree % 30,
+          full_degree: p.full_degree,
+          speed: p.speed ?? 0,
+          is_retrograde: (p.speed ?? 0) < 0,
+          house: p.house
+        }
+      }
+    })
+
+    const houses = {}
+    const houseNamesEn = ['1st House', '2nd House', '3rd House', '4th House', '5th House', '6th House', 
+                          '7th House', '8th House', '9th House', '10th House', '11th House', '12th House']
+    const houseNamesRu = ['Дом 1', 'Дом 2', 'Дом 3', 'Дом 4', 'Дом 5', 'Дом 6', 
+                          'Дом 7', 'Дом 8', 'Дом 9', 'Дом 10', 'Дом 11', 'Дом 12']
+    for (let i = 1; i <= 12; i++) {
+      const house = chartData.houses[i]
+      if (house) {
+        const signIndex = Math.floor((house.cusp_longitude || 0) / 30) % 12
+        houses[i] = {
+          house: i,
+          name_en: houseNamesEn[i-1],
+          name_ru: houseNamesRu[i-1],
+          cusp_longitude: house.cusp_longitude || 0,
+          sign: house.sign || zodiacSigns[signIndex],
+          sign_ru: house.sign_ru || zodiacSignsRu[signIndex],
+          degree: house.degree !== undefined ? house.degree : (house.cusp_longitude || 0) % 30
+        }
+      }
+    }
+
+    const houses_meta = {
+      house_system: chartData.houses_meta?.house_system || 'Placidus',
+      armc: chartData.houses_meta?.armc || 0,
+      vertex: chartData.houses_meta?.vertex || null,
+      pars_fortuna: chartData.houses_meta?.pars_fortuna || null
+    }
+
+    const meta = {
+      birth_date: formData.birth_date ? `${formData.birth_date}T${formData.birth_time}:00+03:00` : null,
+      birth_place: formData.city,
+      latitude: formData.latitude,
+      longitude: formData.longitude,
+      timezone: formData.timezone,
+      jd: chartData.jd
+    }
+
+    return {
+      sun_sign: chartData.sun_sign,
+      sun_sign_ru: chartData.sun_sign_ru,
+      moon_sign: chartData.moon_sign,
+      moon_sign_ru: chartData.moon_sign_ru,
+      ascendant: chartData.ascendant,
+      ascendant_ru: chartData.ascendant_ru,
+      ascendant_degree: chartData.houses?.[1]?.degree || 0,
+      mc: chartData.mc,
+      mc_ru: chartData.mc_ru,
+      mc_degree: chartData.mc_degree || 0,
+      planets,
+      houses,
+      houses_meta,
+      meta,
+      aspects: chartData.aspects || []
+    }
+  }
+
+  const handleFullAnalysisClick = async () => {
+    const chartDataForAnalysis = prepareChartDataForAnalysis(chartData)
+    console.log('=== ОТПРАВЛЯЕМ НА ДАШБОРД ===', chartDataForAnalysis);
+    localStorage.setItem('chartDataForAnalysis', JSON.stringify(chartDataForAnalysis));
+    
+    if (!isAuthenticated) {
+      navigate('/login', { state: { from: '/', chartDataForAnalysis } })
+    } else {
+      navigate('/dashboard', { state: { showFullAnalysis: true, chartDataForAnalysis } })
+    }
+  }
+
 const handleSubmit = async (e) => {
   e.preventDefault()
   setLoading(true)
@@ -122,10 +221,11 @@ const apiData = {
   timezone: formData.timezone,
   name: formData.name
 }
-  console.log('Отправляем apiData:', apiData)
+  console.log('=== CHART CALCULATION REQUEST ===', JSON.stringify(apiData, null, 2))
   
   try {
     const response = await astrologyAPI.calculateChart(apiData)
+    console.log('=== CHART CALCULATION RESPONSE ===', JSON.stringify(response, null, 2))
     
     // Добавляем Pars Fortuna и Vertex в planets для отображения в PlanetTable
     const enhancedPlanets = {
@@ -271,6 +371,32 @@ const apiData = {
                 <div><strong>{t('home.chart.mc')}:</strong> {chartData.mc || '—'}</div>
               </div>
             </div>
+
+            <button 
+              type="button" 
+              className="btn-full-analysis"
+              onClick={handleFullAnalysisClick}
+              disabled={fullAnalysisLoading}
+              style={{
+                marginTop: '24px',
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                color: 'white',
+                padding: fullAnalysisLoading ? '30px 28px' : '14px 28px',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '16px',
+                fontWeight: '600',
+                cursor: fullAnalysisLoading ? 'default' : 'pointer',
+                transition: 'transform 0.2s, box-shadow 0.2s',
+                opacity: fullAnalysisLoading ? 0.8 : 1,
+                minWidth: '280px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              {fullAnalysisLoading ? <ProcessingMessage /> : t('home.getFullAnalysis')}
+            </button>
           </div>
 
           <div style={{ 
