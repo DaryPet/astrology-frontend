@@ -12,7 +12,7 @@ import AstroChartComponent from '../components/AstroChartComponent'
 
 function Home() {
   const navigate = useNavigate()
-  const { t } = useTranslation()
+  const { t, i18n: i18nInstance } = useTranslation()
 
   const [formData, setFormData] = useState({
     name: '',
@@ -65,20 +65,23 @@ function Home() {
   }
 
   const handlePlanetClick = async (planetData) => {
-    setSelectedPlanet(planetData)
+    // Перевод названия планеты на текущий язык приложения
+    const planetName = t('planets.names.' + planetData.name)
+    setSelectedPlanet({ ...planetData, name: planetName })
     setPlanetAnalysis(null)
     setAnalysisError('')
     setAnalysisLoading(true)
 
     try {
-      console.log('=== PLANET ANALYSIS REQUEST ===', planetData)
+      console.log('=== PLANET ANALYSIS REQUEST ===', { planet: planetData.name, sign: planetData.sign, degree: planetData.degree, house: planetData.house, is_retrograde: planetData.is_retrograde, language: i18n.language })
       const result = await astrologyAPI.getPlanetAnalysis({
-        planet: planetData.name,
+        planet: planetData.name, // English name for API
         sign: planetData.sign,
         degree: planetData.degree,
         house: planetData.house,
         house_sign: planetData.house_sign,
         aspects: planetData.aspects,
+        is_retrograde: planetData.is_retrograde,
         language: i18n.language
       })
       console.log('=== PLANET ANALYSIS RESPONSE ===', result)
