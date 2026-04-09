@@ -12,6 +12,9 @@ const Logout = () => {
   useEffect(() => {
     const performLogout = async () => {
       try {
+        // Очищаем только данные, связанные с авторизованным пользователем
+        localStorage.removeItem('savedFullAnalysis');
+        localStorage.removeItem('chartDataForAnalysis');
         await signOut();
       } catch (error) {
         console.log('Logout error:', error);
