@@ -45,7 +45,8 @@
     "errors": {
       "calcError": "Ошибка при расчете карты"
     },
-    "getFullAnalysis": "Получить полный разбор карты"
+    "getFullAnalysis": "Получить полный разбор карты",
+    "newCalculation": "Новый расчет"
   },
   "login": {
     "title": "Вход в систему",
