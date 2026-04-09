@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { geocodeAPI, astrologyAPI } from '../services/api'
 import { useTranslation } from 'react-i18next'
@@ -35,6 +35,20 @@ function Home() {
   const [analysisLoading, setAnalysisLoading] = useState(false)
   const [analysisError, setAnalysisError] = useState('')
   const [fullAnalysisLoading, setFullAnalysisLoading] = useState(false)
+
+  // Восстанавливаем данные карты из localStorage при загрузке страницы
+  useEffect(() => {
+    const savedChartData = localStorage.getItem('savedChartData');
+    if (savedChartData && !chartData) {
+      try {
+        const parsed = JSON.parse(savedChartData);
+        console.log('=== ВОССТАНОВЛЕНА КАРТА ИЗ LOCALSTORAGE ===', parsed);
+        setChartData(parsed);
+      } catch (e) {
+        console.error('Error parsing saved chart data:', e);
+      }
+    }
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -76,6 +90,15 @@ function Home() {
     setAnalysisError('')
     setAnalysisLoading(true)
 
+    // Проверяем есть ли сохраненный анализ в localStorage
+    const savedAnalysis = localStorage.getItem(`planetAnalysis_${planetData.name}`);
+    if (savedAnalysis) {
+      console.log('=== ВОССТАНОВЛЕН АНАЛИЗ ПЛАНЕТЫ ИЗ LOCALSTORAGE ===', planetData.name);
+      setPlanetAnalysis(savedAnalysis);
+      setAnalysisLoading(false);
+      return;
+    }
+
     try {
       console.log('=== PLANET ANALYSIS REQUEST ===', { planet: planetData.name, sign: planetData.sign, degree: planetData.degree, house: planetData.house, is_retrograde: planetData.is_retrograde, language: i18n.language })
       const result = await astrologyAPI.getPlanetAnalysis({
@@ -90,6 +113,8 @@ function Home() {
       })
       console.log('=== PLANET ANALYSIS RESPONSE ===', result)
       setPlanetAnalysis(result.analysis)
+      // Сохраняем анализ планеты в localStorage (ключ - название планеты)
+      localStorage.setItem(`planetAnalysis_${planetData.name}`, result.analysis)
     } catch (err) {
       console.error('Planet analysis error:', err)
       const errorDetail = err.response?.data?.detail
@@ -202,7 +227,7 @@ function Home() {
     localStorage.setItem('chartDataForAnalysis', JSON.stringify(chartDataForAnalysis));
     
     if (!isAuthenticated) {
-      navigate('/login', { state: { from: '/', chartDataForAnalysis } })
+      navigate('/login', { state: { from: '/', chartDataForAnalysis, showFullAnalysis: true } })
     } else {
       navigate('/dashboard', { state: { showFullAnalysis: true, chartDataForAnalysis } })
     }
@@ -258,13 +283,17 @@ const apiData = {
       })
     };
     
-    setChartData({
+    const chartDataToSave = {
       ...response,
       planets: enhancedPlanets,
       vertex: response.houses_meta?.vertex !== undefined 
         ? { longitude: response.houses_meta.vertex.longitude } 
         : null
-    })
+    }
+    
+    setChartData(chartDataToSave)
+    // Сохраняем данные карты в localStorage
+    localStorage.setItem('savedChartData', JSON.stringify(chartDataToSave))
   } catch (err) {
     console.error('Ошибка API:', err.response?.data)
     setError(err.response?.data?.detail || t('home.errors.calcError'))
@@ -281,14 +310,16 @@ const apiData = {
           <h1>{t('home.title')}</h1>
           <p>{t('home.subtitle')}</p>
           
+          {!chartData && (
           <div className="form-card">
             {error && (
-  <div className="error">
-    {typeof error === 'object' 
-      ? error.msg || error.message || t('home.errors.calcError')
-      : error}
-  </div>
-)}
+              <div className="error">
+                {typeof error === 'object' 
+                  ? error.msg || error.message || t('home.errors.calcError')
+                  : error}
+              </div>
+            )}
+            
             <form onSubmit={handleSubmit}>
               <div className="form-group">
                 <label>{t('home.form.name')}</label>
@@ -338,7 +369,8 @@ const apiData = {
                 {loading ? t('home.form.submitting') : t('home.form.submit')}
               </button>
             </form>
-          </div>
+            </div>
+          )}
         </div>
       </section>
 
@@ -355,11 +387,15 @@ const apiData = {
             <h2 style={{ marginBottom: '30px', color: 'var(--text-primary)' }}>
               {t('home.chart.title')}
             </h2>
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
               <AstroChartComponent  
-              chartData={chartData}
-              size={700}
-            />
+                chartData={chartData}
+                size={700}
+              />
+            </div>
             <div style={{ 
+              display: 'flex',
+              justifyContent: 'center',
               marginTop: '30px', 
               color: 'var(--text-secondary)',
               fontSize: '14px'
@@ -379,6 +415,8 @@ const apiData = {
               disabled={fullAnalysisLoading}
               style={{
                 marginTop: '24px',
+                marginLeft: 'auto',
+                marginRight: 'auto',
                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                 color: 'white',
                 padding: fullAnalysisLoading ? '30px 28px' : '14px 28px',

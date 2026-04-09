@@ -26,7 +26,7 @@ const Dashboard = () => {
     }
   }, [loading, isAuthenticated, navigate]);
 
-  // Читаем данные из localStorage при загрузке
+  // Читаем данные и сохраненный анализ из localStorage при загрузке
   useEffect(() => {
     const savedData = localStorage.getItem('chartDataForAnalysis');
     if (savedData && !chartDataForAnalysis) {
@@ -34,10 +34,17 @@ const Dashboard = () => {
         const parsed = JSON.parse(savedData);
         console.log('=== ВОССТАНОВЛЕНО ИЗ LOCALSTORAGE ===', parsed);
         setChartDataForAnalysis(parsed);
-        setShowFullAnalysis(true);
       } catch (e) {
         console.error('Error parsing saved data:', e);
       }
+    }
+
+    // Восстанавливаем сохраненный анализ из localStorage
+    const savedAnalysis = localStorage.getItem('savedFullAnalysis');
+    if (savedAnalysis && !fullAnalysis) {
+      console.log('=== ВОССТАНОВЛЕН АНАЛИЗ ИЗ LOCALSTORAGE ===');
+      setFullAnalysis(savedAnalysis);
+      setShowFullAnalysis(true);
     }
   }, []);
 
@@ -70,6 +77,8 @@ const Dashboard = () => {
       console.log('=== ОТВЕТ ОТ СЕРВЕРА ===', result);
       console.log('=== ANALYSIS ===', result.analysis);
       setFullAnalysis(result.analysis);
+      // Сохраняем анализ в localStorage
+      localStorage.setItem('savedFullAnalysis', result.analysis);
     } catch (err) {
       console.error('Full analysis error:', err);
       console.error('Error response:', err.response?.data);
@@ -80,6 +89,9 @@ const Dashboard = () => {
   };
 
   const handleLogout = async () => {
+    // Очищаем localStorage при выходе
+    localStorage.removeItem('savedFullAnalysis');
+    localStorage.removeItem('chartDataForAnalysis');
     await signOut();
     navigate('/');
   };
@@ -110,26 +122,6 @@ const Dashboard = () => {
         </div>
 
         <div className="dashboard-content">
-          <div className="dashboard-card">
-            <h2>{t('dashboard.userInfo.title')}</h2>
-            <div className="user-info-details">
-              <div className="info-row">
-                <span className="info-label">{t('dashboard.userInfo.email')}:</span>
-                <span className="info-value">{user?.email}</span>
-              </div>
-              <div className="info-row">
-                <span className="info-label">{t('dashboard.userInfo.name')}:</span>
-                <span className="info-value">{user?.user_metadata?.name || t('dashboard.userInfo.notSpecified')}</span>
-              </div>
-              <div className="info-row">
-                <span className="info-label">{t('dashboard.userInfo.createdAt')}:</span>
-                <span className="info-value">
-                  {user?.created_at ? new Date(user.created_at).toLocaleDateString('ru-RU') : t('dashboard.userInfo.unknown')}
-                </span>
-              </div>
-            </div>
-          </div>
-
           {showFullAnalysis && (
             <div className="dashboard-card full-analysis-card">
               <h2>{t('dashboard.fullAnalysis.title')}</h2>
