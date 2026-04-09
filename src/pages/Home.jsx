@@ -233,6 +233,27 @@ function Home() {
     }
   }
 
+  const handleNewCalculation = () => {
+    localStorage.removeItem('savedChartData')
+    localStorage.removeItem('chartDataForAnalysis')
+    localStorage.removeItem('savedFullAnalysis')
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('planetAnalysis_')) {
+        localStorage.removeItem(key)
+      }
+    })
+    setChartData(null)
+    setFormData({
+      name: '',
+      birth_date: '',
+      birth_time: '12:00',
+      city: '',
+      latitude: null,
+      longitude: null,
+      timezone: 'UTC'
+    })
+  }
+
 const handleSubmit = async (e) => {
   e.preventDefault()
   setLoading(true)
@@ -434,6 +455,27 @@ const apiData = {
               }}
             >
               {fullAnalysisLoading ? <ProcessingMessage /> : t('home.getFullAnalysis')}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleNewCalculation}
+              style={{
+                marginTop: '16px',
+                marginLeft: 'auto',
+                marginRight: 'auto',
+                background: 'transparent',
+                color: 'var(--text-primary)',
+                padding: '12px 24px',
+                border: '1px solid var(--border)',
+                borderRadius: '8px',
+                fontSize: '14px',
+                fontWeight: '500',
+                cursor: 'pointer',
+                transition: 'background 0.2s'
+              }}
+            >
+              {t('home.newCalculation')}
             </button>
           </div>
 

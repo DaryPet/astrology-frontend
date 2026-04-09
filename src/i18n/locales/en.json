@@ -45,7 +45,8 @@
     "errors": {
       "calcError": "Error calculating chart"
     },
-    "getFullAnalysis": "Get Full Chart Analysis"
+    "getFullAnalysis": "Get Full Chart Analysis",
+    "newCalculation": "New Calculation"
   },
   "login": {
     "title": "Sign In",
