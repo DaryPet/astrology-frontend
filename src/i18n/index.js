@@ -16,12 +16,12 @@ i18n
   .init({
     resources,
 
-    lng: 'en',
-    fallbackLng: 'en',
-    supportedLngs: ['ru', 'en'],
+    fallbackLng: 'ru',
+    supportedLngs: ['ru', 'en', 'es', 'de', 'fr'],
 
     detection: {
-      order: ['localStorage', 'navigator'],
+      order: ['path', 'localStorage', 'navigator'],
+      lookupFromPathIndex: 0,
       lookupLocalStorage: 'language',
       cacheUserLanguage: true,
     },

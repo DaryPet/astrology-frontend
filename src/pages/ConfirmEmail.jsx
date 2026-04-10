@@ -6,36 +6,30 @@ import { supabase } from '../lib/supabase';
 
 const ConfirmEmail = () => {
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [status, setStatus] = useState('');
   const [isError, setIsError] = useState(false);
 
-  useEffect(() => {
-    // Supabase отправляет ссылку вида /confirm#access_token=...&type=signup
-    // Токен находится в hash (#), supabase-js читает его автоматически
-    // и стреляет событием SIGNED_IN через onAuthStateChange
+  const currentLang = i18n.language || 'ru';
 
+  useEffect(() => {
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
         setStatus(t('confirm.success'));
-        setTimeout(() => navigate('/dashboard'), 2000);
+        setTimeout(() => navigate(`/${currentLang}/dashboard`), 2000);
       }
 
       if (event === 'TOKEN_REFRESHED') {
-        // тоже считаем успехом
         setStatus(t('confirm.success'));
-        setTimeout(() => navigate('/dashboard'), 2000);
+        setTimeout(() => navigate(`/${currentLang}/dashboard`), 2000);
       }
     });
 
-    // Дополнительно — проверяем текущую сессию на случай если
-    // пользователь уже был залогинен до перехода по ссылке
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         setStatus(t('confirm.success'));
-        setTimeout(() => navigate('/dashboard'), 2000);
+        setTimeout(() => navigate(`/${currentLang}/dashboard`), 2000);
       } else {
-        // Если через 5 секунд сессии нет — ссылка невалидна
         setTimeout(() => {
           supabase.auth.getSession().then(({ data: { session: s } }) => {
             if (!s) {
@@ -50,9 +44,8 @@ const ConfirmEmail = () => {
     return () => {
       listener?.subscription.unsubscribe();
     };
-  }, [navigate, t]);
+  }, [navigate, t, currentLang]);
 
-  // Set initial status on mount
   useEffect(() => {
     setStatus(t('confirm.pending'));
   }, [t]);
@@ -66,8 +59,8 @@ const ConfirmEmail = () => {
         <div style={{ marginTop: '20px' }}>
           <p>{t('confirm.tryAgain')}</p>
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '16px' }}>
-            <a href="/register" style={{ color: 'var(--accent)' }}>{t('confirm.registerLink')}</a>
-            <a href="/login" style={{ color: 'var(--accent)' }}>{t('confirm.loginLink')}</a>
+            <a href={`/${currentLang}/register`} style={{ color: 'var(--accent)' }}>{t('confirm.registerLink')}</a>
+            <a href={`/${currentLang}/login`} style={{ color: 'var(--accent)' }}>{t('confirm.loginLink')}</a>
           </div>
         </div>
       )}

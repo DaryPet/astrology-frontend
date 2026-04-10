@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Link, useLocation } from 'react-router-dom';
+import { useNavigate, Link, useLocation, useParams } from 'react-router-dom';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import { useAuth } from '../context/AuthContext';
@@ -9,12 +9,14 @@ import Header from '../components/Header';
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { lang } = useParams();
   const { signIn, signInWithGoogle } = useAuth();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [googleLoading, setGoogleLoading] = useState(false);
 
+  const currentLang = lang || i18n.language || 'ru';
   const chartDataFromHome = location.state?.chartDataForAnalysis;
 
   const initialValues = {
@@ -37,9 +39,9 @@ const Login = () => {
     try {
       await signIn(values.email, values.password);
       if (chartDataFromHome) {
-        navigate('/dashboard', { state: { showFullAnalysis: true, chartDataForAnalysis: chartDataFromHome }, replace: true });
+        navigate(`/${currentLang}/dashboard`, { state: { showFullAnalysis: true, chartDataForAnalysis: chartDataFromHome }, replace: true });
       } else {
-        navigate('/dashboard');
+        navigate(`/${currentLang}/dashboard`);
       }
     } catch (err) {
       setError(err.message || t('login.errors.loginError'));
@@ -142,7 +144,7 @@ const Login = () => {
                 </div>
 
                 <div className="forgot-password-link">
-                  <Link to="/forgot-password">{t('login.forgotPassword')}</Link>
+                  <Link to={`/${currentLang}/forgot-password`}>{t('login.forgotPassword')}</Link>
                 </div>
 
                 <button
@@ -158,10 +160,10 @@ const Login = () => {
 
           <div className="auth-footer">
             <p>
-              {t('login.noAccount')} <Link to="/register" className="auth-link">{t('login.registerLink')}</Link>
+              {t('login.noAccount')} <Link to={`/${currentLang}/register`} className="auth-link">{t('login.registerLink')}</Link>
             </p>
             <p>
-              <Link to="/" className="auth-link">{t('login.backHome')}</Link>
+              <Link to={`/${currentLang}/`} className="auth-link">{t('login.backHome')}</Link>
             </p>
           </div>
         </div>
