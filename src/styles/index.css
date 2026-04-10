@@ -416,8 +416,8 @@ body {
 .analysis-content h3,
 .analysis-content h4 {
   color: var(--text-primary);
-  margin-top: 24px;
-  margin-bottom: 12px;
+  margin-top: 40px;
+  margin-bottom: 20px;
   font-weight: 600;
 }
 
@@ -428,17 +428,17 @@ body {
 }
 
 .analysis-content p {
-  margin-bottom: 16px;
+  margin-bottom: 24px;
 }
 
 .analysis-content ul,
 .analysis-content ol {
-  margin-bottom: 16px;
+  margin-bottom: 24px;
   padding-left: 24px;
 }
 
 .analysis-content li {
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 
 .analysis-content strong {
@@ -452,9 +452,55 @@ body {
 }
 
 .analysis-content hr {
-  border: none;
-  border-top: 1px solid var(--border);
-  margin: 24px 0;
+  display: none;
+}
+
+.markdown-content {
+  color: var(--text-primary);
+}
+
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3,
+.markdown-content h4 {
+  color: var(--text-primary);
+  margin-top: 40px;
+  margin-bottom: 20px;
+  font-weight: 600;
+}
+
+.markdown-content h1:first-child,
+.markdown-content h2:first-child,
+.markdown-content h3:first-child {
+  margin-top: 0;
+}
+
+.markdown-content p {
+  margin-bottom: 24px;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+  margin-bottom: 24px;
+  padding-left: 24px;
+}
+
+.markdown-content li {
+  margin-bottom: 12px;
+}
+
+.markdown-content strong {
+  color: #667eea;
+  font-weight: 600;
+}
+
+.markdown-content em {
+  color: var(--text-primary);
+  font-style: italic;
+}
+
+.markdown-content hr {
+  display: none;
 }
 
 /* Responsive */
@@ -1117,6 +1163,34 @@ body {
 .btn-secondary:hover {
   background: rgba(255, 255, 255, 0.05);
   border-color: var(--accent);
+}
+
+/* Dashboard and Home inline buttons hover */
+.dashboard-card button:hover,
+.home-card button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+/* Home page buttons hover */
+.home button[style*="linear-gradient"]:hover,
+.hero button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+}
+
+/* All buttons with gradient background */
+button[style*="linear-gradient(135deg"]:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+}
+
+/* Transparent button hover (New Calculation on Home, Calculate Synastry on Dashboard) */
+button[style*="transparent"]:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
 .loading {

@@ -119,87 +119,104 @@ const Dashboard = () => {
       <Header />
 
       <div className="container" style={{ paddingTop: '40px' }}>
-        <div className="dashboard-content">
-          {showFullAnalysis && (
-            <div className="dashboard-card full-analysis-card">
-              <h2>{t('dashboard.fullAnalysis.title')}</h2>
-              
-{analysisLoading && (
-                <div style={{ marginTop: '20px' }}>
-                  <ProcessingMessage />
-                </div>
+        <div style={{ display: 'flex', gap: '30px', flexWrap: 'wrap' }}>
+          {/* Основной контент */}
+          <div style={{ flex: '1 1 600px' }}>
+            <div className="dashboard-content">
+              {showFullAnalysis && (
+                <>
+                  <h2 style={{ marginBottom: '30px' }}>{t('dashboard.fullAnalysis.title')}</h2>
+                  
+                  {analysisLoading && (
+                    <div style={{ marginTop: '40px' }}>
+                      <ProcessingMessage />
+                    </div>
+                  )}
+                  
+                  {analysisError && (
+                    <div className="error-message" style={{ marginTop: '20px' }}>
+                      {analysisError}
+                    </div>
+                  )}
+                  
+                  {fullAnalysis && (
+                    <div style={{ 
+                      marginTop: '40px', 
+                      lineHeight: '2',
+                      fontSize: '16px'
+                    }}>
+                      <MarkdownContent content={fullAnalysis} />
+                    </div>
+                  )}
+                </>
               )}
-              
-              {analysisError && (
-                <div className="error-message" style={{ marginTop: '10px' }}>
-                  {analysisError}
-                </div>
-              )}
-              
-              {fullAnalysis && (
-                <div 
-                  className="analysis-content"
-                  style={{ 
-                    marginTop: '20px', 
-                    padding: '20px', 
-                    background: 'var(--bg-secondary)', 
-                    borderRadius: '8px',
-                    maxHeight: '600px',
-                    overflowY: 'auto',
-                    lineHeight: '1.8',
-                    fontSize: '15px'
-                  }}
-                >
-                  <MarkdownContent content={fullAnalysis} />
-                </div>
-              )}
-            </div>
-          )}
-
-          <div className="dashboard-card">
-            <h2>{t('dashboard.features.title')}</h2>
-            <div className="future-features">
-              <div className="feature">
-                <div className="feature-icon">📊</div>
-                <div className="feature-content">
-                  <h3>{t('dashboard.features.history.title')}</h3>
-                  <p>{t('dashboard.features.history.desc')}</p>
-                </div>
-              </div>
-              <div className="feature">
-                <div className="feature-icon">⭐</div>
-                <div className="feature-content">
-                  <h3>{t('dashboard.features.favorites.title')}</h3>
-                  <p>{t('dashboard.features.favorites.desc')}</p>
-                </div>
-              </div>
-              <div className="feature">
-                <div className="feature-icon">🔔</div>
-                <div className="feature-content">
-                  <h3>{t('dashboard.features.notifications.title')}</h3>
-                  <p>{t('dashboard.features.notifications.desc')}</p>
-                </div>
-              </div>
-              <div className="feature">
-                <div className="feature-icon">👥</div>
-                <div className="feature-content">
-                  <h3>{t('dashboard.features.compare.title')}</h3>
-                  <p>{t('dashboard.features.compare.desc')}</p>
-                </div>
-              </div>
             </div>
           </div>
 
-          <div className="dashboard-actions">
-            <button className="btn-primary" onClick={() => navigate(`/${currentLang}/`)}>
-              {t('dashboard.actions.newChart')}
-            </button>
-            <button className="btn-secondary" onClick={() => navigate(`/${currentLang}/synastry`)}>
-              {t('dashboard.actions.synastry')}
-            </button>
-            <button className="btn-logout" onClick={handleLogout}>
-              {t('dashboard.actions.logout')}
-            </button>
+          {/* Боковая панель */}
+          <div style={{ width: '300px', flexShrink: 0 }}>
+            <div className="dashboard-card">
+              {t('dashboard.features.title') && <h2>{t('dashboard.features.title')}</h2>}
+              <div className="future-features">
+                <div className="feature">
+                  <div className="feature-icon">📊</div>
+                  <div className="feature-content">
+                    <h3>{t('dashboard.features.history.title')}</h3>
+                    <p>{t('dashboard.features.history.desc')}</p>
+                  </div>
+                </div>
+                <div className="feature">
+                  <div className="feature-icon">⭐</div>
+                  <div className="feature-content">
+                    <h3>{t('dashboard.features.favorites.title')}</h3>
+                    <p>{t('dashboard.features.favorites.desc')}</p>
+                  </div>
+                </div>
+                <div className="feature">
+                  <div className="feature-icon">👥</div>
+                  <div className="feature-content">
+                    <h3>{t('dashboard.features.compare.title')}</h3>
+                    <p>{t('dashboard.features.compare.desc')}</p>
+                  </div>
+                </div>
+              </div>
+
+              <button 
+                onClick={() => navigate(`/${currentLang}/`)}
+                style={{
+                  width: '100%',
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  color: 'white',
+                  padding: '14px 24px',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '16px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  marginTop: '20px'
+                }}
+              >
+                {t('dashboard.actions.newChart')}
+              </button>
+
+              <button 
+                onClick={() => navigate(`/${currentLang}/synastry`)}
+                style={{
+                  width: '100%',
+                  background: 'transparent',
+                  color: 'var(--text-primary)',
+                  padding: '14px 24px',
+                  border: '1px solid var(--border)',
+                  borderRadius: '8px',
+                  fontSize: '16px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  marginTop: '12px'
+                }}
+              >
+                {t('dashboard.actions.synastry')}
+              </button>
+            </div>
           </div>
         </div>
       </div>
