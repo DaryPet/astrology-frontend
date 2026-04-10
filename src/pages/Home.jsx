@@ -7,7 +7,7 @@ import i18n from '../i18n'
 import Header from '../components/Header'
 import LocationInput from '../components/LocationInput'
 import PlanetTable from '../components/PlanetTable'
-import MarkdownContent from '../components/MarkdownContent'
+import PlanetAnalysisModal from '../components/PlanetAnalysisModal'
 import AspectGrid from '../components/AspectGrid'
 import AstroChartComponent from '../components/AstroChartComponent'
 import ProcessingMessage from '../components/ProcessingMessage'
@@ -501,44 +501,14 @@ const apiData = {
               />
             </div>
 
-            {selectedPlanet && (
-              <div style={{
-                background: 'var(--bg-card)',
-                borderRadius: '12px',
-                border: '1px solid var(--border)',
-                padding: '24px',
-                marginTop: '20px'
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                  <h3 style={{ margin: 0, color: 'var(--text-primary)' }}>{selectedPlanet.name}</h3>
-                  <button 
-                    onClick={handleCloseAnalysis} 
-                    style={{ 
-                      background: 'none', 
-                      border: 'none', 
-                      fontSize: '24px', 
-                      cursor: 'pointer',
-                      color: 'var(--text-secondary)'
-                    }}
-                  >×</button>
-                </div>
-                {selectedPlanet.sign && (
-                  <div style={{ 
-                    marginBottom: '16px', 
-                    padding: '12px', 
-                    background: 'var(--bg-primary)', 
-                    borderRadius: '8px', 
-                    fontSize: '14px', 
-                    color: 'var(--text-secondary)'
-                  }}>
-                    {selectedPlanet.sign} {selectedPlanet.degree?.toFixed(2)}°{selectedPlanet.house && ` — ${t('planets.house')} ${selectedPlanet.house}`}
-                  </div>
-                )}
-                {analysisLoading && <ProcessingMessage />}
-                {analysisError && <div className="error-message" style={{ color: '#ff3b30', marginBottom: '16px' }}>{analysisError}</div>}
-                {planetAnalysis && <MarkdownContent content={planetAnalysis} />}
-              </div>
-            )}
+            <PlanetAnalysisModal
+              planet={selectedPlanet}
+              analysis={planetAnalysis}
+              isOpen={!!selectedPlanet}
+              onClose={handleCloseAnalysis}
+              loading={analysisLoading}
+              error={analysisError}
+            />
           </div>
         </div>
       )}
