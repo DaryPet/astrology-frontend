@@ -67,22 +67,17 @@ const formatInline = (text) => {
 
   while (remaining) {
     const boldMatch = remaining.match(/\*\*(.+?)\*\*/);
-    const italicMatch = remaining.match(/\*(.+?)\*/);
 
-    if (boldMatch && (!italicMatch || boldMatch.index < italicMatch.index)) {
+    if (boldMatch) {
       if (boldMatch.index > 0) {
-        parts.push(remaining.substring(0, boldMatch.index));
+        let before = remaining.substring(0, boldMatch.index).replace(/\*/g, '');
+        if (before) parts.push(before);
       }
       parts.push(<strong key={`bold-${keyIndex++}`}>{boldMatch[1]}</strong>);
       remaining = remaining.substring(boldMatch.index + boldMatch[0].length);
-    } else if (italicMatch) {
-      if (italicMatch.index > 0) {
-        parts.push(remaining.substring(0, italicMatch.index));
-      }
-      parts.push(<em key={`italic-${keyIndex++}`}>{italicMatch[1]}</em>);
-      remaining = remaining.substring(italicMatch.index + italicMatch[0].length);
     } else {
-      parts.push(remaining);
+      let rest = remaining.replace(/\*/g, '');
+      if (rest) parts.push(rest);
       break;
     }
   }
