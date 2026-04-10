@@ -425,10 +425,10 @@ const apiData = {
               fontSize: '14px'
             }}>
               <div style={{ display: 'flex', justifyContent: 'center', gap: '30px', flexWrap: 'wrap' }}>
-                <div><strong>{t('home.chart.sun')}:</strong> {chartData.sun_sign_ru || chartData.sun_sign || '—'}</div>
-                <div><strong>{t('home.chart.moon')}:</strong> {chartData.moon_sign_ru || chartData.moon_sign || '—'}</div>
-                <div><strong>{t('home.chart.ascendant')}:</strong> {chartData.ascendant_ru || chartData.ascendant || '—'}</div>
-                <div><strong>{t('home.chart.mc')}:</strong> {chartData.mc_ru || chartData.mc || '—'}</div>
+                <div><strong>{t('home.chart.sun')}:</strong> {chartData.sun_sign ? t(`planets.signs.${chartData.sun_sign}`) : '—'}</div>
+                <div><strong>{t('home.chart.moon')}:</strong> {chartData.moon_sign ? t(`planets.signs.${chartData.moon_sign}`) : '—'}</div>
+                <div><strong>{t('home.chart.ascendant')}:</strong> {chartData.ascendant ? t(`planets.signs.${chartData.ascendant}`) : '—'}</div>
+                <div><strong>{t('home.chart.mc')}:</strong> {chartData.mc ? t(`planets.signs.${chartData.mc}`) : '—'}</div>
               </div>
             </div>
 

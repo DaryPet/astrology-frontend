@@ -6,9 +6,6 @@ import { useTranslation } from 'react-i18next';
 const languages = [
   { code: 'ru', name: 'Русский' },
   { code: 'en', name: 'English' },
-  { code: 'es', name: 'Español' },
-  { code: 'de', name: 'Deutsch' },
-  { code: 'fr', name: 'Français' },
 ];
 
 const Header = () => {
