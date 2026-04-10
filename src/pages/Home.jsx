@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { geocodeAPI, astrologyAPI } from '../services/api'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../context/AuthContext'
@@ -14,8 +14,11 @@ import ProcessingMessage from '../components/ProcessingMessage'
 
 function Home() {
   const navigate = useNavigate()
+  const { lang } = useParams()
   const { t, i18n: i18nInstance } = useTranslation()
   const { isAuthenticated } = useAuth()
+
+  const currentLang = lang || i18n.language || 'ru'
 
   const [formData, setFormData] = useState({
     name: '',
@@ -227,9 +230,9 @@ function Home() {
     localStorage.setItem('chartDataForAnalysis', JSON.stringify(chartDataForAnalysis));
     
     if (!isAuthenticated) {
-      navigate('/login', { state: { from: '/', chartDataForAnalysis, showFullAnalysis: true } })
+      navigate(`/${currentLang}/login`, { state: { from: '/', chartDataForAnalysis, showFullAnalysis: true } })
     } else {
-      navigate('/dashboard', { state: { showFullAnalysis: true, chartDataForAnalysis } })
+      navigate(`/${currentLang}/dashboard`, { state: { showFullAnalysis: true, chartDataForAnalysis } })
     }
   }
 
@@ -422,10 +425,10 @@ const apiData = {
               fontSize: '14px'
             }}>
               <div style={{ display: 'flex', justifyContent: 'center', gap: '30px', flexWrap: 'wrap' }}>
-                <div><strong>{t('home.chart.sun')}:</strong> {chartData.sun_sign || '—'}</div>
-                <div><strong>{t('home.chart.moon')}:</strong> {chartData.moon_sign || '—'}</div>
-                <div><strong>{t('home.chart.ascendant')}:</strong> {chartData.ascendant || '—'}</div>
-                <div><strong>{t('home.chart.mc')}:</strong> {chartData.mc || '—'}</div>
+                <div><strong>{t('home.chart.sun')}:</strong> {chartData.sun_sign_ru || chartData.sun_sign || '—'}</div>
+                <div><strong>{t('home.chart.moon')}:</strong> {chartData.moon_sign_ru || chartData.moon_sign || '—'}</div>
+                <div><strong>{t('home.chart.ascendant')}:</strong> {chartData.ascendant_ru || chartData.ascendant || '—'}</div>
+                <div><strong>{t('home.chart.mc')}:</strong> {chartData.mc_ru || chartData.mc || '—'}</div>
               </div>
             </div>
 

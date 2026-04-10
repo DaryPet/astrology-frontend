@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useParams } from 'react-router-dom';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import { useAuth } from '../context/AuthContext';
@@ -8,12 +8,15 @@ import Header from '../components/Header';
 
 const Register = () => {
   const navigate = useNavigate();
+  const { lang } = useParams();
   const { signUp, signInWithGoogle } = useAuth();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [emailSent, setEmailSent] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+
+  const currentLang = lang || i18n.language || 'ru';
 
   const initialValues = {
     name: '',
@@ -45,7 +48,7 @@ const Register = () => {
       const data = await signUp(values.email, values.password, values.name);
 
       if (data.session) {
-        navigate('/dashboard');
+        navigate(`/${currentLang}/dashboard`);
       } else {
         setEmailSent(true);
       }
@@ -81,7 +84,7 @@ const Register = () => {
             </div>
             <div className="auth-footer">
               <p>
-                <Link to="/login" className="auth-link">{t('register.confirmEmail.loginAfter')}</Link>
+                <Link to={`/${currentLang}/login`} className="auth-link">{t('register.confirmEmail.loginAfter')}</Link>
               </p>
             </div>
           </div>
@@ -210,10 +213,10 @@ const Register = () => {
 
           <div className="auth-footer">
             <p>
-              {t('register.hasAccount')} <Link to="/login" className="auth-link">{t('register.loginLink')}</Link>
+              {t('register.hasAccount')} <Link to={`/${currentLang}/login`} className="auth-link">{t('register.loginLink')}</Link>
             </p>
             <p>
-              <Link to="/" className="auth-link">{t('register.backHome')}</Link>
+              <Link to={`/${currentLang}/`} className="auth-link">{t('register.backHome')}</Link>
             </p>
           </div>
         </div>

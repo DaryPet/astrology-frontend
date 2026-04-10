@@ -1,43 +1,50 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 
 const languages = [
   { code: 'ru', name: 'Русский' },
   { code: 'en', name: 'English' },
+  { code: 'es', name: 'Español' },
+  { code: 'de', name: 'Deutsch' },
+  { code: 'fr', name: 'Français' },
 ];
 
 const Header = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, signOut } = useAuth();
   const { t, i18n } = useTranslation();
+  const { lang } = useParams();
   const [langOpen, setLangOpen] = useState(false);
+
+  const currentLangCode = lang || i18n.language || 'ru';
+  const currentLang = languages.find(l => l.code === currentLangCode) || languages[0];
 
   const handleLogout = async () => {
     await signOut();
-    navigate('/');
+    navigate(`/${currentLangCode}/`);
   };
 
-  const changeLanguage = (lang) => {
-    i18n.changeLanguage(lang);
+  const changeLanguage = (langCode) => {
+    i18n.changeLanguage(langCode);
+    const currentPath = window.location.pathname.replace(/^\/(ru|en|es|de|fr)/, '');
+    window.location.href = `/${langCode}${currentPath || '/'}`;
     setLangOpen(false);
   };
-
-  const currentLang = languages.find(l => l.code === i18n.language) || languages[0];
 
   return (
     <header className="header">
       <div className="container header-content">
-        <div className="logo" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
+        <div className="logo" onClick={() => navigate(`/${currentLangCode}/`)} style={{ cursor: 'pointer' }}>
           {t('chart.logo')}
         </div>
         <nav className="nav">
-          <Link to="/" className="nav-link">{t('nav.home')}</Link>
-          <Link to="/synastry" className="nav-link">{t('nav.synastry')}</Link>
+          <Link to={`/${currentLangCode}/`} className="nav-link">{t('nav.home')}</Link>
+          <Link to={`/${currentLangCode}/synastry`} className="nav-link">{t('nav.synastry')}</Link>
           {isAuthenticated ? (
             <>
-              <Link to="/dashboard" className="nav-link">{t('nav.dashboard')}</Link>
+              <Link to={`/${currentLangCode}/dashboard`} className="nav-link">{t('nav.dashboard')}</Link>
               <div className="user-info">
                 <span className="user-name">{user?.user_metadata?.name || user?.email}</span>
                 <button className="btn-logout" onClick={handleLogout}>{t('nav.logout')}</button>
@@ -45,8 +52,8 @@ const Header = () => {
             </>
           ) : (
             <div className="auth-buttons">
-              <Link to="/login" className="btn-login">{t('nav.login')}</Link>
-              <Link to="/register" className="btn-register">{t('nav.register')}</Link>
+              <Link to={`/${currentLangCode}/login`} className="btn-login">{t('nav.login')}</Link>
+              <Link to={`/${currentLangCode}/register`} className="btn-register">{t('nav.register')}</Link>
             </div>
           )}
         </nav>
@@ -90,18 +97,18 @@ const Header = () => {
                     display: 'block',
                     width: '100%',
                     padding: '10px 16px',
-                    background: i18n.language === lang.code ? 'var(--accent)' : 'transparent',
-                    color: i18n.language === lang.code ? '#fff' : 'var(--text-primary)',
+                    background: currentLangCode === lang.code ? 'var(--accent)' : 'transparent',
+                    color: currentLangCode === lang.code ? '#fff' : 'var(--text-primary)',
                     border: 'none',
                     textAlign: 'left',
                     cursor: 'pointer',
                     fontSize: '14px'
                   }}
                   onMouseEnter={(e) => {
-                    if (i18n.language !== lang.code) e.target.style.background = 'var(--bg-secondary)';
+                    if (currentLangCode !== lang.code) e.target.style.background = 'var(--bg-secondary)';
                   }}
                   onMouseLeave={(e) => {
-                    if (i18n.language !== lang.code) e.target.style.background = 'transparent';
+                    if (currentLangCode !== lang.code) e.target.style.background = 'transparent';
                   }}
                 >
                   {lang.name}

@@ -7,24 +7,25 @@ import Header from '../components/Header';
 const Logout = () => {
   const navigate = useNavigate();
   const { signOut } = useAuth();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+
+  const currentLang = i18n.language || 'ru';
 
   useEffect(() => {
     const performLogout = async () => {
       try {
-        // Очищаем только данные, связанные с авторизованным пользователем
         localStorage.removeItem('savedFullAnalysis');
         localStorage.removeItem('chartDataForAnalysis');
         await signOut();
       } catch (error) {
         console.log('Logout error:', error);
       } finally {
-        navigate('/');
+        navigate(`/${currentLang}/`);
       }
     };
 
     performLogout();
-  }, [navigate, signOut]);
+  }, [navigate, signOut, currentLang]);
 
   return (
     <div className="logout-page">

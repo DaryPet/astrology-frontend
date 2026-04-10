@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { astrologyAPI } from '../services/api';
@@ -11,8 +11,11 @@ import MarkdownContent from '../components/MarkdownContent';
 const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { lang } = useParams();
   const { user, isAuthenticated, loading, signOut } = useAuth();
   const { t } = useTranslation();
+
+  const currentLang = lang || i18n.language || 'ru';
 
   const [showFullAnalysis, setShowFullAnalysis] = useState(false);
   const [chartDataForAnalysis, setChartDataForAnalysis] = useState(null);
@@ -22,7 +25,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
-      navigate('/login');
+      navigate(`/${currentLang}/login`);
     }
   }, [loading, isAuthenticated, navigate]);
 
@@ -93,7 +96,7 @@ const Dashboard = () => {
     localStorage.removeItem('savedFullAnalysis');
     localStorage.removeItem('chartDataForAnalysis');
     await signOut();
-    navigate('/');
+    navigate(`/${currentLang}/`);
   };
 
   if (loading) {
@@ -193,10 +196,10 @@ const Dashboard = () => {
           </div>
 
           <div className="dashboard-actions">
-            <button className="btn-primary" onClick={() => navigate('/')}>
+            <button className="btn-primary" onClick={() => navigate(`/${currentLang}/`)}>
               {t('dashboard.actions.newChart')}
             </button>
-            <button className="btn-secondary" onClick={() => navigate('/synastry')}>
+            <button className="btn-secondary" onClick={() => navigate(`/${currentLang}/synastry`)}>
               {t('dashboard.actions.synastry')}
             </button>
             <button className="btn-logout" onClick={handleLogout}>
