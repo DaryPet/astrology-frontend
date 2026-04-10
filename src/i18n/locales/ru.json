@@ -2,7 +2,7 @@
   "nav": {
     "home": "Главная",
     "synastry": "Синастрия",
-    "dashboard": "Dashboard",
+    "dashboard": "Мой кабинет",
     "login": "Войти",
     "register": "Регистрация",
     "logout": "Выйти"
@@ -109,7 +109,7 @@
     }
   },
   "dashboard": {
-    "title": "Dashboard",
+    "title": "Моя карта",
     "subtitle": "Добро пожаловать в ваш личный кабинет",
     "userInfo": {
       "title": "Информация о пользователе",

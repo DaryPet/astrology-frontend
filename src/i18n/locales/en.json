@@ -109,7 +109,7 @@
     }
   },
   "dashboard": {
-    "title": "Dashboard",
+    "title": "My Chart",
     "subtitle": "Welcome to your personal account",
     "userInfo": {
       "title": "User Information",

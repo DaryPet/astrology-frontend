@@ -17,7 +17,7 @@ i18n
     resources,
 
     fallbackLng: 'ru',
-    supportedLngs: ['ru', 'en', 'es', 'de', 'fr'],
+    supportedLngs: ['ru', 'en'],
 
     detection: {
       order: ['path', 'localStorage', 'navigator'],

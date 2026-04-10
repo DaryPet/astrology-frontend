@@ -118,12 +118,7 @@ const Dashboard = () => {
     <div className="dashboard">
       <Header />
 
-      <div className="container">
-        <div className="dashboard-header">
-          <h1>{t('dashboard.title')}</h1>
-          <p>{t('dashboard.subtitle')}</p>
-        </div>
-
+      <div className="container" style={{ paddingTop: '40px' }}>
         <div className="dashboard-content">
           {showFullAnalysis && (
             <div className="dashboard-card full-analysis-card">

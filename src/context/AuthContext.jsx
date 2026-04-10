@@ -53,8 +53,10 @@ export const AuthProvider = ({ children }) => {
   };
 
   const resetPassword = async (email) => {
+    const pathParts = window.location.pathname.split('/');
+    const lang = pathParts[1] || 'ru';
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`
+      redirectTo: `${window.location.origin}/${lang}/reset-password`
     });
     if (error) throw error;
   };
@@ -66,10 +68,12 @@ export const AuthProvider = ({ children }) => {
   };
 
   const signInWithGoogle = async () => {
+    const pathParts = window.location.pathname.split('/');
+    const lang = pathParts[1] || 'ru';
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/dashboard`
+        redirectTo: `${window.location.origin}/${lang}/dashboard`
       }
     });
     if (error) throw error;
