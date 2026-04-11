@@ -125,7 +125,14 @@ const Dashboard = () => {
             <div className="dashboard-content">
               {showFullAnalysis && (
                 <>
-                  <h2 style={{ marginBottom: '30px' }}>{t('dashboard.fullAnalysis.title')}</h2>
+                  <h2 style={{ marginBottom: '20px' }}>
+                    {chartDataForAnalysis?.name && (
+                      <span style={{ fontWeight: '500', marginRight: '10px' }}>
+                        {chartDataForAnalysis.name}
+                      </span>
+                    )}
+                    {t('dashboard.fullAnalysis.title')}
+                  </h2>
                   
                   {analysisLoading && (
                     <div style={{ marginTop: '40px' }}>

@@ -202,7 +202,8 @@ function Home() {
       latitude: formData.latitude,
       longitude: formData.longitude,
       timezone: formData.timezone,
-      jd: chartData.jd
+      jd: chartData.jd,
+      name: formData.name?.trim() || (i18n.language === 'ru' ? 'Карта 1' : 'Chart 1')
     }
 
     return {
@@ -220,6 +221,7 @@ function Home() {
       houses,
       houses_meta,
       meta,
+      name: formData.name?.trim() || (i18n.language === 'ru' ? 'Карта 1' : 'Chart 1'),
       aspects: chartData.aspects || []
     }
   }
@@ -307,12 +309,15 @@ const apiData = {
       })
     };
     
+    const chartName = formData.name?.trim() || (i18n.language === 'ru' ? 'Карта 1' : 'Chart 1')
+    
     const chartDataToSave = {
       ...response,
       planets: enhancedPlanets,
       vertex: response.houses_meta?.vertex !== undefined 
         ? { longitude: response.houses_meta.vertex.longitude } 
-        : null
+        : null,
+      name: chartName
     }
     
     setChartData(chartDataToSave)
@@ -408,9 +413,19 @@ const apiData = {
             borderRadius: '12px',
             border: '1px solid var(--border)'
           }}>
-            <h2 style={{ marginBottom: '30px', color: 'var(--text-primary)' }}>
+            <h2 style={{ marginBottom: '10px', color: 'var(--text-primary)' }}>
               {t('home.chart.title')}
             </h2>
+            {chartData.name && (
+              <p style={{ 
+                fontSize: '18px', 
+                color: 'var(--text-secondary)', 
+                marginBottom: '20px',
+                fontWeight: '500'
+              }}>
+                {chartData.name}
+              </p>
+            )}
             <div style={{ display: 'flex', justifyContent: 'center' }}>
               <AstroChartComponent  
                 chartData={chartData}

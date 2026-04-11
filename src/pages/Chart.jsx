@@ -111,7 +111,7 @@ function Chart() {
         <div className="chart-header">
           <h1>{t('chart.title')}</h1>
           <p className="chart-subtitle">
-            {chart.sun_sign} • {chart.moon_sign} • ASC {chart.ascendant}
+            {chart.name && `${chart.name} • `}{chart.sun_sign} • {chart.moon_sign} • ASC {chart.ascendant}
           </p>
         </div>
 
