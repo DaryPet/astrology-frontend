@@ -32,6 +32,7 @@ function Home() {
   
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [nameError, setNameError] = useState('')
   const [chartData, setChartData] = useState(null)
   const [selectedPlanet, setSelectedPlanet] = useState(null)
   const [planetAnalysis, setPlanetAnalysis] = useState(null)
@@ -55,6 +56,7 @@ function Home() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
+    if (name === 'name') setNameError('')
     setFormData(prev => ({ ...prev, [name]: value }))
   }
 
@@ -202,7 +204,8 @@ function Home() {
       latitude: formData.latitude,
       longitude: formData.longitude,
       timezone: formData.timezone,
-      jd: chartData.jd
+      jd: chartData.jd,
+      name: chartData.name || formData.name?.trim()
     }
 
     return {
@@ -220,6 +223,7 @@ function Home() {
       houses,
       houses_meta,
       meta,
+      name: chartData.name || formData.name?.trim(),
       aspects: chartData.aspects || []
     }
   }
@@ -261,6 +265,12 @@ const handleSubmit = async (e) => {
   e.preventDefault()
   setLoading(true)
   setError('')
+  
+  if (!formData.name?.trim()) {
+    setNameError(i18n.language === 'ru' ? 'Введите название карты' : 'Enter chart name')
+    setLoading(false)
+    return
+  }
   
 const apiData = {
   birth_date: `${formData.birth_date}T${formData.birth_time}:00`,
@@ -307,12 +317,15 @@ const apiData = {
       })
     };
     
+    const chartName = formData.name?.trim()
+    
     const chartDataToSave = {
       ...response,
       planets: enhancedPlanets,
       vertex: response.houses_meta?.vertex !== undefined 
         ? { longitude: response.houses_meta.vertex.longitude } 
-        : null
+        : null,
+      name: chartName
     }
     
     setChartData(chartDataToSave)
@@ -346,7 +359,7 @@ const apiData = {
             
             <form onSubmit={handleSubmit}>
               <div className="form-group">
-                <label>{t('home.form.name')}</label>
+                <label>{t('home.form.name')} *</label>
                 <input
                   type="text"
                   name="name"
@@ -354,6 +367,7 @@ const apiData = {
                   onChange={handleInputChange}
                   placeholder={t('home.form.namePlaceholder')}
                 />
+                {nameError && <div style={{color: 'red', fontSize: '12px', marginTop: '4px'}}>{nameError}</div>}
               </div>
 
               <div className="form-row">
@@ -408,9 +422,19 @@ const apiData = {
             borderRadius: '12px',
             border: '1px solid var(--border)'
           }}>
-            <h2 style={{ marginBottom: '30px', color: 'var(--text-primary)' }}>
+            <h2 style={{ marginBottom: '10px', color: 'var(--text-primary)' }}>
               {t('home.chart.title')}
             </h2>
+            {chartData.name && (
+              <p style={{ 
+                fontSize: '18px', 
+                color: 'var(--text-secondary)', 
+                marginBottom: '20px',
+                fontWeight: '500'
+              }}>
+                {chartData.name}
+              </p>
+            )}
             <div style={{ display: 'flex', justifyContent: 'center' }}>
               <AstroChartComponent  
                 chartData={chartData}

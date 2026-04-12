@@ -14,7 +14,7 @@
     "title": "Natal Chart Calculator",
     "subtitle": "Professional astrological birth chart calculation using Swiss Ephemeris",
     "form": {
-      "name": "Name (optional)",
+"name": "Name *",
       "namePlaceholder": "Enter your name",
       "birthDate": "Date of birth *",
       "birthTime": "Time of birth *",
