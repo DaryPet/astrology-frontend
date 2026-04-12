@@ -32,6 +32,7 @@ function Home() {
   
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [nameError, setNameError] = useState('')
   const [chartData, setChartData] = useState(null)
   const [selectedPlanet, setSelectedPlanet] = useState(null)
   const [planetAnalysis, setPlanetAnalysis] = useState(null)
@@ -55,6 +56,7 @@ function Home() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
+    if (name === 'name') setNameError('')
     setFormData(prev => ({ ...prev, [name]: value }))
   }
 
@@ -203,7 +205,7 @@ function Home() {
       longitude: formData.longitude,
       timezone: formData.timezone,
       jd: chartData.jd,
-      name: formData.name?.trim() || (i18n.language === 'ru' ? 'Карта 1' : 'Chart 1')
+      name: chartData.name || formData.name?.trim()
     }
 
     return {
@@ -221,7 +223,7 @@ function Home() {
       houses,
       houses_meta,
       meta,
-      name: formData.name?.trim() || (i18n.language === 'ru' ? 'Карта 1' : 'Chart 1'),
+      name: chartData.name || formData.name?.trim(),
       aspects: chartData.aspects || []
     }
   }
@@ -263,6 +265,12 @@ const handleSubmit = async (e) => {
   e.preventDefault()
   setLoading(true)
   setError('')
+  
+  if (!formData.name?.trim()) {
+    setNameError(i18n.language === 'ru' ? 'Введите название карты' : 'Enter chart name')
+    setLoading(false)
+    return
+  }
   
 const apiData = {
   birth_date: `${formData.birth_date}T${formData.birth_time}:00`,
@@ -309,7 +317,7 @@ const apiData = {
       })
     };
     
-    const chartName = formData.name?.trim() || (i18n.language === 'ru' ? 'Карта 1' : 'Chart 1')
+    const chartName = formData.name?.trim()
     
     const chartDataToSave = {
       ...response,
@@ -351,7 +359,7 @@ const apiData = {
             
             <form onSubmit={handleSubmit}>
               <div className="form-group">
-                <label>{t('home.form.name')}</label>
+                <label>{t('home.form.name')} *</label>
                 <input
                   type="text"
                   name="name"
@@ -359,6 +367,7 @@ const apiData = {
                   onChange={handleInputChange}
                   placeholder={t('home.form.namePlaceholder')}
                 />
+                {nameError && <div style={{color: 'red', fontSize: '12px', marginTop: '4px'}}>{nameError}</div>}
               </div>
 
               <div className="form-row">

@@ -9,6 +9,22 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const ensureUserProfile = async (userId) => {
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('id')
+      .eq('id', userId)
+      .single();
+
+    if (!existingUser) {
+      const { data: { user } } = await supabase.auth.getUser();
+      const userData = user?.user_metadata || {};
+      await supabase
+        .from('users')
+        .insert({ id: userId, name: userData.name || null });
+    }
+  };
+
   useEffect(() => {
     // Проверяем текущую сессию при загрузке
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -19,6 +35,10 @@ export const AuthProvider = ({ children }) => {
     // Слушаем изменения авторизации (вход/выход)
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        ensureUserProfile(session.user.id);
+      }
     });
 
     return () => {
@@ -27,6 +47,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const signUp = async (email, password, name = '') => {
+    console.log('=== AuthContext.signUp ===', email);
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -34,20 +55,35 @@ export const AuthProvider = ({ children }) => {
         data: { name }
       }
     });
+    console.log('=== supabase.signUp result ===', { data, error });
     if (error) throw error;
+
+    if (data.user) {
+      const { error: userError } = await supabase
+        .from('users')
+        .insert({ id: data.user.id, name: name || null });
+      if (userError) {
+        console.error('Error creating user profile:', userError);
+      }
+    }
+
     return data;
   };
 
   const signIn = async (email, password) => {
+    console.log('=== AuthContext.signIn ===', email);
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password
     });
+    console.log('=== supabase.signIn result ===', { data, error });
     if (error) throw error;
     return data;
   };
 
   const signOut = async () => {
+    localStorage.removeItem('auth_token');
+    setUser(null);
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
   };
@@ -68,14 +104,17 @@ export const AuthProvider = ({ children }) => {
   };
 
   const signInWithGoogle = async () => {
+    console.log('=== AuthContext.signInWithGoogle ===');
     const pathParts = window.location.pathname.split('/');
     const lang = pathParts[1] || 'ru';
+    console.log('=== redirectTo ===', `${window.location.origin}/${lang}/dashboard`);
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/${lang}/dashboard`
       }
     });
+    console.log('=== supabase.signInWithOAuth result ===', { data, error });
     if (error) throw error;
     return data;
   };
