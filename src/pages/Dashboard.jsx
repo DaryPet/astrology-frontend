@@ -234,6 +234,40 @@ const Dashboard = () => {
           {/* Основной контент */}
           <div style={{ flex: '1 1 600px' }}>
             <div className="dashboard-content">
+              {/* Кнопка "Получить полный анализ" — видна если пользователь залогинен и есть данные карты */}
+              {chartDataForAnalysis && isAuthenticated && (
+                <button
+                  type="button"
+                  className="btn-full-analysis"
+                  onClick={() => {
+                    setShowFullAnalysis(true);
+                    loadFullAnalysis();
+                  }}
+                  disabled={analysisLoading}
+                  style={{
+                    marginTop: '24px',
+                    marginLeft: 'auto',
+                    marginRight: 'auto',
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    color: 'white',
+                    padding: analysisLoading ? '30px 28px' : '14px 28px',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    cursor: analysisLoading ? 'default' : 'pointer',
+                    transition: 'transform 0.2s, box-shadow 0.2s',
+                    opacity: analysisLoading ? 0.8 : 1,
+                    minWidth: '280px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  {analysisLoading ? t('home.getFullAnalysis') : t('home.getFullAnalysis')}
+                </button>
+              )}
+
               {showFullAnalysis && (
                 <>
                   <h2 style={{ marginBottom: '20px' }}>
@@ -244,19 +278,19 @@ const Dashboard = () => {
                     )}
                     {t('dashboard.fullAnalysis.title')}
                   </h2>
-                  
+                   
                   {analysisLoading && (
                     <div style={{ marginTop: '40px' }}>
                       <ProcessingMessage />
                     </div>
                   )}
-                  
+                   
                   {analysisError && (
                     <div className="error-message" style={{ marginTop: '20px' }}>
                       {analysisError}
                     </div>
                   )}
-                  
+                   
                   {fullAnalysis && (
                     <div style={{ 
                       marginTop: '40px', 
