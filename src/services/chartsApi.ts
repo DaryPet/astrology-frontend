@@ -119,6 +119,13 @@ export const chartsApi = {
   },
 
   async deleteChart(chartId: number) {
+    // Сначала удаляем интерпретации
+    await supabase
+      .from('chart_interpretations')
+      .delete()
+      .eq('chart_id', chartId)
+    
+    // Потом карту
     const { error } = await supabase
       .from('natal_charts')
       .delete()

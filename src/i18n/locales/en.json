@@ -314,12 +314,21 @@
       "notFoundDesc": "This chart has no significant aspects between planets"
     }
   },
-"analysis": {
-     "planetAnalysis": "Planet Analysis",
-     "loading": "Loading analysis...",
-     "processing": "Your analysis is being processed",
-     "processingHint": "This may take 2-5 minutes. Please wait...",
-     "error": "Error loading analysis",
-     "noData": "No data available for this planet"
-   }
-}
+    "analysis": {
+      "planetAnalysis": "Planet Analysis",
+      "loading": "Loading analysis...",
+      "processing": "Your analysis is being processed",
+      "processingHint": "This may take 2-5 minutes. Please wait...",
+      "error": "Error loading analysis",
+      "noData": "No data available for this planet"
+    },
+    "history": {
+      "saved": "Saved",
+      "empty": "History is empty",
+      "confirmDelete": "Delete this chart?",
+      "limitReached": "Chart limit reached",
+      "selectToDelete": "Select a chart to delete",
+      "cancel": "Cancel",
+      "delete": "Delete"
+    }
+  }

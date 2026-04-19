@@ -231,7 +231,13 @@ function Home() {
   const handleFullAnalysisClick = async () => {
     const chartDataForAnalysis = prepareChartDataForAnalysis(chartData)
     console.log('=== ОТПРАВЛЯЕМ НА ДАШБОРД ===', chartDataForAnalysis);
+    // Чистим всё старое ДО перехода
+  localStorage.removeItem('savedFullAnalysis')
+  localStorage.removeItem('savedChartId')
+  localStorage.removeItem('chartDataForAnalysis')
     localStorage.setItem('chartDataForAnalysis', JSON.stringify(chartDataForAnalysis));
+    localStorage.removeItem('savedFullAnalysis')  // ← ДОБАВИТЬ ЭТУ СТРОКУ
+    localStorage.removeItem('savedChartId') 
     
     if (!isAuthenticated) {
       navigate(`/${currentLang}/login`, { state: { from: '/', chartDataForAnalysis, showFullAnalysis: true } })
@@ -331,6 +337,7 @@ const apiData = {
     setChartData(chartDataToSave)
     // Сохраняем данные карты в localStorage
     localStorage.setItem('savedChartData', JSON.stringify(chartDataToSave))
+    localStorage.removeItem('savedChartId')
   } catch (err) {
     console.error('Ошибка API:', err.response?.data)
     setError(err.response?.data?.detail || t('home.errors.calcError'))

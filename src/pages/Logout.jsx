@@ -16,6 +16,7 @@ const Logout = () => {
       try {
         localStorage.removeItem('savedFullAnalysis');
         localStorage.removeItem('chartDataForAnalysis');
+        localStorage.removeItem('savedChartId');
         await signOut();
       } catch (error) {
         console.log('Logout error:', error);

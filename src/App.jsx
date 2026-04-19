@@ -52,7 +52,7 @@ function AppRoutes() {
       <Route path="/:lang/" element={<Home />} />
       <Route path="/:lang/chart/:id" element={<Chart />} />
       <Route path="/:lang/synastry" element={<Synastry />} />
-      <Route path="/:lang/dashboard" element={<Dashboard />} />
+      <Route path="/:lang/dashboard"  element={<Dashboard key={location.key} />}  />
       <Route path="/:lang/login" element={<Login />} />
       <Route path="/:lang/register" element={<Register />} />
       <Route path="/:lang/logout" element={<Logout />} />
