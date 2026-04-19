@@ -128,7 +128,7 @@ function DeleteChartModal({ isOpen, onClose, onDeleted }) {
                     {getSunSignEmoji(chart.sun_sign)} {chart.name || chart.chart_interpretations?.[0]?.name || 'Карта'}
                   </div>
                   <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                    {chart.chart_data?.birth_date?.split('T')[0] || '—'} • {chart.chart_data?.birth_place || '—'}
+                    {chart.chart_data?.meta?.birth_date?.split('T')[0] || '—'} • {chart.chart_data?.meta?.birth_place || '—'}
                   </div>
                   <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
                     📅 {formatDate(chart.created_at)}

@@ -9,7 +9,6 @@ import Header from '../components/Header';
 import ProcessingMessage from '../components/ProcessingMessage';
 import MarkdownContent from '../components/MarkdownContent';
 import DeleteChartModal from '../components/DeleteChartModal';
-import HistoryDrawer from '../components/HistoryDrawer';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -26,9 +25,15 @@ const Dashboard = () => {
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [analysisError, setAnalysisError] = useState('');
   const [saving, setSaving] = useState(false);
+  // const [savedChartId, setSavedChartId] = useState(() => {
+  //   const saved = localStorage.getItem('savedChartId');
+  //   return saved ? parseInt(saved, 10) : null;
+  // });
   const [savedChartId, setSavedChartId] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [historyCharts, setHistoryCharts] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -36,7 +41,7 @@ const Dashboard = () => {
     }
   }, [loading, isAuthenticated, navigate]);
 
-  // Читаем данные и сохраненный анализ из localStorage при загрузке
+  // Читаем данные из localStorage при загрузке
   useEffect(() => {
     const savedData = localStorage.getItem('chartDataForAnalysis');
     if (savedData && !chartDataForAnalysis) {
@@ -60,8 +65,13 @@ const Dashboard = () => {
 
   useEffect(() => {
     const state = location.state;
-    console.log('=== LOCATION.STATE ===', state);
+    
     if (state?.showFullAnalysis && state?.chartDataForAnalysis) {
+      // Новая карта — сбрасываем всё старое
+      setFullAnalysis(null);
+      setSavedChartId(null);
+      localStorage.removeItem('savedFullAnalysis');
+      localStorage.removeItem('savedChartId');
       setShowFullAnalysis(true);
       setChartDataForAnalysis(state.chartDataForAnalysis);
     }
@@ -87,7 +97,6 @@ const Dashboard = () => {
       console.log('=== ОТВЕТ ОТ СЕРВЕРА ===', result);
       console.log('=== ANALYSIS ===', result.analysis);
       setFullAnalysis(result.analysis);
-      // Сохраняем анализ в localStorage
       localStorage.setItem('savedFullAnalysis', result.analysis);
     } catch (err) {
       console.error('Full analysis error:', err);
@@ -116,6 +125,7 @@ const Dashboard = () => {
         fullAnalysis
       )
       setSavedChartId(saved.id)
+      localStorage.setItem('savedChartId', saved.id.toString())
     } catch (err) {
       console.error('Save error:', err)
     } finally {
@@ -127,6 +137,7 @@ const Dashboard = () => {
     // Очищаем localStorage при выходе
     localStorage.removeItem('savedFullAnalysis');
     localStorage.removeItem('chartDataForAnalysis');
+    localStorage.removeItem('savedChartId');
     await signOut();
     navigate(`/${currentLang}/`);
   };
@@ -143,8 +154,61 @@ const Dashboard = () => {
     if (interp?.interpretation) {
       setFullAnalysis(interp.interpretation)
       setShowFullAnalysis(true)
+      // Сохраняем в localStorage
+      localStorage.setItem('chartDataForAnalysis', JSON.stringify(chart.chart_data))
+      localStorage.setItem('savedFullAnalysis', interp.interpretation)
+      // Записываем ID карты чтобы кнопка "Сохранить" не появилась
+      localStorage.setItem('savedChartId', chart.id.toString())
+      setSavedChartId(chart.id)
     }
   };
+
+  const loadHistoryCharts = async () => {
+    if (!user) return
+    setHistoryLoading(true)
+    try {
+      const data = await chartsApi.getCharts(user.id)
+      setHistoryCharts(data)
+    } catch (err) {
+      console.error('Load charts error:', err)
+    } finally {
+      setHistoryLoading(false)
+    }
+  };
+
+  const handleDeleteFromHistory = async (chartId, e) => {
+    e.stopPropagation()
+    if (!confirm(t('history.confirmDelete'))) return
+    try {
+      await chartsApi.deleteChart(chartId)
+      loadHistoryCharts()
+    } catch (err) {
+      console.error('Delete error:', err)
+    }
+  };
+
+  const getSunSignEmoji = (sign) => {
+    const fireSigns = ['Aries', 'Leo', 'Sagittarius']
+    const earthSigns = ['Taurus', 'Virgo', 'Capricorn']
+    const airSigns = ['Gemini', 'Libra', 'Aquarius']
+    const waterSigns = ['Cancer', 'Scorpio', 'Pisces']
+    if (fireSigns.includes(sign)) return '🔥'
+    if (earthSigns.includes(sign)) return '🌍'
+    if (airSigns.includes(sign)) return '💨'
+    if (waterSigns.includes(sign)) return '💧'
+    return '🌟'
+  };
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return ''
+    return new Date(dateStr).toLocaleDateString()
+  };
+
+  useEffect(() => {
+    if (showHistory && user) {
+      loadHistoryCharts()
+    }
+  }, [showHistory, user]);
 
   if (loading) {
     return (
@@ -199,7 +263,7 @@ const Dashboard = () => {
                       lineHeight: '2',
                       fontSize: '16px'
                     }}>
-                      {!savedChartId && (
+                      {!savedChartId && !analysisLoading &&(
                       <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
                         <button 
                           className="btn btn-primary"
@@ -223,19 +287,76 @@ const Dashboard = () => {
             <div className="dashboard-card">
               {t('dashboard.features.title') && <h2>{t('dashboard.features.title')}</h2>}
               <div className="future-features">
-                <div className="feature" onClick={() => setShowHistory(true)} style={{ cursor: 'pointer' }}>
+                <div 
+                  className="feature" 
+                  onClick={() => setShowHistory(!showHistory)} 
+                  style={{ cursor: 'pointer' }}
+                >
                   <div className="feature-icon">📊</div>
-                  <div className="feature-content">
-                    <h3>{t('dashboard.features.history.title')}</h3>
+                  <div className="feature-content" style={{ flex: 1 }}>
+                    <h3>
+                      {t('dashboard.features.history.title')} 
+                      <span style={{ float: 'right', fontSize: '12px' }}>
+                        {showHistory ? '▼' : '▶'}
+                      </span>
+                    </h3>
                   </div>
                 </div>
-                <div className="feature">
-                  <div className="feature-icon">⭐</div>
-                  <div className="feature-content">
-                    <h3>{t('dashboard.features.favorites.title')}</h3>
-                    <p>{t('dashboard.features.favorites.desc')}</p>
+                
+                {showHistory && (
+                  <div style={{ 
+                    padding: '12px', 
+                    background: 'var(--bg-secondary)', 
+                    borderRadius: '8px',
+                    marginTop: '8px'
+                  }}>
+                    {historyLoading ? (
+                      <div className="loading">{t('common.loading')}</div>
+                    ) : historyCharts.length === 0 ? (
+                      <div style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '20px 0' }}>
+                        {t('history.empty')}
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {historyCharts.map((chart) => (
+                          <div
+                            key={chart.id}
+                            onClick={() => handleSelectChart(chart)}
+                            style={{
+                              padding: '10px',
+                              background: 'var(--bg-card)',
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              border: '1px solid var(--border)'
+                            }}
+                          >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                              <div style={{ fontSize: '13px', fontWeight: '600' }}>
+                                {getSunSignEmoji(chart.sun_sign)} {chart.name || 'Карта'}
+                              </div>
+                              <button
+                                onClick={(e) => handleDeleteFromHistory(chart.id, e)}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  fontSize: '14px',
+                                  cursor: 'pointer',
+                                  padding: '2px'
+                                }}
+                              >
+                                🗑️
+                              </button>
+                            </div>
+                            <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                              📅 {chart.chart_data?.meta?.birth_date?.split('T')[0] || '—'} • 📍 {chart.chart_data?.meta?.birth_place || '—'}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                </div>
+                )}
+                
                 <div className="feature">
                   <div className="feature-icon">👥</div>
                   <div className="feature-content">
@@ -246,7 +367,18 @@ const Dashboard = () => {
               </div>
 
               <button 
-                onClick={() => navigate(`/${currentLang}/`)}
+                onClick={() => {
+                  localStorage.removeItem('savedChartData')
+                  localStorage.removeItem('chartDataForAnalysis')
+                  localStorage.removeItem('savedFullAnalysis')
+                  localStorage.removeItem('savedChartId')
+                  Object.keys(localStorage).forEach(key => {
+                    if (key.startsWith('planetAnalysis_')) {
+                      localStorage.removeItem(key)
+                    }
+                  })
+                  navigate(`/${currentLang}/`)
+                }}
                 style={{
                   width: '100%',
                   background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
@@ -289,12 +421,6 @@ const Dashboard = () => {
         isOpen={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
         onDeleted={handleDeleted}
-      />
-
-      <HistoryDrawer
-        isOpen={showHistory}
-        onClose={() => setShowHistory(false)}
-        onSelectChart={handleSelectChart}
       />
     </div>
   );
