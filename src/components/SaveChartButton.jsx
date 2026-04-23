@@ -1,38 +1,38 @@
-import { useState } from 'react'
-import { useTranslation } from 'react-i18next'
-import { useAuth } from '../context/AuthContext'
-import { chartsApi } from '../services/chartsApi'
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useAuth } from '../context/AuthContext';
+import { chartsApi } from '../services/chartsApi';
 
 function SaveChartButton({ chartData, onSaved, onLimitReached }) {
-  const { t } = useTranslation()
-  const { user } = useAuth()
-  const [saving, setSaving] = useState(false)
-  const [showToast, setShowToast] = useState(false)
+  const { t } = useTranslation();
+  const { user } = useAuth();
+  const [saving, setSaving] = useState(false);
+  const [showToast, setShowToast] = useState(false);
 
   const handleSave = async () => {
-    if (!user || !chartData) return
+    if (!user || !chartData) return;
 
-    setSaving(true)
+    setSaving(true);
     try {
-      const hasLimit = await chartsApi.hasReachedLimit(user.id)
-      
+      const hasLimit = await chartsApi.hasReachedLimit(user.id);
+
       if (hasLimit) {
-        onLimitReached?.()
-        setSaving(false)
-        return
+        onLimitReached?.();
+        setSaving(false);
+        return;
       }
 
-      await chartsApi.saveChart(user.id, chartData)
-      setShowToast(true)
-      onSaved?.()
-      
-      setTimeout(() => setShowToast(false), 3000)
+      await chartsApi.saveChart(user.id, chartData);
+      setShowToast(true);
+      onSaved?.();
+
+      setTimeout(() => setShowToast(false), 3000);
     } catch (err) {
-      console.error('Save chart error:', err)
+      console.error('Save chart error:', err);
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   return (
     <>
@@ -74,7 +74,7 @@ function SaveChartButton({ chartData, onSaved, onLimitReached }) {
         </div>
       )}
     </>
-  )
+  );
 }
 
-export default SaveChartButton
+export default SaveChartButton;

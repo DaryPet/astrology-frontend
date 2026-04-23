@@ -68,7 +68,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     const state = location.state;
-    
+
     if (state?.showFullAnalysis && state?.chartDataForAnalysis) {
       // Новая карта — сбрасываем всё старое
       setFullAnalysis(null);
@@ -111,67 +111,67 @@ const Dashboard = () => {
   };
 
   const handleSaveChartWithAnalysis = async () => {
-    if (!user || !chartDataForAnalysis || !fullAnalysis) return
-    
-    const chartName = chartDataForAnalysis.name || 'Карта'
-    
-    console.log('=== SAVE TO DB ===', chartDataForAnalysis)
-    setSaving(true)
+    if (!user || !chartDataForAnalysis || !fullAnalysis) return;
+
+    const chartName = chartDataForAnalysis.name || 'Карта';
+
+    console.log('=== SAVE TO DB ===', chartDataForAnalysis);
+    setSaving(true);
     try {
-      const hasLimit = await chartsApi.hasReachedLimit(user.id)
+      const hasLimit = await chartsApi.hasReachedLimit(user.id);
       if (hasLimit) {
-        setShowDeleteModal(true)
-        setSaving(false)
-        return
+        setShowDeleteModal(true);
+        setSaving(false);
+        return;
       }
 
-      const existingChart = await chartsApi.checkChartByName(user.id, chartName)
+      const existingChart = await chartsApi.checkChartByName(user.id, chartName);
       if (existingChart) {
-        setPendingSaveName(chartName)
-        setShowDuplicateModal(true)
-        setSaving(false)
-        return
+        setPendingSaveName(chartName);
+        setShowDuplicateModal(true);
+        setSaving(false);
+        return;
       }
-      
+
       const saved = await chartsApi.saveChartWithInterpretation(
         user.id,
         chartDataForAnalysis,
         fullAnalysis
-      )
-      setSavedChartId(saved.id)
-      localStorage.setItem('savedChartId', saved.id.toString())
+      );
+      setSavedChartId(saved.id);
+      localStorage.setItem('savedChartId', saved.id.toString());
     } catch (err) {
-      console.error('Save error:', err)
-      setSaving(false)
+      console.error('Save error:', err);
+      setSaving(false);
     }
   };
 
   const handleDuplicateConfirm = async () => {
-    if (!user || !chartDataForAnalysis || !fullAnalysis || !pendingSaveName) return
+    if (!user || !chartDataForAnalysis || !fullAnalysis || !pendingSaveName) return;
 
-    setShowDuplicateModal(false)
-    setSaving(true)
+    setShowDuplicateModal(false);
+    setSaving(true);
     try {
-      const existingCharts = await chartsApi.getCharts(user.id)
-      const uniqueName = chartsApi.getUniqueChartName(pendingSaveName, existingCharts)
-      
+      const existingCharts = await chartsApi.getCharts(user.id);
+      const uniqueName = chartsApi.getUniqueChartName(pendingSaveName, existingCharts);
+
       const chartDataWithNewName = {
         ...chartDataForAnalysis,
         name: uniqueName
-      }
-      
+      };
+
       const saved = await chartsApi.saveChartWithInterpretation(
         user.id,
         chartDataWithNewName,
         fullAnalysis
-      )
-      setSavedChartId(saved.id)
-      localStorage.setItem('savedChartId', saved.id.toString())
-      setPendingSaveName(null)
+      );
+      setSavedChartId(saved.id);
+      localStorage.setItem('savedChartId', saved.id.toString());
+      setPendingSaveName(null);
     } catch (err) {
-      console.error('Save error:', err)
+      console.error('Save error:', err);
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
   };
 
@@ -185,70 +185,70 @@ const Dashboard = () => {
   };
 
   const handleDeleted = () => {
-    setShowDeleteModal(false)
-    handleSaveChartWithAnalysis()
+    setShowDeleteModal(false);
+    handleSaveChartWithAnalysis();
   };
 
   const handleSelectChart = (chart) => {
-    setShowHistory(false)
-    setChartDataForAnalysis(chart.chart_data)
-    const interp = chart.chart_interpretations?.[0]
+    setShowHistory(false);
+    setChartDataForAnalysis(chart.chart_data);
+    const interp = chart.chart_interpretations?.[0];
     if (interp?.interpretation) {
-      setFullAnalysis(interp.interpretation)
-      setShowFullAnalysis(true)
+      setFullAnalysis(interp.interpretation);
+      setShowFullAnalysis(true);
       // Сохраняем в localStorage
-      localStorage.setItem('chartDataForAnalysis', JSON.stringify(chart.chart_data))
-      localStorage.setItem('savedFullAnalysis', interp.interpretation)
+      localStorage.setItem('chartDataForAnalysis', JSON.stringify(chart.chart_data));
+      localStorage.setItem('savedFullAnalysis', interp.interpretation);
       // Записываем ID карты чтобы кнопка "Сохранить" не появилась
-      localStorage.setItem('savedChartId', chart.id.toString())
-      setSavedChartId(chart.id)
+      localStorage.setItem('savedChartId', chart.id.toString());
+      setSavedChartId(chart.id);
     }
   };
 
   const loadHistoryCharts = async () => {
-    if (!user) return
-    setHistoryLoading(true)
+    if (!user) return;
+    setHistoryLoading(true);
     try {
-      const data = await chartsApi.getCharts(user.id)
-      setHistoryCharts(data)
+      const data = await chartsApi.getCharts(user.id);
+      setHistoryCharts(data);
     } catch (err) {
-      console.error('Load charts error:', err)
+      console.error('Load charts error:', err);
     } finally {
-      setHistoryLoading(false)
+      setHistoryLoading(false);
     }
   };
 
   const handleDeleteFromHistory = async (chartId, e) => {
-    e.stopPropagation()
-    if (!confirm(t('history.confirmDelete'))) return
+    e.stopPropagation();
+    if (!confirm(t('history.confirmDelete'))) return;
     try {
-      await chartsApi.deleteChart(chartId)
-      loadHistoryCharts()
+      await chartsApi.deleteChart(chartId);
+      loadHistoryCharts();
     } catch (err) {
-      console.error('Delete error:', err)
+      console.error('Delete error:', err);
     }
   };
 
   const getSunSignEmoji = (sign) => {
-    const fireSigns = ['Aries', 'Leo', 'Sagittarius']
-    const earthSigns = ['Taurus', 'Virgo', 'Capricorn']
-    const airSigns = ['Gemini', 'Libra', 'Aquarius']
-    const waterSigns = ['Cancer', 'Scorpio', 'Pisces']
-    if (fireSigns.includes(sign)) return '🔥'
-    if (earthSigns.includes(sign)) return '🌍'
-    if (airSigns.includes(sign)) return '💨'
-    if (waterSigns.includes(sign)) return '💧'
-    return '🌟'
+    const fireSigns = ['Aries', 'Leo', 'Sagittarius'];
+    const earthSigns = ['Taurus', 'Virgo', 'Capricorn'];
+    const airSigns = ['Gemini', 'Libra', 'Aquarius'];
+    const waterSigns = ['Cancer', 'Scorpio', 'Pisces'];
+    if (fireSigns.includes(sign)) return '🔥';
+    if (earthSigns.includes(sign)) return '🌍';
+    if (airSigns.includes(sign)) return '💨';
+    if (waterSigns.includes(sign)) return '💧';
+    return '🌟';
   };
 
   const formatDate = (dateStr) => {
-    if (!dateStr) return ''
-    return new Date(dateStr).toLocaleDateString()
+    if (!dateStr) return '';
+    return new Date(dateStr).toLocaleDateString();
   };
 
   useEffect(() => {
     if (showHistory && user) {
-      loadHistoryCharts()
+      loadHistoryCharts();
     }
   }, [showHistory, user]);
 
@@ -320,36 +320,36 @@ const Dashboard = () => {
                     )}
                     {t('dashboard.fullAnalysis.title')}
                   </h2>
-                   
+
                   {analysisLoading && (
                     <div style={{ marginTop: '40px' }}>
                       <ProcessingMessage />
                     </div>
                   )}
-                   
+
                   {analysisError && (
                     <div className="error-message" style={{ marginTop: '20px' }}>
                       {analysisError}
                     </div>
                   )}
-                   
+
                   {fullAnalysis && (
-                    <div style={{ 
-                      marginTop: '40px', 
+                    <div style={{
+                      marginTop: '40px',
                       lineHeight: '2',
                       fontSize: '16px'
                     }}>
                       {!savedChartId && !analysisLoading &&(
-                      <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
-                        <button 
-                          className="btn btn-primary"
-                          onClick={handleSaveChartWithAnalysis}
-                          disabled={saving}
-                        >
-                          {saving ? '...' : '💾 Сохранить'}
-                        </button>
-                      </div>
-                    )}
+                        <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
+                          <button
+                            className="btn btn-primary"
+                            onClick={handleSaveChartWithAnalysis}
+                            disabled={saving}
+                          >
+                            {saving ? '...' : '💾 Сохранить'}
+                          </button>
+                        </div>
+                      )}
                       <MarkdownContent content={fullAnalysis} />
                     </div>
                   )}
@@ -363,26 +363,26 @@ const Dashboard = () => {
             <div className="dashboard-card">
               {t('dashboard.features.title') && <h2>{t('dashboard.features.title')}</h2>}
               <div className="future-features">
-                <div 
-                  className="feature" 
-                  onClick={() => setShowHistory(!showHistory)} 
+                <div
+                  className="feature"
+                  onClick={() => setShowHistory(!showHistory)}
                   style={{ cursor: 'pointer' }}
                 >
                   <div className="feature-icon">📊</div>
                   <div className="feature-content" style={{ flex: 1 }}>
                     <h3>
-                      {t('dashboard.features.history.title')} 
+                      {t('dashboard.features.history.title')}
                       <span style={{ float: 'right', fontSize: '12px' }}>
                         {showHistory ? '▼' : '▶'}
                       </span>
                     </h3>
                   </div>
                 </div>
-                
+
                 {showHistory && (
-                  <div style={{ 
-                    padding: '12px', 
-                    background: 'var(--bg-secondary)', 
+                  <div style={{
+                    padding: '12px',
+                    background: 'var(--bg-secondary)',
                     borderRadius: '8px',
                     marginTop: '8px'
                   }}>
@@ -432,7 +432,7 @@ const Dashboard = () => {
                     )}
                   </div>
                 )}
-                
+
                 <div className="feature">
                   <div className="feature-icon">👥</div>
                   <div className="feature-content">
@@ -442,18 +442,18 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              <button 
+              <button
                 onClick={() => {
-                  localStorage.removeItem('savedChartData')
-                  localStorage.removeItem('chartDataForAnalysis')
-                  localStorage.removeItem('savedFullAnalysis')
-                  localStorage.removeItem('savedChartId')
+                  localStorage.removeItem('savedChartData');
+                  localStorage.removeItem('chartDataForAnalysis');
+                  localStorage.removeItem('savedFullAnalysis');
+                  localStorage.removeItem('savedChartId');
                   Object.keys(localStorage).forEach(key => {
                     if (key.startsWith('planetAnalysis_')) {
-                      localStorage.removeItem(key)
+                      localStorage.removeItem(key);
                     }
-                  })
-                  navigate(`/${currentLang}/`)
+                  });
+                  navigate(`/${currentLang}/`);
                 }}
                 style={{
                   width: '100%',
@@ -471,7 +471,7 @@ const Dashboard = () => {
                 {t('dashboard.actions.newChart')}
               </button>
 
-              <button 
+              <button
                 onClick={() => navigate(`/${currentLang}/synastry`)}
                 style={{
                   width: '100%',
@@ -503,8 +503,8 @@ const Dashboard = () => {
         isOpen={showDuplicateModal}
         chartName={pendingSaveName}
         onClose={() => {
-          setShowDuplicateModal(false)
-          setPendingSaveName(null)
+          setShowDuplicateModal(false);
+          setPendingSaveName(null);
         }}
         onConfirm={handleDuplicateConfirm}
       />

@@ -1,5 +1,5 @@
-import axios from 'axios'
-import i18n from '../i18n'
+import axios from 'axios';
+import i18n from '../i18n';
 
 const api = axios.create({
   baseURL: '/api',
@@ -7,7 +7,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json'
   }
-})
+});
 
 // Геокодинг API методы
 export const geocodeAPI = {
@@ -18,19 +18,19 @@ export const geocodeAPI = {
    */
   autocomplete: async (query) => {
     if (!query || query.trim().length < 2) {
-      return []
+      return [];
     }
-    
-    const currentLang = i18n.language || 'en'
-    
+
+    const currentLang = i18n.language || 'en';
+
     try {
       const response = await api.get(
         `/geocode/autocomplete?q=${encodeURIComponent(query.trim())}&lang=${currentLang}`
-      )
-      return response.data || []
+      );
+      return response.data || [];
     } catch (error) {
-      console.error('Geocode autocomplete error:', error)
-      throw new Error(`Не удалось найти города: ${error.message}`)
+      console.error('Geocode autocomplete error:', error);
+      throw new Error(`Не удалось найти города: ${error.message}`);
     }
   },
 
@@ -42,15 +42,15 @@ export const geocodeAPI = {
    */
   getLocationInfo: async (lat, lon) => {
     if (lat == null || lon == null) {
-      throw new Error('Координаты не указаны')
+      throw new Error('Координаты не указаны');
     }
-    
+
     try {
-      const response = await api.get(`/geocode/coordinates?lat=${lat}&lon=${lon}`)
-      return response.data
+      const response = await api.get(`/geocode/coordinates?lat=${lat}&lon=${lon}`);
+      return response.data;
     } catch (error) {
-      console.error('Reverse geocode error:', error)
-      throw new Error(`Не удалось определить информацию о месте: ${error.message}`)
+      console.error('Reverse geocode error:', error);
+      throw new Error(`Не удалось определить информацию о месте: ${error.message}`);
     }
   },
 
@@ -62,14 +62,14 @@ export const geocodeAPI = {
    */
   detectTimezone: async (lat, lon) => {
     try {
-      const locationInfo = await geocodeAPI.getLocationInfo(lat, lon)
-      return locationInfo.timezone || 'UTC'
+      const locationInfo = await geocodeAPI.getLocationInfo(lat, lon);
+      return locationInfo.timezone || 'UTC';
     } catch (error) {
-      console.error('Timezone detection error:', error)
-      return 'UTC' // Fallback на UTC если не удалось определить
+      console.error('Timezone detection error:', error);
+      return 'UTC'; // Fallback на UTC если не удалось определить
     }
   }
-}
+};
 
 // Основные API методы для астрологических расчетов
 export const astrologyAPI = {
@@ -80,11 +80,11 @@ export const astrologyAPI = {
    */
   calculateChart: async (data) => {
     try {
-      const response = await api.post('/chart/calculate', data)
-      return response.data
+      const response = await api.post('/chart/calculate', data);
+      return response.data;
     } catch (error) {
-      console.error('Chart calculation error:', error)
-      throw error
+      console.error('Chart calculation error:', error);
+      throw error;
     }
   },
 
@@ -95,11 +95,11 @@ export const astrologyAPI = {
    */
   calculateTransits: async (data) => {
     try {
-      const response = await api.post('/transits', data)
-      return response.data
+      const response = await api.post('/transits', data);
+      return response.data;
     } catch (error) {
-      console.error('Transits calculation error:', error)
-      throw error
+      console.error('Transits calculation error:', error);
+      throw error;
     }
   },
 
@@ -110,21 +110,21 @@ export const astrologyAPI = {
    */
   calculateSynastry: async (data) => {
     try {
-      const response = await api.post('/synastry/direct', data)
-      return response.data
+      const response = await api.post('/synastry/direct', data);
+      return response.data;
     } catch (error) {
-      console.error('Synastry calculation error:', error)
-      throw error
+      console.error('Synastry calculation error:', error);
+      throw error;
     }
   },
 
   getPlanetAnalysis: async (planetData) => {
     try {
-      const response = await api.post('/analysis/planet', planetData)
-      return response.data
+      const response = await api.post('/analysis/planet', planetData);
+      return response.data;
     } catch (error) {
-      console.error('Planet analysis error:', error)
-      throw error
+      console.error('Planet analysis error:', error);
+      throw error;
     }
   },
 
@@ -134,13 +134,13 @@ export const astrologyAPI = {
         chart_data: chartData,
         language,
         top_books: topBooks
-      })
-      return response.data
+      });
+      return response.data;
     } catch (error) {
-      console.error('Full chart analysis error:', error)
-      throw error
+      console.error('Full chart analysis error:', error);
+      throw error;
     }
   }
-}
+};
 
-export default api
+export default api;

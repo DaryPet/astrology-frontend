@@ -55,13 +55,13 @@ const Header = () => {
           )}
         </nav>
         <div className="language-dropdown" style={{ position: 'relative', marginLeft: '20px' }}>
-          <button 
+          <button
             onClick={() => setLangOpen(!langOpen)}
-            style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
+            style={{
+              display: 'flex',
+              alignItems: 'center',
               gap: '6px',
-              padding: '8px 12px', 
+              padding: '8px 12px',
               background: 'var(--bg-secondary)',
               color: 'var(--text-primary)',
               border: '1px solid var(--border)',

@@ -42,25 +42,25 @@ const PlanetTable = ({ planets, houses, onPlanetClick }) => {
 
   // Знаки зодиака
   const zodiacSigns = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
-                      'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
+    'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
 
   // Преобразуем объект планет в массив
   const planetList = Object.entries(planets)
     .filter(([name, data]) => data && data.full_degree !== undefined)
     .map(([name, data]) => {
       const degree = parseFloat(data.full_degree);
-      
+
       // Защита от NaN
       if (isNaN(degree)) {
         console.warn(`Invalid degree for planet ${name}:`, data.full_degree);
         return null;
       }
-      
+
       const signIndex = Math.floor(degree / 30) % 12;
       const signDegree = degree % 30;
       const degrees = Math.floor(signDegree);
       const minutes = Math.floor((signDegree - degrees) * 60);
-      
+
       // Используем sign из данных, если есть, иначе вычисляем
       const signName = data.sign || zodiacSigns[signIndex];
       const signTranslated = t(`planets.signs.${signName}`);
@@ -210,7 +210,7 @@ const PlanetTable = ({ planets, houses, onPlanetClick }) => {
                   {planet.name.substring(0, 2)}
                 </span>
               </div>
-              
+
               <div style={{ flex: 1 }}>
                 <div style={{
                   display: 'flex',
@@ -234,7 +234,7 @@ const PlanetTable = ({ planets, houses, onPlanetClick }) => {
                     )}
                   </span>
                 </div>
-                
+
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -247,7 +247,7 @@ const PlanetTable = ({ planets, houses, onPlanetClick }) => {
                   }}>
                     {planet.translatedSign}
                   </span>
-                  
+
                   <span style={{
                     color: 'var(--text-secondary)',
                     fontSize: '13px'
@@ -306,16 +306,16 @@ const PlanetTable = ({ planets, houses, onPlanetClick }) => {
         borderRadius: '8px',
         border: '1px solid var(--border)'
       }}>
-          <h4 style={{
-            marginTop: 0,
-            marginBottom: '12px',
-            color: 'var(--text-primary)',
-            fontSize: '14px',
-            fontWeight: 'bold'
-          }}>
-            {t('planets.legend')}
-          </h4>
-        
+        <h4 style={{
+          marginTop: 0,
+          marginBottom: '12px',
+          color: 'var(--text-primary)',
+          fontSize: '14px',
+          fontWeight: 'bold'
+        }}>
+          {t('planets.legend')}
+        </h4>
+
         <div style={{
           display: 'flex',
           flexWrap: 'wrap',
@@ -358,7 +358,7 @@ const PlanetTable = ({ planets, houses, onPlanetClick }) => {
                   {item.name}
                 </span>
               </div>
-              
+
               <div style={{
                 fontSize: '12px',
                 color: 'var(--text-secondary)',

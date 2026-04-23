@@ -24,11 +24,11 @@ export const authAPI = {
       options: { data: { name } }
     });
     if (error) throw error;
-    
+
     if (data.session?.access_token) {
       localStorage.setItem('auth_token', data.session.access_token);
     }
-    
+
     return { access_token: data.session?.access_token, user: data.user };
   },
 
@@ -38,7 +38,7 @@ export const authAPI = {
       password
     });
     if (error) throw error;
-    
+
     localStorage.setItem('auth_token', data.session.access_token);
     return { access_token: data.session.access_token, user: data.user };
   },

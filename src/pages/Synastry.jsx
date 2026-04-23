@@ -1,68 +1,68 @@
-import { useState, useEffect, useRef } from 'react'
-import { useTranslation } from 'react-i18next'
-import api from '../services/api'
-import Header from '../components/Header'
+import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import api from '../services/api';
+import Header from '../components/Header';
 
 function Synastry() {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     person1: { name: '', birth_date: '', birth_time: '12:00', birth_place: '', latitude: null, longitude: null, timezone: 'Europe/Moscow' },
     person2: { name: '', birth_date: '', birth_time: '12:00', birth_place: '', latitude: null, longitude: null, timezone: 'Europe/Moscow' }
-  })
-  const [synastry, setSynastry] = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  
-  const [locations1, setLocations1] = useState([])
-  const [locations2, setLocations2] = useState([])
-  const [showLoc1, setShowLoc1] = useState(false)
-  const [showLoc2, setShowLoc2] = useState(false)
-  const loc1Ref = useRef(null)
-  const loc2Ref = useRef(null)
+  });
+  const [synastry, setSynastry] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const [locations1, setLocations1] = useState([]);
+  const [locations2, setLocations2] = useState([]);
+  const [showLoc1, setShowLoc1] = useState(false);
+  const [showLoc2, setShowLoc2] = useState(false);
+  const loc1Ref = useRef(null);
+  const loc2Ref = useRef(null);
 
   const searchLocation = async (query, setLocations) => {
-    if (query.length < 2) { setLocations([]); return }
+    if (query.length < 2) { setLocations([]); return; }
     try {
-      const res = await api.get(`/geocode/search?q=${encodeURIComponent(query)}`)
-      setLocations(res.data.slice(0, 8))
-    } catch (err) { console.error(err) }
-  }
+      const res = await api.get(`/geocode/search?q=${encodeURIComponent(query)}`);
+      setLocations(res.data.slice(0, 8));
+    } catch (err) { console.error(err); }
+  };
 
   const selectLocation = (loc, personNum) => {
-    const name = loc.display_name.split(',')[0]
-    const data = personNum === 1 ? formData.person1 : formData.person2
-    const setPerson = personNum === 1 
+    const name = loc.display_name.split(',')[0];
+    const data = personNum === 1 ? formData.person1 : formData.person2;
+    const setPerson = personNum === 1
       ? (p) => setFormData({...formData, person1: p})
-      : (p) => setFormData({...formData, person2: p})
-    
+      : (p) => setFormData({...formData, person2: p});
+
     setPerson({
       ...data,
       birth_place: name,
       latitude: parseFloat(loc.lat),
       longitude: parseFloat(loc.lon)
-    })
-    if (personNum === 1) { setShowLoc1(false); setLocations1([]) }
-    else { setShowLoc2(false); setLocations2([]) }
-  }
+    });
+    if (personNum === 1) { setShowLoc1(false); setLocations1([]); }
+    else { setShowLoc2(false); setLocations2([]); }
+  };
 
   useEffect(() => {
     const handleClick = (e) => {
-      if (loc1Ref.current && !loc1Ref.current.contains(e.target)) setShowLoc1(false)
-      if (loc2Ref.current && !loc2Ref.current.contains(e.target)) setShowLoc2(false)
-    }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
-  }, [])
+      if (loc1Ref.current && !loc1Ref.current.contains(e.target)) setShowLoc1(false);
+      if (loc2Ref.current && !loc2Ref.current.contains(e.target)) setShowLoc2(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
+    e.preventDefault();
+    setLoading(true);
+    setError('');
 
     try {
       const parseForm = (p) => {
-        const [y, m, d] = p.birth_date.split('-')
-        const [h, min] = p.birth_time.split(':')
+        const [y, m, d] = p.birth_date.split('-');
+        const [h, min] = p.birth_time.split(':');
         return {
           birth_date: `${y}-${m}-${d}T${h}:${min}:00`,
           birth_time: p.birth_time,
@@ -70,20 +70,20 @@ function Synastry() {
           latitude: p.latitude || 55.7558,
           longitude: p.longitude || 37.6173,
           timezone: p.timezone
-        }
-      }
+        };
+      };
 
       const res = await api.post('/synastry/direct', {
         chart1: parseForm(formData.person1),
         chart2: parseForm(formData.person2)
-      })
-      setSynastry(res.data)
+      });
+      setSynastry(res.data);
     } catch (err) {
-      setError(err.response?.data?.detail || err.message || t('home.errors.calcError'))
+      setError(err.response?.data?.detail || err.message || t('home.errors.calcError'));
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="synastry-page">
@@ -116,9 +116,9 @@ function Synastry() {
                 <div className="form-group" ref={loc1Ref} style={{position: 'relative'}}>
                   <label>{t('synastry.form.birthPlace')}</label>
                   <input type="text" value={formData.person1.birth_place} onChange={(e) => {
-                    setFormData({...formData, person1: {...formData.person1, birth_place: e.target.value}})
-                    searchLocation(e.target.value, setLocations1)
-                    setShowLoc1(true)
+                    setFormData({...formData, person1: {...formData.person1, birth_place: e.target.value}});
+                    searchLocation(e.target.value, setLocations1);
+                    setShowLoc1(true);
                   }} placeholder={t('synastry.form.birthPlacePlaceholder')} required />
                   {showLoc1 && locations1.length > 0 && (
                     <div className="autocomplete-dropdown">
@@ -162,9 +162,9 @@ function Synastry() {
                 <div className="form-group" ref={loc2Ref} style={{position: 'relative'}}>
                   <label>{t('synastry.form.birthPlace')}</label>
                   <input type="text" value={formData.person2.birth_place} onChange={(e) => {
-                    setFormData({...formData, person2: {...formData.person2, birth_place: e.target.value}})
-                    searchLocation(e.target.value, setLocations2)
-                    setShowLoc2(true)
+                    setFormData({...formData, person2: {...formData.person2, birth_place: e.target.value}});
+                    searchLocation(e.target.value, setLocations2);
+                    setShowLoc2(true);
                   }} placeholder={t('synastry.form.birthPlacePlaceholder')} required />
                   {showLoc2 && locations2.length > 0 && (
                     <div className="autocomplete-dropdown">
@@ -210,7 +210,7 @@ function Synastry() {
                 <p>{t('chart.ascendant')}: {synastry.chart2.ascendant}</p>
               </div>
             </div>
-            
+
             <div className="result-card" style={{marginTop: '20px'}}>
               <h3>{t('synastry.aspects')} ({synastry.total_aspects})</h3>
               <div className="aspects-list">
@@ -231,7 +231,7 @@ function Synastry() {
         )}
       </div>
     </div>
-  )
+  );
 }
 
-export default Synastry
+export default Synastry;

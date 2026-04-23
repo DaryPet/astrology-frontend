@@ -9,7 +9,7 @@ const AstroChartComponent = ({ chartData, size = 700 }) => {
 
     import('@astrodraw/astrochart').then(module => {
       const Chart = module.Chart;
-      
+
       containerRef.current.innerHTML = '';
       const containerId = `astrochart-${Date.now()}`;
       containerRef.current.id = containerId;
@@ -19,34 +19,34 @@ const AstroChartComponent = ({ chartData, size = 700 }) => {
           SHOW_DIGNITIES_TEXT: false,
           CUSTOM_SYMBOL_FN: (name, x, y, context) => {
             if (name === 'Vx') {
-              const g = document.createElementNS('http://www.w3.org/2000/svg', 'g')
-              const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
-              circle.setAttribute('cx', x)
-              circle.setAttribute('cy', y)
-              circle.setAttribute('r', '8')
-              circle.setAttribute('fill', 'none')
-              circle.setAttribute('stroke', '#000')
-              circle.setAttribute('stroke-width', '2')
-              g.appendChild(circle)
-              const text = document.createElementNS('http://www.w3.org/2000/svg', 'text')
-              text.setAttribute('x', x)
-              text.setAttribute('y', y + 4)
-              text.setAttribute('text-anchor', 'middle')
-              text.setAttribute('fill', '#000')
-              text.setAttribute('font-size', '10')
-              text.setAttribute('font-weight', 'bold')
-              text.textContent = 'Vx'
-              g.appendChild(text)
-              return g
+              const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+              const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+              circle.setAttribute('cx', x);
+              circle.setAttribute('cy', y);
+              circle.setAttribute('r', '8');
+              circle.setAttribute('fill', 'none');
+              circle.setAttribute('stroke', '#000');
+              circle.setAttribute('stroke-width', '2');
+              g.appendChild(circle);
+              const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+              text.setAttribute('x', x);
+              text.setAttribute('y', y + 4);
+              text.setAttribute('text-anchor', 'middle');
+              text.setAttribute('fill', '#000');
+              text.setAttribute('font-size', '10');
+              text.setAttribute('font-weight', 'bold');
+              text.textContent = 'Vx';
+              g.appendChild(text);
+              return g;
             }
-            return null
+            return null;
           }
         });
         const radixData = convertToRadixFormat(chartData);
         if (!radixData) return;
-        
+
         const radix = chart.radix(radixData);
-        
+
         // Настройки аспектов с sextile
         const aspectsSettings = {
           ASPECTS: {
@@ -57,11 +57,11 @@ const AstroChartComponent = ({ chartData, size = 700 }) => {
             opposition: { degree: 180, orbit: 12, color: '#27AE60' }
           }
         };
-        
+
         // Создать AspectCalculator явно с sextile
         const aspectCalc = new module.AspectCalculator(radixData.planets, aspectsSettings);
         const calculatedAspects = aspectCalc.radix(radixData.planets);
-        
+
         // Добавить все точки и отрисовать аспекты
         radix.addPointsOfInterest(radixData.planets);
         radix.aspects(calculatedAspects);
@@ -96,31 +96,31 @@ const AstroChartComponent = ({ chartData, size = 700 }) => {
     Object.entries(data.planets).forEach(([name, p]) => {
       const key = planetMapping[name];
       console.log(`  ${name} -> key: ${key}, full_degree: ${p?.full_degree}, speed: ${p?.speed}`);
-        if (key && p?.full_degree !== undefined) {
-          // Формат: [degree, speed]
-          // speed - скорость планеты (градусы/день). Если < 0, планета ретроградна
-          planets[key] = [p.full_degree % 360, p.speed ?? 0];
-        }
-      });
-      
-      console.log('result planets:', Object.keys(planets));
-
-      // Вершина (Vertex)
-      if (data.vertex && data.vertex.longitude !== undefined) {
-        planets['Vx'] = [data.vertex.longitude % 360, 0];
+      if (key && p?.full_degree !== undefined) {
+        // Формат: [degree, speed]
+        // speed - скорость планеты (градусы/день). Если < 0, планета ретроградна
+        planets[key] = [p.full_degree % 360, p.speed ?? 0];
       }
+    });
 
-      // Парта Фортуны (pars_fortuna) из houses_meta
-      if (data.houses_meta && data.houses_meta.pars_fortuna) {
-        const pf = data.houses_meta.pars_fortuna;
-        const longitude = pf.longitude % 360;
-        planets['Fortune'] = [longitude, 0];
-      }
+    console.log('result planets:', Object.keys(planets));
+
+    // Вершина (Vertex)
+    if (data.vertex && data.vertex.longitude !== undefined) {
+      planets['Vx'] = [data.vertex.longitude % 360, 0];
+    }
+
+    // Парта Фортуны (pars_fortuna) из houses_meta
+    if (data.houses_meta && data.houses_meta.pars_fortuna) {
+      const pf = data.houses_meta.pars_fortuna;
+      const longitude = pf.longitude % 360;
+      planets['Fortune'] = [longitude, 0];
+    }
 
     for (let i = 1; i <= 12; i++) {
       const house = data.houses[i];
-      cusps[i-1] = house?.cusp_longitude !== undefined 
-        ? house.cusp_longitude % 360 
+      cusps[i-1] = house?.cusp_longitude !== undefined
+        ? house.cusp_longitude % 360
         : ((i-1) * 30) % 360;
     }
 

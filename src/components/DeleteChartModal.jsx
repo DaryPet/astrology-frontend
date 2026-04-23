@@ -1,68 +1,68 @@
-import { useState, useEffect } from 'react'
-import { useTranslation } from 'react-i18next'
-import { useAuth } from '../context/AuthContext'
-import { chartsApi } from '../services/chartsApi'
+import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useAuth } from '../context/AuthContext';
+import { chartsApi } from '../services/chartsApi';
 
 function DeleteChartModal({ isOpen, onClose, onDeleted }) {
-  const { t } = useTranslation()
-  const { user } = useAuth()
-  const [charts, setCharts] = useState([])
-  const [selectedId, setSelectedId] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [deleting, setDeleting] = useState(false)
+  const { t } = useTranslation();
+  const { user } = useAuth();
+  const [charts, setCharts] = useState([]);
+  const [selectedId, setSelectedId] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (isOpen && user) {
-      loadCharts()
+      loadCharts();
     }
-  }, [isOpen, user])
+  }, [isOpen, user]);
 
   const loadCharts = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const data = await chartsApi.getCharts(user.id)
-      setCharts(data)
+      const data = await chartsApi.getCharts(user.id);
+      setCharts(data);
     } catch (err) {
-      console.error('Load charts error:', err)
+      console.error('Load charts error:', err);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleDelete = async () => {
-    if (!selectedId) return
-    
-    setDeleting(true)
-    try {
-      await chartsApi.deleteChart(selectedId)
-      onDeleted?.()
-      onClose()
-    } catch (err) {
-      console.error('Delete error:', err)
-    } finally {
-      setDeleting(false)
-    }
-  }
+    if (!selectedId) return;
 
-  if (!isOpen) return null
+    setDeleting(true);
+    try {
+      await chartsApi.deleteChart(selectedId);
+      onDeleted?.();
+      onClose();
+    } catch (err) {
+      console.error('Delete error:', err);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  if (!isOpen) return null;
 
   const getSunSignEmoji = (sign) => {
-    const fireSigns = ['Aries', 'Leo', 'Sagittarius']
-    const earthSigns = ['Taurus', 'Virgo', 'Capricorn']
-    const airSigns = ['Gemini', 'Libra', 'Aquarius']
-    const waterSigns = ['Cancer', 'Scorpio', 'Pisces']
-    
-    if (fireSigns.includes(sign)) return '🔥'
-    if (earthSigns.includes(sign)) return '🌍'
-    if (airSigns.includes(sign)) return '💨'
-    if (waterSigns.includes(sign)) return '💧'
-    return '🌟'
-  }
+    const fireSigns = ['Aries', 'Leo', 'Sagittarius'];
+    const earthSigns = ['Taurus', 'Virgo', 'Capricorn'];
+    const airSigns = ['Gemini', 'Libra', 'Aquarius'];
+    const waterSigns = ['Cancer', 'Scorpio', 'Pisces'];
+
+    if (fireSigns.includes(sign)) return '🔥';
+    if (earthSigns.includes(sign)) return '🌍';
+    if (airSigns.includes(sign)) return '💨';
+    if (waterSigns.includes(sign)) return '💧';
+    return '🌟';
+  };
 
   const formatDate = (dateStr) => {
-    if (!dateStr) return ''
-    return new Date(dateStr).toLocaleDateString()
-  }
+    if (!dateStr) return '';
+    return new Date(dateStr).toLocaleDateString();
+  };
 
   return (
     <div
@@ -158,7 +158,7 @@ function DeleteChartModal({ isOpen, onClose, onDeleted }) {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default DeleteChartModal
+export default DeleteChartModal;
