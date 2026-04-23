@@ -329,6 +329,9 @@
       "limitReached": "Chart limit reached",
       "selectToDelete": "Select a chart to delete",
       "cancel": "Cancel",
-      "delete": "Delete"
+      "delete": "Delete",
+      "duplicateTitle": "Chart with this name already exists",
+      "duplicateMessage": "You already have a chart named '{{name}}'. Save anyway?",
+      "saveAnyway": "Yes, save anyway"
     }
   }

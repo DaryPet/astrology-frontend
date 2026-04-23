@@ -150,6 +150,39 @@ export const chartsApi = {
     return count >= CHARTS_LIMIT
   },
 
+  async checkChartByName(userId: string, name: string) {
+    const { data, error } = await supabase
+      .from('natal_charts')
+      .select('id, name')
+      .eq('user_id', userId)
+      .eq('name', name)
+      .single()
+
+    if (error && error.code !== 'PGRST116') {
+      console.error('Check chart by name error:', error)
+      throw error
+    }
+    return data || null
+  },
+
+  getUniqueChartName(baseName: string, existingCharts: Array<{ name: string }>) {
+    const existingNames = new Set(existingCharts.map(c => c.name))
+    
+    if (!existingNames.has(baseName)) {
+      return baseName
+    }
+
+    let counter = 1
+    let newName = `${baseName} (${counter})`
+    
+    while (existingNames.has(newName)) {
+      counter++
+      newName = `${baseName} (${counter})`
+    }
+    
+    return newName
+  },
+
   async saveInterpretation(chartId: number, type: string, interpretation: string) {
     console.log('Saving interpretation for chart:', chartId)
     const { data, error } = await supabase
