@@ -1,86 +1,86 @@
-import { useState, useEffect } from 'react'
-import { useTranslation } from 'react-i18next'
-import { useAuth } from '../context/AuthContext'
-import { chartsApi } from '../services/chartsApi'
+import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useAuth } from '../context/AuthContext';
+import { chartsApi } from '../services/chartsApi';
 
 function HistoryDrawer({ isOpen, onClose, onSelectChart, isMobile = false }) {
-  const { t } = useTranslation()
-  const { user } = useAuth()
-  const [charts, setCharts] = useState([])
-  const [loading, setLoading] = useState(true)
+  const { t } = useTranslation();
+  const { user } = useAuth();
+  const [charts, setCharts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (isOpen && user) {
-      loadCharts()
+      loadCharts();
     }
-  }, [isOpen, user])
+  }, [isOpen, user]);
 
   const loadCharts = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const data = await chartsApi.getCharts(user.id)
-      setCharts(data)
+      const data = await chartsApi.getCharts(user.id);
+      setCharts(data);
     } catch (err) {
-      console.error('Load charts error:', err)
+      console.error('Load charts error:', err);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleDelete = async (chartId, e) => {
-    e.stopPropagation()
-    if (!confirm(t('history.confirmDelete'))) return
-    
+    e.stopPropagation();
+    if (!confirm(t('history.confirmDelete'))) return;
+
     try {
-      await chartsApi.deleteChart(chartId)
-      loadCharts()
+      await chartsApi.deleteChart(chartId);
+      loadCharts();
     } catch (err) {
-      console.error('Delete error:', err)
+      console.error('Delete error:', err);
     }
-  }
+  };
 
   const handleSelect = (chart) => {
-    onSelectChart?.(chart)
-    onClose()
-  }
+    onSelectChart?.(chart);
+    onClose();
+  };
 
   const getSunSignEmoji = (sign) => {
-    const fireSigns = ['Aries', 'Leo', 'Sagittarius']
-    const earthSigns = ['Taurus', 'Virgo', 'Capricorn']
-    const airSigns = ['Gemini', 'Libra', 'Aquarius']
-    const waterSigns = ['Cancer', 'Scorpio', 'Pisces']
-    
-    if (fireSigns.includes(sign)) return '🔥'
-    if (earthSigns.includes(sign)) return '🌍'
-    if (airSigns.includes(sign)) return '💨'
-    if (waterSigns.includes(sign)) return '💧'
-    return '🌟'
-  }
+    const fireSigns = ['Aries', 'Leo', 'Sagittarius'];
+    const earthSigns = ['Taurus', 'Virgo', 'Capricorn'];
+    const airSigns = ['Gemini', 'Libra', 'Aquarius'];
+    const waterSigns = ['Cancer', 'Scorpio', 'Pisces'];
+
+    if (fireSigns.includes(sign)) return '🔥';
+    if (earthSigns.includes(sign)) return '🌍';
+    if (airSigns.includes(sign)) return '💨';
+    if (waterSigns.includes(sign)) return '💧';
+    return '🌟';
+  };
 
   const formatDate = (dateStr) => {
-    if (!dateStr) return ''
-    return new Date(dateStr).toLocaleDateString()
-  }
+    if (!dateStr) return '';
+    return new Date(dateStr).toLocaleDateString();
+  };
 
-  if (!isOpen) return null
+  if (!isOpen) return null;
 
   const drawerStyle = isMobile
     ? {
-        position: 'fixed',
-        left: 0,
-        right: 0,
-        bottom: 0,
-        height: '60vh',
-        borderTopLeftRadius: '16px',
-        borderTopRightRadius: '16px'
-      }
+      position: 'fixed',
+      left: 0,
+      right: 0,
+      bottom: 0,
+      height: '60vh',
+      borderTopLeftRadius: '16px',
+      borderTopRightRadius: '16px'
+    }
     : {
-        position: 'fixed',
-        top: 0,
-        right: 0,
-        bottom: 0,
-        width: '350px'
-      }
+      position: 'fixed',
+      top: 0,
+      right: 0,
+      bottom: 0,
+      width: '350px'
+    };
 
   return (
     <>
@@ -96,7 +96,7 @@ function HistoryDrawer({ isOpen, onClose, onSelectChart, isMobile = false }) {
         }}
         onClick={onClose}
       />
-      
+
       <div
         style={{
           ...drawerStyle,
@@ -108,11 +108,11 @@ function HistoryDrawer({ isOpen, onClose, onSelectChart, isMobile = false }) {
           boxShadow: '-4px 0 20px rgba(0,0,0,0.2)'
         }}
       >
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: '20px' 
+          marginBottom: '20px'
         }}>
           <h3 style={{ margin: 0 }}>
             {t('dashboard.features.history.title')} ({charts.length}/{chartsApi.CHARTS_LIMIT})
@@ -134,16 +134,16 @@ function HistoryDrawer({ isOpen, onClose, onSelectChart, isMobile = false }) {
         {loading ? (
           <div className="loading">{t('common.loading')}</div>
         ) : charts.length === 0 ? (
-          <div style={{ 
-            textAlign: 'center', 
+          <div style={{
+            textAlign: 'center',
             color: 'var(--text-secondary)',
             padding: '40px 0'
           }}>
             {t('history.empty')}
           </div>
         ) : (
-          <div style={{ 
-            flex: 1, 
+          <div style={{
+            flex: 1,
             overflow: 'auto',
             display: 'flex',
             flexDirection: 'column',
@@ -162,8 +162,8 @@ function HistoryDrawer({ isOpen, onClose, onSelectChart, isMobile = false }) {
                   transition: 'all 0.2s'
                 }}
               >
-                <div style={{ 
-                  display: 'flex', 
+                <div style={{
+                  display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'flex-start'
                 }}>
@@ -171,21 +171,21 @@ function HistoryDrawer({ isOpen, onClose, onSelectChart, isMobile = false }) {
                     <div style={{ fontWeight: '600', fontSize: '15px' }}>
                       {getSunSignEmoji(chart.sun_sign)} {chart.name || 'Карта'}
                     </div>
-                    <div style={{ 
-                      fontSize: '13px', 
+                    <div style={{
+                      fontSize: '13px',
                       color: 'var(--text-secondary)',
                       marginTop: '4px'
                     }}>
                       📅 {chart.chart_data?.birth_date?.split('T')[0] || '—'}
                     </div>
-                    <div style={{ 
-                      fontSize: '13px', 
+                    <div style={{
+                      fontSize: '13px',
                       color: 'var(--text-secondary)'
                     }}>
                       📍 {chart.chart_data?.birth_place || '—'}
                     </div>
-                    <div style={{ 
-                      fontSize: '12px', 
+                    <div style={{
+                      fontSize: '12px',
                       color: 'var(--text-secondary)',
                       marginTop: '6px'
                     }}>
@@ -213,7 +213,7 @@ function HistoryDrawer({ isOpen, onClose, onSelectChart, isMobile = false }) {
         )}
       </div>
     </>
-  )
+  );
 }
 
-export default HistoryDrawer
+export default HistoryDrawer;

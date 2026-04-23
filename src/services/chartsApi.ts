@@ -68,18 +68,18 @@
 
 // export default chartsApi
 
-import { supabase } from '../lib/supabase'
+import { supabase } from '../lib/supabase';
 
-const CHARTS_LIMIT = 5
+const CHARTS_LIMIT = 5;
 
 export const chartsApi = {
 
   async saveChart(userId: string, chartData: Record<string, unknown>) {
-    console.log('=== SAVE CHART DATA ===', chartData)
+    console.log('=== SAVE CHART DATA ===', chartData);
     if (!chartData.name) {
-      throw new Error('Chart name is required')
+      throw new Error('Chart name is required');
     }
-    
+
     const chartToSave = {
       user_id: userId,
       name: chartData.name,
@@ -90,21 +90,21 @@ export const chartsApi = {
       houses: chartData.houses,
       aspects: chartData.aspects,
       chart_data: chartData,
-    }
+    };
 
-    console.log('=== chartToSave ===', chartToSave)
+    console.log('=== chartToSave ===', chartToSave);
 
     const { data, error } = await supabase
       .from('natal_charts')
       .insert(chartToSave)
       .select()
-      .single()
+      .single();
 
     if (error) {
-      console.error('Supabase error:', error)
-      throw error
+      console.error('Supabase error:', error);
+      throw error;
     }
-    return data
+    return data;
   },
 
   async getCharts(userId: string) {
@@ -112,10 +112,10 @@ export const chartsApi = {
       .from('natal_charts')
       .select('*, chart_interpretations(*)')
       .eq('user_id', userId)
-      .order('created_at', { ascending: false })
+      .order('created_at', { ascending: false });
 
-    if (error) throw error
-    return data || []
+    if (error) throw error;
+    return data || [];
   },
 
   async deleteChart(chartId: number) {
@@ -123,31 +123,31 @@ export const chartsApi = {
     await supabase
       .from('chart_interpretations')
       .delete()
-      .eq('chart_id', chartId)
-    
+      .eq('chart_id', chartId);
+
     // Потом карту
     const { error } = await supabase
       .from('natal_charts')
       .delete()
-      .eq('id', chartId)
+      .eq('id', chartId);
 
-    if (error) throw error
-    return true
+    if (error) throw error;
+    return true;
   },
 
   async getChartsCount(userId: string) {
     const { count, error } = await supabase
       .from('natal_charts')
       .select('*', { count: 'exact', head: true })
-      .eq('user_id', userId)
+      .eq('user_id', userId);
 
-    if (error) throw error
-    return count || 0
+    if (error) throw error;
+    return count || 0;
   },
 
   async hasReachedLimit(userId: string) {
-    const count = await this.getChartsCount(userId)
-    return count >= CHARTS_LIMIT
+    const count = await this.getChartsCount(userId);
+    return count >= CHARTS_LIMIT;
   },
 
   async checkChartByName(userId: string, name: string) {
@@ -156,35 +156,35 @@ export const chartsApi = {
       .select('id, name')
       .eq('user_id', userId)
       .eq('name', name)
-      .single()
+      .single();
 
     if (error && error.code !== 'PGRST116') {
-      console.error('Check chart by name error:', error)
-      throw error
+      console.error('Check chart by name error:', error);
+      throw error;
     }
-    return data || null
+    return data || null;
   },
 
   getUniqueChartName(baseName: string, existingCharts: Array<{ name: string }>) {
-    const existingNames = new Set(existingCharts.map(c => c.name))
-    
+    const existingNames = new Set(existingCharts.map(c => c.name));
+
     if (!existingNames.has(baseName)) {
-      return baseName
+      return baseName;
     }
 
-    let counter = 1
-    let newName = `${baseName} (${counter})`
-    
+    let counter = 1;
+    let newName = `${baseName} (${counter})`;
+
     while (existingNames.has(newName)) {
-      counter++
-      newName = `${baseName} (${counter})`
+      counter++;
+      newName = `${baseName} (${counter})`;
     }
-    
-    return newName
+
+    return newName;
   },
 
   async saveInterpretation(chartId: number, type: string, interpretation: string) {
-    console.log('Saving interpretation for chart:', chartId)
+    console.log('Saving interpretation for chart:', chartId);
     const { data, error } = await supabase
       .from('chart_interpretations')
       .insert({
@@ -194,22 +194,22 @@ export const chartsApi = {
         created_at: new Date().toISOString()
       })
       .select()
-      .single()
+      .single();
 
     if (error) {
-      console.error('Supabase saveInterpretation error:', error)
-      throw error
+      console.error('Supabase saveInterpretation error:', error);
+      throw error;
     }
-    return data
+    return data;
   },
 
   async saveChartWithInterpretation(userId: string, chartData: Record<string, unknown>, interpretation: string) {
-    const chart = await this.saveChart(userId, chartData)
-    await this.saveInterpretation(chart.id, 'full', interpretation)
-    return chart
+    const chart = await this.saveChart(userId, chartData);
+    await this.saveInterpretation(chart.id, 'full', interpretation);
+    return chart;
   },
 
   CHARTS_LIMIT,
-}
+};
 
-export default chartsApi
+export default chartsApi;

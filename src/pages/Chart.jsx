@@ -1,52 +1,52 @@
-import { useState, useEffect } from 'react'
-import { useParams, Link } from 'react-router-dom'
-import { useTranslation } from 'react-i18next'
-import api from '../services/api'
-import Header from '../components/Header'
-import D3NatalChartWheel from '../components/D3NatalChartWheel'
-import PlanetTable from '../components/PlanetTable'
-import AspectGrid from '../components/AspectGrid'
+import { useState, useEffect } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import api from '../services/api';
+import Header from '../components/Header';
+import D3NatalChartWheel from '../components/D3NatalChartWheel';
+import PlanetTable from '../components/PlanetTable';
+import AspectGrid from '../components/AspectGrid';
 
 function Chart() {
-  const { id } = useParams()
-  const { t } = useTranslation()
-  const [chart, setChart] = useState(null)
-  const [interpretation, setInterpretation] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const { id } = useParams();
+  const { t } = useTranslation();
+  const [chart, setChart] = useState(null);
+  const [interpretation, setInterpretation] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    fetchChart()
-  }, [id])
+    fetchChart();
+  }, [id]);
 
   const fetchChart = async () => {
     try {
-      const response = await api.get(`/charts/${id}`)
-      setChart(response.data)
-      setLoading(false)
+      const response = await api.get(`/charts/${id}`);
+      setChart(response.data);
+      setLoading(false);
     } catch (err) {
-      setError(t('chart.error'))
-      setLoading(false)
+      setError(t('chart.error'));
+      setLoading(false);
     }
-  }
+  };
 
   const getInterpretation = async () => {
     try {
       const response = await api.post(`/charts/${id}/interpret`, {
         type: 'natal'
-      })
-      setInterpretation(response.data.interpretation)
+      });
+      setInterpretation(response.data.interpretation);
     } catch (err) {
-      console.error(err)
+      console.error(err);
     }
-  }
+  };
 
   // Парсим данные планет и аспектов если они в строковом формате
   const parseChartData = (chart) => {
     if (!chart) return null;
-    
+
     const parsedChart = { ...chart };
-    
+
     // Парсим планеты если они в строковом формате
     if (typeof chart.planets === 'string') {
       try {
@@ -56,7 +56,7 @@ function Chart() {
         parsedChart.planets = {};
       }
     }
-    
+
     // Парсим дома если они в строковом формате
     if (typeof chart.houses === 'string') {
       try {
@@ -66,7 +66,7 @@ function Chart() {
         parsedChart.houses = {};
       }
     }
-    
+
     // Парсим аспекты если они в строковом формате
     if (typeof chart.aspects === 'string') {
       try {
@@ -76,7 +76,7 @@ function Chart() {
         parsedChart.aspects = [];
       }
     }
-    
+
     return parsedChart;
   };
 
@@ -89,7 +89,7 @@ function Chart() {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   if (error) {
@@ -100,7 +100,7 @@ function Chart() {
           <Link to="/" className="btn btn-primary">{t('common.backHome')}</Link>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -121,7 +121,7 @@ function Chart() {
           display: 'flex',
           justifyContent: 'center'
         }}>
-          <D3NatalChartWheel 
+          <D3NatalChartWheel
             chartData={parseChartData(chart)}
             size={800}
           />
@@ -251,7 +251,7 @@ function Chart() {
 
         {/* Таблица планет */}
         <div style={{ margin: '40px 0' }}>
-          <PlanetTable 
+          <PlanetTable
             planets={parseChartData(chart)?.planets}
             houses={parseChartData(chart)?.houses}
           />
@@ -259,7 +259,7 @@ function Chart() {
 
         {/* Сетка аспектов */}
         <div style={{ margin: '40px 0' }}>
-          <AspectGrid 
+          <AspectGrid
             aspects={parseChartData(chart)?.aspects}
             planets={parseChartData(chart)?.planets}
           />
@@ -280,7 +280,7 @@ function Chart() {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default Chart
+export default Chart;

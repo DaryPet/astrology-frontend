@@ -54,18 +54,18 @@ const ConfirmEmail = () => {
     <>
       <Header />
       <div style={{ textAlign: 'center', marginTop: '40px', padding: '20px' }}>
-      <h2 style={{ color: isError ? '#e53e3e' : 'inherit' }}>{status}</h2>
-      {isError && (
-        <div style={{ marginTop: '20px' }}>
-          <p>{t('confirm.tryAgain')}</p>
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '16px' }}>
-            <a href={`/${currentLang}/register`} style={{ color: 'var(--accent)' }}>{t('confirm.registerLink')}</a>
-            <a href={`/${currentLang}/login`} style={{ color: 'var(--accent)' }}>{t('confirm.loginLink')}</a>
+        <h2 style={{ color: isError ? '#e53e3e' : 'inherit' }}>{status}</h2>
+        {isError && (
+          <div style={{ marginTop: '20px' }}>
+            <p>{t('confirm.tryAgain')}</p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '16px' }}>
+              <a href={`/${currentLang}/register`} style={{ color: 'var(--accent)' }}>{t('confirm.registerLink')}</a>
+              <a href={`/${currentLang}/login`} style={{ color: 'var(--accent)' }}>{t('confirm.loginLink')}</a>
+            </div>
           </div>
-        </div>
-      )}
-    </div>
-      </>
+        )}
+      </div>
+    </>
   );
 };
 

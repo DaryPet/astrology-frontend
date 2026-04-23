@@ -11,7 +11,7 @@ const ZODIAC_COLORS = [
 const PLANET_COLORS = {
   Sun: '#FFD700', Moon: '#C0C0C0', Mercury: '#8B7355', Venus: '#FFB6C1',
   Mars: '#FF4500', Jupiter: '#FFA500', Saturn: '#DAA520', Uranus: '#40E0D0',
-  Neptune: '#4169E1', Pluto: '#8B008B', Chiron: '#32CD32', 
+  Neptune: '#4169E1', Pluto: '#8B008B', Chiron: '#32CD32',
   NorthNode: '#9370DB', SouthNode: '#9370DB', Ascendant: '#FF1493',
   MC: '#00BFFF', IC: '#00BFFF', DC: '#FF1493'
 };
@@ -53,7 +53,7 @@ const D3NatalChartWheel = ({ chartData, size = 800 }) => {
       .endAngle((d, i) => ((i + 1) * Math.PI) / 6);
 
     const zodiacGroup = svg.append('g').attr('class', 'zodiac');
-    
+
     zodiacGroup.selectAll('.zodiac-sector')
       .data(d3.range(12))
       .enter()
@@ -110,7 +110,7 @@ const D3NatalChartWheel = ({ chartData, size = 800 }) => {
 
     // 5. Градусная сетка
     const gridGroup = svg.append('g').attr('class', 'grid');
-    
+
     // Основные линии каждые 30°
     for (let i = 0; i < 360; i += 30) {
       const angle = i * (Math.PI / 180);
@@ -118,7 +118,7 @@ const D3NatalChartWheel = ({ chartData, size = 800 }) => {
       const y1 = center + (radius * 0.7) * Math.sin(angle - Math.PI / 2);
       const x2 = center + radius * Math.cos(angle - Math.PI / 2);
       const y2 = center + radius * Math.sin(angle - Math.PI / 2);
-      
+
       gridGroup.append('line')
         .attr('x1', x1)
         .attr('y1', y1)
@@ -133,14 +133,14 @@ const D3NatalChartWheel = ({ chartData, size = 800 }) => {
     if (chartData.planets) {
       const planetsGroup = svg.append('g').attr('class', 'planets');
       const planetRadius = radius * 0.6;
-      
+
       Object.entries(chartData.planets).forEach(([name, data]) => {
         if (!data.full_degree) return;
-        
+
         const angle = (data.full_degree - 90) * (Math.PI / 180);
         const x = center + planetRadius * Math.cos(angle);
         const y = center + planetRadius * Math.sin(angle);
-        
+
         // Планета
         const planet = planetsGroup.append('circle')
           .attr('cx', x)
@@ -153,7 +153,7 @@ const D3NatalChartWheel = ({ chartData, size = 800 }) => {
           .attr('data-name', name)
           .on('mouseover', () => setHoveredElement({ type: 'planet', name, data }))
           .on('mouseout', () => setHoveredElement(null));
-        
+
         // Символ планеты
         planetsGroup.append('text')
           .attr('x', x)
@@ -171,21 +171,21 @@ const D3NatalChartWheel = ({ chartData, size = 800 }) => {
     if (chartData.aspects && chartData.aspects.length > 0 && chartData.planets) {
       const aspectsGroup = svg.append('g').attr('class', 'aspects');
       const planetRadius = radius * 0.6;
-      
+
       chartData.aspects.forEach((aspect, i) => {
         const planet1 = chartData.planets[aspect.planet1];
         const planet2 = chartData.planets[aspect.planet2];
-        
+
         if (!planet1 || !planet2) return;
-        
+
         const angle1 = (planet1.full_degree - 90) * (Math.PI / 180);
         const angle2 = (planet2.full_degree - 90) * (Math.PI / 180);
-        
+
         const x1 = center + planetRadius * Math.cos(angle1);
         const y1 = center + planetRadius * Math.sin(angle1);
         const x2 = center + planetRadius * Math.cos(angle2);
         const y2 = center + planetRadius * Math.sin(angle2);
-        
+
         // Цвет аспекта
         const aspectColor = {
           'Conjunction': '#FFD700',
@@ -194,7 +194,7 @@ const D3NatalChartWheel = ({ chartData, size = 800 }) => {
           'Square': '#FF6347',
           'Sextile': '#1E90FF'
         }[aspect.aspect] || '#7c3aed';
-        
+
         // Линия аспекта
         aspectsGroup.append('line')
           .attr('x1', x1)
@@ -224,7 +224,7 @@ const D3NatalChartWheel = ({ chartData, size = 800 }) => {
       const signDegree = data.full_degree % 30;
       const degrees = Math.floor(signDegree);
       const minutes = Math.floor((signDegree - degrees) * 60);
-      
+
       return (
         <div style={{
           position: 'absolute',
@@ -273,7 +273,7 @@ const D3NatalChartWheel = ({ chartData, size = 800 }) => {
         'Square': '#FF6347',
         'Sextile': '#1E90FF'
       }[aspect.aspect] || '#7c3aed';
-      
+
       return (
         <div style={{
           position: 'absolute',

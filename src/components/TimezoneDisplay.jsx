@@ -1,8 +1,8 @@
-import React from 'react'
+import React from 'react';
 
 /**
  * Компонент для отображения автоматически определенной таймзоны
- * 
+ *
  * @param {Object} props
  * @param {string} props.timezone - Таймзона в формате IANA (например, "Europe/Moscow")
  * @param {number} props.lat - Широта (опционально, для отображения координат)
@@ -15,14 +15,14 @@ const TimezoneDisplay = ({
   lon = null,
   label = 'Часовой пояс'
 }) => {
-  const hasCoordinates = lat !== null && lon !== null
-  const displayTimezone = timezone.replace('_', ' ')
-  
+  const hasCoordinates = lat !== null && lon !== null;
+  const displayTimezone = timezone.replace('_', ' ');
+
   // Форматируем координаты для отображения
   const formatCoordinates = () => {
-    if (!hasCoordinates) return null
-    return `${lat.toFixed(4)}°, ${lon.toFixed(4)}°`
-  }
+    if (!hasCoordinates) return null;
+    return `${lat.toFixed(4)}°, ${lon.toFixed(4)}°`;
+  };
 
   return (
     <div className="form-group">
@@ -42,10 +42,10 @@ const TimezoneDisplay = ({
           <>
             <span style={{ color: 'var(--accent-glow)', marginRight: '8px' }}>✓</span>
             {displayTimezone}
-            <span style={{ 
-              marginLeft: 'auto', 
-              fontSize: '12px', 
-              color: 'var(--text-secondary)' 
+            <span style={{
+              marginLeft: 'auto',
+              fontSize: '12px',
+              color: 'var(--text-secondary)'
             }}>
               Автоматически
             </span>
@@ -54,7 +54,7 @@ const TimezoneDisplay = ({
           'Выберите город для определения часового пояса'
         )}
       </div>
-      
+
       <div style={{
         marginTop: '4px',
         fontSize: '11px',
@@ -64,7 +64,7 @@ const TimezoneDisplay = ({
         alignItems: 'center'
       }}>
         <span>
-          {hasCoordinates 
+          {hasCoordinates
             ? `Координаты: ${formatCoordinates()}`
             : 'Часовой пояс будет определен автоматически после выбора города'
           }
@@ -82,7 +82,7 @@ const TimezoneDisplay = ({
         )}
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default TimezoneDisplay
+export default TimezoneDisplay;

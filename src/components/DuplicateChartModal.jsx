@@ -1,9 +1,9 @@
-import { useTranslation } from 'react-i18next'
+import { useTranslation } from 'react-i18next';
 
 function DuplicateChartModal({ isOpen, chartName, onClose, onConfirm }) {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
 
-  if (!isOpen) return null
+  if (!isOpen) return null;
 
   return (
     <div
@@ -54,7 +54,7 @@ function DuplicateChartModal({ isOpen, chartName, onClose, onConfirm }) {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default DuplicateChartModal
+export default DuplicateChartModal;

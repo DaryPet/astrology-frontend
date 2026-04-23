@@ -1,24 +1,24 @@
-import React, { useState, useEffect } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
-import { geocodeAPI, astrologyAPI } from '../services/api'
-import { useTranslation } from 'react-i18next'
-import { useAuth } from '../context/AuthContext'
-import i18n from '../i18n'
-import Header from '../components/Header'
-import LocationInput from '../components/LocationInput'
-import PlanetTable from '../components/PlanetTable'
-import PlanetAnalysisModal from '../components/PlanetAnalysisModal'
-import AspectGrid from '../components/AspectGrid'
-import AstroChartComponent from '../components/AstroChartComponent'
-import ProcessingMessage from '../components/ProcessingMessage'
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { geocodeAPI, astrologyAPI } from '../services/api';
+import { useTranslation } from 'react-i18next';
+import { useAuth } from '../context/AuthContext';
+import i18n from '../i18n';
+import Header from '../components/Header';
+import LocationInput from '../components/LocationInput';
+import PlanetTable from '../components/PlanetTable';
+import PlanetAnalysisModal from '../components/PlanetAnalysisModal';
+import AspectGrid from '../components/AspectGrid';
+import AstroChartComponent from '../components/AstroChartComponent';
+import ProcessingMessage from '../components/ProcessingMessage';
 
 function Home() {
-  const navigate = useNavigate()
-  const { lang } = useParams()
-  const { t, i18n: i18nInstance } = useTranslation()
-  const { isAuthenticated } = useAuth()
+  const navigate = useNavigate();
+  const { lang } = useParams();
+  const { t, i18n: i18nInstance } = useTranslation();
+  const { isAuthenticated } = useAuth();
 
-  const currentLang = lang || i18n.language || 'ru'
+  const currentLang = lang || i18n.language || 'ru';
 
   const [formData, setFormData] = useState({
     name: '',
@@ -28,17 +28,17 @@ function Home() {
     latitude: null,
     longitude: null,
     timezone: 'UTC'
-  })
-  
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [nameError, setNameError] = useState('')
-  const [chartData, setChartData] = useState(null)
-  const [selectedPlanet, setSelectedPlanet] = useState(null)
-  const [planetAnalysis, setPlanetAnalysis] = useState(null)
-  const [analysisLoading, setAnalysisLoading] = useState(false)
-  const [analysisError, setAnalysisError] = useState('')
-  const [fullAnalysisLoading, setFullAnalysisLoading] = useState(false)
+  });
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [nameError, setNameError] = useState('');
+  const [chartData, setChartData] = useState(null);
+  const [selectedPlanet, setSelectedPlanet] = useState(null);
+  const [planetAnalysis, setPlanetAnalysis] = useState(null);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [analysisError, setAnalysisError] = useState('');
+  const [fullAnalysisLoading, setFullAnalysisLoading] = useState(false);
 
   // Восстанавливаем данные карты из localStorage при загрузке страницы
   useEffect(() => {
@@ -55,26 +55,26 @@ function Home() {
   }, []);
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target
-    if (name === 'name') setNameError('')
-    setFormData(prev => ({ ...prev, [name]: value }))
-  }
+    const { name, value } = e.target;
+    if (name === 'name') setNameError('');
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
 
 
   const handleLocationSelect = async (location) => {
-    const lat = parseFloat(location.lat)
-    const lon = parseFloat(location.lon)
+    const lat = parseFloat(location.lat);
+    const lon = parseFloat(location.lon);
 
-    let timezone = location.timezone || 'UTC'
+    let timezone = location.timezone || 'UTC';
 
     if (lat && lon) {
       try {
-        const detectedTimezone = await geocodeAPI.detectTimezone(lat, lon)
+        const detectedTimezone = await geocodeAPI.detectTimezone(lat, lon);
         if (detectedTimezone && detectedTimezone !== 'UTC') {
-          timezone = detectedTimezone
+          timezone = detectedTimezone;
         }
       } catch (err) {
-        console.warn('Timezone detection warning:', err)
+        console.warn('Timezone detection warning:', err);
       }
     }
 
@@ -84,16 +84,16 @@ function Home() {
       latitude: lat,
       longitude: lon,
       timezone: timezone
-    }))
-  }
+    }));
+  };
 
   const handlePlanetClick = async (planetData) => {
     // Перевод названия планеты на текущий язык приложения
-    const planetName = t('planets.names.' + planetData.name)
-    setSelectedPlanet({ ...planetData, name: planetName })
-    setPlanetAnalysis(null)
-    setAnalysisError('')
-    setAnalysisLoading(true)
+    const planetName = t('planets.names.' + planetData.name);
+    setSelectedPlanet({ ...planetData, name: planetName });
+    setPlanetAnalysis(null);
+    setAnalysisError('');
+    setAnalysisLoading(true);
 
     // Проверяем есть ли сохраненный анализ в localStorage
     const savedAnalysis = localStorage.getItem(`planetAnalysis_${planetData.name}`);
@@ -105,7 +105,7 @@ function Home() {
     }
 
     try {
-      console.log('=== PLANET ANALYSIS REQUEST ===', { planet: planetData.name, sign: planetData.sign, degree: planetData.degree, house: planetData.house, is_retrograde: planetData.is_retrograde, language: i18n.language })
+      console.log('=== PLANET ANALYSIS REQUEST ===', { planet: planetData.name, sign: planetData.sign, degree: planetData.degree, house: planetData.house, is_retrograde: planetData.is_retrograde, language: i18n.language });
       const result = await astrologyAPI.getPlanetAnalysis({
         planet: planetData.name, // English name for API
         sign: planetData.sign,
@@ -115,48 +115,48 @@ function Home() {
         aspects: planetData.aspects,
         is_retrograde: planetData.is_retrograde,
         language: i18n.language
-      })
-      console.log('=== PLANET ANALYSIS RESPONSE ===', result)
-      setPlanetAnalysis(result.analysis)
+      });
+      console.log('=== PLANET ANALYSIS RESPONSE ===', result);
+      setPlanetAnalysis(result.analysis);
       // Сохраняем анализ планеты в localStorage (ключ - название планеты)
-      localStorage.setItem(`planetAnalysis_${planetData.name}`, result.analysis)
+      localStorage.setItem(`planetAnalysis_${planetData.name}`, result.analysis);
     } catch (err) {
-      console.error('Planet analysis error:', err)
-      const errorDetail = err.response?.data?.detail
+      console.error('Planet analysis error:', err);
+      const errorDetail = err.response?.data?.detail;
       if (typeof errorDetail === 'string') {
-        setAnalysisError(errorDetail)
+        setAnalysisError(errorDetail);
       } else if (Array.isArray(errorDetail)) {
-        setAnalysisError(errorDetail.map(e => e.msg || JSON.stringify(e)).join(', '))
+        setAnalysisError(errorDetail.map(e => e.msg || JSON.stringify(e)).join(', '));
       } else if (errorDetail?.msg) {
-        setAnalysisError(errorDetail.msg)
+        setAnalysisError(errorDetail.msg);
       } else {
-        setAnalysisError('Failed to load planet analysis')
+        setAnalysisError('Failed to load planet analysis');
       }
     } finally {
-      setAnalysisLoading(false)
+      setAnalysisLoading(false);
     }
-  }
+  };
 
   const handleCloseAnalysis = () => {
-    setSelectedPlanet(null)
-    setPlanetAnalysis(null)
-    setAnalysisError('')
-  }
+    setSelectedPlanet(null);
+    setPlanetAnalysis(null);
+    setAnalysisError('');
+  };
 
   const prepareChartDataForAnalysis = (chartData) => {
-    const zodiacSigns = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces']
-    const zodiacSignsRu = ['Овен', 'Телец', 'Близнецы', 'Рак', 'Лев', 'Дева', 'Весы', 'Скорпион', 'Стрелец', 'Козерог', 'Водолей', 'Рыбы']
+    const zodiacSigns = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
+    const zodiacSignsRu = ['Овен', 'Телец', 'Близнецы', 'Рак', 'Лев', 'Дева', 'Весы', 'Скорпион', 'Стрелец', 'Козерог', 'Водолей', 'Рыбы'];
     const planetNamesEn = {
       Sun: 'Sun', Moon: 'Moon', Mercury: 'Mercury', Venus: 'Venus', Mars: 'Mars',
       Jupiter: 'Jupiter', Saturn: 'Saturn', Uranus: 'Uranus', Neptune: 'Neptune',
       Pluto: 'Pluto', NorthNode: 'NorthNode', SouthNode: 'SouthNode', Chiron: 'Chiron',
       Lilith: 'Lilith', Ft: 'PartOfFortune', Vertex: 'Vertex'
-    }
+    };
 
-    const planets = {}
+    const planets = {};
     Object.entries(chartData.planets).forEach(([name, p]) => {
       if (p && p.full_degree !== undefined) {
-        const signIndex = Math.floor(p.full_degree / 30) % 12
+        const signIndex = Math.floor(p.full_degree / 30) % 12;
         planets[name] = {
           planet: planetNamesEn[name] || name,
           sign: p.sign || zodiacSigns[signIndex],
@@ -166,19 +166,19 @@ function Home() {
           speed: p.speed ?? 0,
           is_retrograde: (p.speed ?? 0) < 0,
           house: p.house
-        }
+        };
       }
-    })
+    });
 
-    const houses = {}
-    const houseNamesEn = ['1st House', '2nd House', '3rd House', '4th House', '5th House', '6th House', 
-                          '7th House', '8th House', '9th House', '10th House', '11th House', '12th House']
-    const houseNamesRu = ['Дом 1', 'Дом 2', 'Дом 3', 'Дом 4', 'Дом 5', 'Дом 6', 
-                          'Дом 7', 'Дом 8', 'Дом 9', 'Дом 10', 'Дом 11', 'Дом 12']
+    const houses = {};
+    const houseNamesEn = ['1st House', '2nd House', '3rd House', '4th House', '5th House', '6th House',
+      '7th House', '8th House', '9th House', '10th House', '11th House', '12th House'];
+    const houseNamesRu = ['Дом 1', 'Дом 2', 'Дом 3', 'Дом 4', 'Дом 5', 'Дом 6',
+      'Дом 7', 'Дом 8', 'Дом 9', 'Дом 10', 'Дом 11', 'Дом 12'];
     for (let i = 1; i <= 12; i++) {
-      const house = chartData.houses[i]
+      const house = chartData.houses[i];
       if (house) {
-        const signIndex = Math.floor((house.cusp_longitude || 0) / 30) % 12
+        const signIndex = Math.floor((house.cusp_longitude || 0) / 30) % 12;
         houses[i] = {
           house: i,
           name_en: houseNamesEn[i-1],
@@ -187,7 +187,7 @@ function Home() {
           sign: house.sign || zodiacSigns[signIndex],
           sign_ru: house.sign_ru || zodiacSignsRu[signIndex],
           degree: house.degree !== undefined ? house.degree : (house.cusp_longitude || 0) % 30
-        }
+        };
       }
     }
 
@@ -196,7 +196,7 @@ function Home() {
       armc: chartData.houses_meta?.armc || 0,
       vertex: chartData.houses_meta?.vertex || null,
       pars_fortuna: chartData.houses_meta?.pars_fortuna || null
-    }
+    };
 
     const meta = {
       birth_date: formData.birth_date ? `${formData.birth_date}T${formData.birth_time}:00+03:00` : null,
@@ -206,7 +206,7 @@ function Home() {
       timezone: formData.timezone,
       jd: chartData.jd,
       name: chartData.name || formData.name?.trim()
-    }
+    };
 
     return {
       sun_sign: chartData.sun_sign,
@@ -225,37 +225,37 @@ function Home() {
       meta,
       name: chartData.name || formData.name?.trim(),
       aspects: chartData.aspects || []
-    }
-  }
+    };
+  };
 
   const handleFullAnalysisClick = async () => {
-    const chartDataForAnalysis = prepareChartDataForAnalysis(chartData)
+    const chartDataForAnalysis = prepareChartDataForAnalysis(chartData);
     console.log('=== ОТПРАВЛЯЕМ НА ДАШБОРД ===', chartDataForAnalysis);
     // Чистим всё старое ДО перехода
-  localStorage.removeItem('savedFullAnalysis')
-  localStorage.removeItem('savedChartId')
-  localStorage.removeItem('chartDataForAnalysis')
+    localStorage.removeItem('savedFullAnalysis');
+    localStorage.removeItem('savedChartId');
+    localStorage.removeItem('chartDataForAnalysis');
     localStorage.setItem('chartDataForAnalysis', JSON.stringify(chartDataForAnalysis));
-    localStorage.removeItem('savedFullAnalysis')  // ← ДОБАВИТЬ ЭТУ СТРОКУ
-    localStorage.removeItem('savedChartId') 
-    
+    localStorage.removeItem('savedFullAnalysis');  // ← ДОБАВИТЬ ЭТУ СТРОКУ
+    localStorage.removeItem('savedChartId');
+
     if (!isAuthenticated) {
-      navigate(`/${currentLang}/login`, { state: { from: '/', chartDataForAnalysis, showFullAnalysis: true } })
+      navigate(`/${currentLang}/login`, { state: { from: '/', chartDataForAnalysis, showFullAnalysis: true } });
     } else {
-      navigate(`/${currentLang}/dashboard`, { state: { showFullAnalysis: true, chartDataForAnalysis } })
+      navigate(`/${currentLang}/dashboard`, { state: { showFullAnalysis: true, chartDataForAnalysis } });
     }
-  }
+  };
 
   const handleNewCalculation = () => {
-    localStorage.removeItem('savedChartData')
-    localStorage.removeItem('chartDataForAnalysis')
-    localStorage.removeItem('savedFullAnalysis')
+    localStorage.removeItem('savedChartData');
+    localStorage.removeItem('chartDataForAnalysis');
+    localStorage.removeItem('savedFullAnalysis');
     Object.keys(localStorage).forEach(key => {
       if (key.startsWith('planetAnalysis_')) {
-        localStorage.removeItem(key)
+        localStorage.removeItem(key);
       }
-    })
-    setChartData(null)
+    });
+    setChartData(null);
     setFormData({
       name: '',
       birth_date: '',
@@ -264,87 +264,87 @@ function Home() {
       latitude: null,
       longitude: null,
       timezone: 'UTC'
-    })
-  }
+    });
+  };
 
-const handleSubmit = async (e) => {
-  e.preventDefault()
-  setLoading(true)
-  setError('')
-  
-  if (!formData.name?.trim()) {
-    setNameError(i18n.language === 'ru' ? 'Введите название карты' : 'Enter chart name')
-    setLoading(false)
-    return
-  }
-  
-const apiData = {
-  birth_date: `${formData.birth_date}T${formData.birth_time}:00`,
-  birth_place: formData.city,
-  latitude: formData.latitude,
-  longitude: formData.longitude,
-  timezone: formData.timezone,
-  name: formData.name
-}
-  console.log('=== CHART CALCULATION REQUEST ===', JSON.stringify(apiData, null, 2))
-  
-  try {
-    const response = await astrologyAPI.calculateChart(apiData)
-    console.log('=== CHART CALCULATION RESPONSE ===', JSON.stringify(response, null, 2))
-    
-    // Добавляем Pars Fortuna и Vertex в planets для отображения в PlanetTable
-    const enhancedPlanets = {
-      ...response.planets,
-      ...(response.houses_meta?.pars_fortuna && {
-        Ft: { 
-          full_degree: response.houses_meta.pars_fortuna.longitude,
-          sign: response.houses_meta.pars_fortuna.sign,
-          sign_ru: response.houses_meta.pars_fortuna.sign_ru,
-          degree: response.houses_meta.pars_fortuna.degree,
-          house: response.houses_meta.pars_fortuna.house,
-          speed: 0
-        }
-      }),
-      ...(response.houses_meta?.vertex && {
-        Vertex: (() => {
-          const vertex = response.houses_meta.vertex;
-          const longitude = vertex.longitude;
-          const signIndex = Math.floor(longitude / 30) % 12;
-          const zodiacSigns = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
-          return {
-            full_degree: longitude,
-            sign: vertex.sign || zodiacSigns[signIndex],
-            sign_ru: vertex.sign_ru,
-            degree: vertex.degree !== undefined ? vertex.degree : longitude % 30,
-            house: vertex.house,
-            speed: 0
-          };
-        })()
-      })
-    };
-    
-    const chartName = formData.name?.trim()
-    
-    const chartDataToSave = {
-      ...response,
-      planets: enhancedPlanets,
-      vertex: response.houses_meta?.vertex !== undefined 
-        ? { longitude: response.houses_meta.vertex.longitude } 
-        : null,
-      name: chartName
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    if (!formData.name?.trim()) {
+      setNameError(i18n.language === 'ru' ? 'Введите название карты' : 'Enter chart name');
+      setLoading(false);
+      return;
     }
-    
-    setChartData(chartDataToSave)
-    // Сохраняем данные карты в localStorage
-    localStorage.setItem('savedChartData', JSON.stringify(chartDataToSave))
-    localStorage.removeItem('savedChartId')
-  } catch (err) {
-    console.error('Ошибка API:', err.response?.data)
-    setError(err.response?.data?.detail || t('home.errors.calcError'))
-  } finally {
-    setLoading(false)
-  }
-}
+
+    const apiData = {
+      birth_date: `${formData.birth_date}T${formData.birth_time}:00`,
+      birth_place: formData.city,
+      latitude: formData.latitude,
+      longitude: formData.longitude,
+      timezone: formData.timezone,
+      name: formData.name
+    };
+    console.log('=== CHART CALCULATION REQUEST ===', JSON.stringify(apiData, null, 2));
+
+    try {
+      const response = await astrologyAPI.calculateChart(apiData);
+      console.log('=== CHART CALCULATION RESPONSE ===', JSON.stringify(response, null, 2));
+
+      // Добавляем Pars Fortuna и Vertex в planets для отображения в PlanetTable
+      const enhancedPlanets = {
+        ...response.planets,
+        ...(response.houses_meta?.pars_fortuna && {
+          Ft: {
+            full_degree: response.houses_meta.pars_fortuna.longitude,
+            sign: response.houses_meta.pars_fortuna.sign,
+            sign_ru: response.houses_meta.pars_fortuna.sign_ru,
+            degree: response.houses_meta.pars_fortuna.degree,
+            house: response.houses_meta.pars_fortuna.house,
+            speed: 0
+          }
+        }),
+        ...(response.houses_meta?.vertex && {
+          Vertex: (() => {
+            const vertex = response.houses_meta.vertex;
+            const longitude = vertex.longitude;
+            const signIndex = Math.floor(longitude / 30) % 12;
+            const zodiacSigns = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
+            return {
+              full_degree: longitude,
+              sign: vertex.sign || zodiacSigns[signIndex],
+              sign_ru: vertex.sign_ru,
+              degree: vertex.degree !== undefined ? vertex.degree : longitude % 30,
+              house: vertex.house,
+              speed: 0
+            };
+          })()
+        })
+      };
+
+      const chartName = formData.name?.trim();
+
+      const chartDataToSave = {
+        ...response,
+        planets: enhancedPlanets,
+        vertex: response.houses_meta?.vertex !== undefined
+          ? { longitude: response.houses_meta.vertex.longitude }
+          : null,
+        name: chartName
+      };
+
+      setChartData(chartDataToSave);
+      // Сохраняем данные карты в localStorage
+      localStorage.setItem('savedChartData', JSON.stringify(chartDataToSave));
+      localStorage.removeItem('savedChartId');
+    } catch (err) {
+      console.error('Ошибка API:', err.response?.data);
+      setError(err.response?.data?.detail || t('home.errors.calcError'));
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <div className="home">
       <Header />
@@ -353,67 +353,67 @@ const apiData = {
         <div className="container">
           <h1>{t('home.title')}</h1>
           <p>{t('home.subtitle')}</p>
-          
+
           {!chartData && (
-          <div className="form-card">
-            {error && (
-              <div className="error">
-                {typeof error === 'object' 
-                  ? error.msg || error.message || t('home.errors.calcError')
-                  : error}
-              </div>
-            )}
-            
-            <form onSubmit={handleSubmit}>
-              <div className="form-group">
-                <label>{t('home.form.name')} *</label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  placeholder={t('home.form.namePlaceholder')}
-                />
-                {nameError && <div style={{color: 'red', fontSize: '12px', marginTop: '4px'}}>{nameError}</div>}
-              </div>
+            <div className="form-card">
+              {error && (
+                <div className="error">
+                  {typeof error === 'object'
+                    ? error.msg || error.message || t('home.errors.calcError')
+                    : error}
+                </div>
+              )}
 
-              <div className="form-row">
+              <form onSubmit={handleSubmit}>
                 <div className="form-group">
-                  <label>{t('home.form.birthDate')}</label>
+                  <label>{t('home.form.name')} *</label>
                   <input
-                    type="date"
-                    name="birth_date"
-                    value={formData.birth_date}
+                    type="text"
+                    name="name"
+                    value={formData.name}
                     onChange={handleInputChange}
-                    required
+                    placeholder={t('home.form.namePlaceholder')}
                   />
+                  {nameError && <div style={{color: 'red', fontSize: '12px', marginTop: '4px'}}>{nameError}</div>}
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>{t('home.form.birthDate')}</label>
+                    <input
+                      type="date"
+                      name="birth_date"
+                      value={formData.birth_date}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>{t('home.form.birthTime')}</label>
+                    <input
+                      type="time"
+                      name="birth_time"
+                      value={formData.birth_time}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
                 </div>
 
                 <div className="form-group">
-                  <label>{t('home.form.birthTime')}</label>
-                  <input
-                    type="time"
-                    name="birth_time"
-                    value={formData.birth_time}
-                    onChange={handleInputChange}
-                    required
+                  <label>{t('home.form.birthPlace')}</label>
+                  <LocationInput
+                    value={formData.city}
+                    onLocationSelect={handleLocationSelect}
+                    placeholder={t('home.form.cityPlaceholder')}
                   />
                 </div>
-              </div>
 
-              <div className="form-group">
-                <label>{t('home.form.birthPlace')}</label>
-                <LocationInput
-                  value={formData.city}
-                  onLocationSelect={handleLocationSelect}
-                  placeholder={t('home.form.cityPlaceholder')}
-                />
-              </div>
-
-              <button type="submit" className="btn-register" disabled={loading}>
-                {loading ? t('home.form.submitting') : t('home.form.submit')}
-              </button>
-            </form>
+                <button type="submit" className="btn-register" disabled={loading}>
+                  {loading ? t('home.form.submitting') : t('home.form.submit')}
+                </button>
+              </form>
             </div>
           )}
         </div>
@@ -421,7 +421,7 @@ const apiData = {
 
       {chartData && (
         <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
-          <div style={{ 
+          <div style={{
             textAlign: 'center',
             margin: '40px 0',
             padding: '20px',
@@ -433,9 +433,9 @@ const apiData = {
               {t('home.chart.title')}
             </h2>
             {chartData.name && (
-              <p style={{ 
-                fontSize: '18px', 
-                color: 'var(--text-secondary)', 
+              <p style={{
+                fontSize: '18px',
+                color: 'var(--text-secondary)',
                 marginBottom: '20px',
                 fontWeight: '500'
               }}>
@@ -443,15 +443,15 @@ const apiData = {
               </p>
             )}
             <div style={{ display: 'flex', justifyContent: 'center' }}>
-              <AstroChartComponent  
+              <AstroChartComponent
                 chartData={chartData}
                 size={700}
               />
             </div>
-            <div style={{ 
+            <div style={{
               display: 'flex',
               justifyContent: 'center',
-              marginTop: '30px', 
+              marginTop: '30px',
               color: 'var(--text-secondary)',
               fontSize: '14px'
             }}>
@@ -463,8 +463,8 @@ const apiData = {
               </div>
             </div>
 
-            <button 
-              type="button" 
+            <button
+              type="button"
               className="btn-full-analysis"
               onClick={handleFullAnalysisClick}
               disabled={fullAnalysisLoading}
@@ -513,7 +513,7 @@ const apiData = {
             </button>
           </div>
 
-          <div style={{ 
+          <div style={{
             background: 'var(--bg-card)',
             borderRadius: '12px',
             border: '1px solid var(--border)',
@@ -523,9 +523,9 @@ const apiData = {
             <h3 style={{ marginBottom: '20px', color: 'var(--text-primary)' }}>
               {t('home.chart.title')}
             </h3>
-            
+
             <div style={{ marginBottom: '40px' }}>
-              <PlanetTable 
+              <PlanetTable
                 planets={chartData.planets}
                 houses={chartData.houses}
                 onPlanetClick={handlePlanetClick}
@@ -544,7 +544,7 @@ const apiData = {
         </div>
       )}
     </div>
-  )
+  );
 }
 
-export default Home
+export default Home;

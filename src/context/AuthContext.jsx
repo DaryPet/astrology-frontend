@@ -35,7 +35,7 @@ export const AuthProvider = ({ children }) => {
     // Слушаем изменения авторизации (вход/выход)
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
-      
+
       if (session?.user) {
         ensureUserProfile(session.user.id);
       }
