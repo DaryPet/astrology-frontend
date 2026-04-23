@@ -9,6 +9,7 @@ import Header from '../components/Header';
 import ProcessingMessage from '../components/ProcessingMessage';
 import MarkdownContent from '../components/MarkdownContent';
 import DeleteChartModal from '../components/DeleteChartModal';
+import DuplicateChartModal from '../components/DuplicateChartModal';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -31,9 +32,11 @@ const Dashboard = () => {
   // });
   const [savedChartId, setSavedChartId] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [historyCharts, setHistoryCharts] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [pendingSaveName, setPendingSaveName] = useState(null);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -110,12 +113,23 @@ const Dashboard = () => {
   const handleSaveChartWithAnalysis = async () => {
     if (!user || !chartDataForAnalysis || !fullAnalysis) return
     
+    const chartName = chartDataForAnalysis.name || 'Карта'
+    
     console.log('=== SAVE TO DB ===', chartDataForAnalysis)
     setSaving(true)
     try {
       const hasLimit = await chartsApi.hasReachedLimit(user.id)
       if (hasLimit) {
         setShowDeleteModal(true)
+        setSaving(false)
+        return
+      }
+
+      const existingChart = await chartsApi.checkChartByName(user.id, chartName)
+      if (existingChart) {
+        setPendingSaveName(chartName)
+        setShowDuplicateModal(true)
+        setSaving(false)
         return
       }
       
@@ -126,6 +140,34 @@ const Dashboard = () => {
       )
       setSavedChartId(saved.id)
       localStorage.setItem('savedChartId', saved.id.toString())
+    } catch (err) {
+      console.error('Save error:', err)
+      setSaving(false)
+    }
+  };
+
+  const handleDuplicateConfirm = async () => {
+    if (!user || !chartDataForAnalysis || !fullAnalysis || !pendingSaveName) return
+
+    setShowDuplicateModal(false)
+    setSaving(true)
+    try {
+      const existingCharts = await chartsApi.getCharts(user.id)
+      const uniqueName = chartsApi.getUniqueChartName(pendingSaveName, existingCharts)
+      
+      const chartDataWithNewName = {
+        ...chartDataForAnalysis,
+        name: uniqueName
+      }
+      
+      const saved = await chartsApi.saveChartWithInterpretation(
+        user.id,
+        chartDataWithNewName,
+        fullAnalysis
+      )
+      setSavedChartId(saved.id)
+      localStorage.setItem('savedChartId', saved.id.toString())
+      setPendingSaveName(null)
     } catch (err) {
       console.error('Save error:', err)
     } finally {
@@ -455,6 +497,16 @@ const Dashboard = () => {
         isOpen={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
         onDeleted={handleDeleted}
+      />
+
+      <DuplicateChartModal
+        isOpen={showDuplicateModal}
+        chartName={pendingSaveName}
+        onClose={() => {
+          setShowDuplicateModal(false)
+          setPendingSaveName(null)
+        }}
+        onConfirm={handleDuplicateConfirm}
       />
     </div>
   );
