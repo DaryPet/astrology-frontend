@@ -25,7 +25,7 @@ function Synastry() {
     try {
       const res = await api.get(`/geocode/search?q=${encodeURIComponent(query)}`);
       setLocations(res.data.slice(0, 8));
-    } catch (err) { console.error(err); }
+    } catch { }
   };
 
   const selectLocation = (loc, personNum) => {

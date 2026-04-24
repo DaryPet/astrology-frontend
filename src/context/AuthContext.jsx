@@ -47,7 +47,6 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const signUp = async (email, password, name = '') => {
-    console.log('=== AuthContext.signUp ===', email);
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -55,7 +54,6 @@ export const AuthProvider = ({ children }) => {
         data: { name }
       }
     });
-    console.log('=== supabase.signUp result ===', { data, error });
     if (error) throw error;
 
     if (data.user) {
@@ -63,7 +61,7 @@ export const AuthProvider = ({ children }) => {
         .from('users')
         .insert({ id: data.user.id, name: name || null });
       if (userError) {
-        console.error('Error creating user profile:', userError);
+        // Error creating user profile
       }
     }
 
@@ -71,12 +69,10 @@ export const AuthProvider = ({ children }) => {
   };
 
   const signIn = async (email, password) => {
-    console.log('=== AuthContext.signIn ===', email);
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password
     });
-    console.log('=== supabase.signIn result ===', { data, error });
     if (error) throw error;
     return data;
   };
@@ -104,17 +100,14 @@ export const AuthProvider = ({ children }) => {
   };
 
   const signInWithGoogle = async () => {
-    console.log('=== AuthContext.signInWithGoogle ===');
     const pathParts = window.location.pathname.split('/');
     const lang = pathParts[1] || 'ru';
-    console.log('=== redirectTo ===', `${window.location.origin}/${lang}/dashboard`);
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/${lang}/dashboard`
       }
     });
-    console.log('=== supabase.signInWithOAuth result ===', { data, error });
     if (error) throw error;
     return data;
   };

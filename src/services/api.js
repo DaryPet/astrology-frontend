@@ -29,7 +29,6 @@ export const geocodeAPI = {
       );
       return response.data || [];
     } catch (error) {
-      console.error('Geocode autocomplete error:', error);
       throw new Error(`Не удалось найти города: ${error.message}`);
     }
   },
@@ -49,7 +48,6 @@ export const geocodeAPI = {
       const response = await api.get(`/geocode/coordinates?lat=${lat}&lon=${lon}`);
       return response.data;
     } catch (error) {
-      console.error('Reverse geocode error:', error);
       throw new Error(`Не удалось определить информацию о месте: ${error.message}`);
     }
   },
@@ -64,8 +62,7 @@ export const geocodeAPI = {
     try {
       const locationInfo = await geocodeAPI.getLocationInfo(lat, lon);
       return locationInfo.timezone || 'UTC';
-    } catch (error) {
-      console.error('Timezone detection error:', error);
+    } catch {
       return 'UTC'; // Fallback на UTC если не удалось определить
     }
   }
@@ -83,7 +80,6 @@ export const astrologyAPI = {
       const response = await api.post('/chart/calculate', data);
       return response.data;
     } catch (error) {
-      console.error('Chart calculation error:', error);
       throw error;
     }
   },
@@ -98,7 +94,6 @@ export const astrologyAPI = {
       const response = await api.post('/transits', data);
       return response.data;
     } catch (error) {
-      console.error('Transits calculation error:', error);
       throw error;
     }
   },
@@ -113,7 +108,6 @@ export const astrologyAPI = {
       const response = await api.post('/synastry/direct', data);
       return response.data;
     } catch (error) {
-      console.error('Synastry calculation error:', error);
       throw error;
     }
   },
@@ -123,7 +117,6 @@ export const astrologyAPI = {
       const response = await api.post('/analysis/planet', planetData);
       return response.data;
     } catch (error) {
-      console.error('Planet analysis error:', error);
       throw error;
     }
   },
@@ -136,9 +129,8 @@ export const astrologyAPI = {
         top_books: topBooks
       });
       return response.data;
-    } catch (error) {
-      console.error('Full chart analysis error:', error);
-      throw error;
+    } catch {
+      return 'UTC'; // Fallback на UTC если не удалось определить
     }
   }
 };

@@ -6,7 +6,7 @@ const ASPECT_COLORS = {
   'Square': '#FF6347', 'Sextile': '#1E90FF', 'Quincunx': '#9370DB'
 };
 
-const AspectGrid = ({ aspects, planets }) => {
+const AspectGrid = ({ aspects, _planets }) => {
   const { t } = useTranslation();
   const [selectedAspect, setSelectedAspect] = useState(null);
 

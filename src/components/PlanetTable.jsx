@@ -46,13 +46,12 @@ const PlanetTable = ({ planets, houses, onPlanetClick }) => {
 
   // Преобразуем объект планет в массив
   const planetList = Object.entries(planets)
-    .filter(([name, data]) => data && data.full_degree !== undefined)
+    .filter(([, data]) => data && data.full_degree !== undefined)
     .map(([name, data]) => {
       const degree = parseFloat(data.full_degree);
 
       // Защита от NaN
       if (isNaN(degree)) {
-        console.warn(`Invalid degree for planet ${name}:`, data.full_degree);
         return null;
       }
 

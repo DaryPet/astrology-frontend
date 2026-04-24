@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
@@ -46,7 +46,7 @@ const Dashboard = () => {
     if (!loading && !isAuthenticated) {
       navigate(`/${currentLang}/login`);
     }
-  }, [loading, isAuthenticated, navigate]);
+  }, [loading, isAuthenticated, navigate, currentLang]);
 
   // Читаем данные из localStorage при загрузке
   useEffect(() => {
@@ -54,20 +54,19 @@ const Dashboard = () => {
     if (savedData && !chartDataForAnalysis) {
       try {
         const parsed = JSON.parse(savedData);
-        console.log('=== ВОССТАНОВЛЕНО ИЗ LOCALSTORAGE ===', parsed);
         setChartDataForAnalysis(parsed);
-      } catch (e) {
-        console.error('Error parsing saved data:', e);
+      } catch {
+        // Error parsing saved data
       }
     }
 
     // Восстанавливаем сохраненный анализ из localStorage
     const savedAnalysis = localStorage.getItem('savedFullAnalysis');
     if (savedAnalysis && !fullAnalysis) {
-      console.log('=== ВОССТАНОВЛЕН АНАЛИЗ ИЗ LOCALSTORAGE ===');
       setFullAnalysis(savedAnalysis);
       setShowFullAnalysis(true);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -84,42 +83,49 @@ const Dashboard = () => {
     }
   }, [location.state]);
 
-  useEffect(() => {
-    if (showFullAnalysis && chartDataForAnalysis && !fullAnalysis && !analysisLoading) {
-      console.log('=== ВЫЗЫВАЕМ loadFullAnalysis ===', { showFullAnalysis, chartDataForAnalysis, fullAnalysis });
-      loadFullAnalysis();
-    }
-  }, [showFullAnalysis, chartDataForAnalysis, fullAnalysis, analysisLoading]);
-
-  const loadFullAnalysis = async () => {
+  const loadFullAnalysis = useCallback(async () => {
+    if (!chartDataForAnalysis) return;
     setAnalysisLoading(true);
     setAnalysisError('');
     try {
-      console.log('=== ОТПРАВЛЯЕМ НА СЕРВЕР ===', { chartDataForAnalysis, language: i18n.language, topBooks: 5 });
       const result = await astrologyAPI.getFullChartAnalysis(
         chartDataForAnalysis,
         i18n.language,
         5
       );
-      console.log('=== ОТВЕТ ОТ СЕРВЕРА ===', result);
-      console.log('=== ANALYSIS ===', result.analysis);
       setFullAnalysis(result.analysis);
       localStorage.setItem('savedFullAnalysis', result.analysis);
     } catch (err) {
-      console.error('Full analysis error:', err);
-      console.error('Error response:', err.response?.data);
       setAnalysisError(err.response?.data?.detail || t('dashboard.errors.analysisError'));
     } finally {
       setAnalysisLoading(false);
     }
-  };
+  }, [chartDataForAnalysis, t]);
+
+  useEffect(() => {
+    if (showFullAnalysis && chartDataForAnalysis && !fullAnalysis && !analysisLoading) {
+      loadFullAnalysis();
+    }
+  }, [showFullAnalysis, chartDataForAnalysis, fullAnalysis, analysisLoading, loadFullAnalysis]);
+
+  const loadHistoryCharts = useCallback(async () => {
+    if (!user) return;
+    setHistoryLoading(true);
+    try {
+      const data = await chartsApi.getCharts(user.id);
+      setHistoryCharts(data);
+    } catch {
+      // Error loading charts
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, [user]);
 
   const handleSaveChartWithAnalysis = async () => {
     if (!user || !chartDataForAnalysis || !fullAnalysis) return;
 
     const chartName = chartDataForAnalysis.name || 'Карта';
 
-    console.log('=== SAVE TO DB ===', chartDataForAnalysis);
     setSaving(true);
     try {
       const hasLimit = await chartsApi.hasReachedLimit(user.id);
@@ -144,8 +150,7 @@ const Dashboard = () => {
       );
       setSavedChartId(saved.id);
       localStorage.setItem('savedChartId', saved.id.toString());
-    } catch (err) {
-      console.error('Save error:', err);
+    } catch {
       setSaving(false);
     }
   };
@@ -172,8 +177,8 @@ const Dashboard = () => {
       setSavedChartId(saved.id);
       localStorage.setItem('savedChartId', saved.id.toString());
       setPendingSaveName(null);
-    } catch (err) {
-      console.error('Save error:', err);
+    } catch {
+      // Error
     } finally {
       setSaving(false);
     }
@@ -209,19 +214,6 @@ const Dashboard = () => {
     }
   };
 
-  const loadHistoryCharts = async () => {
-    if (!user) return;
-    setHistoryLoading(true);
-    try {
-      const data = await chartsApi.getCharts(user.id);
-      setHistoryCharts(data);
-    } catch (err) {
-      console.error('Load charts error:', err);
-    } finally {
-      setHistoryLoading(false);
-    }
-  };
-
   const handleDeleteFromHistory = (chart, e) => {
     e.stopPropagation();
     setChartToDelete(chart);
@@ -236,8 +228,8 @@ const Dashboard = () => {
       setConfirmDeleteModal(false);
       setChartToDelete(null);
       loadHistoryCharts();
-    } catch (err) {
-      console.error('Delete error:', err);
+    } catch {
+      // Error deleting chart
     } finally {
       setDeletingChart(false);
     }
@@ -255,16 +247,11 @@ const Dashboard = () => {
     return '🌟';
   };
 
-  const formatDate = (dateStr) => {
-    if (!dateStr) return '';
-    return new Date(dateStr).toLocaleDateString();
-  };
-
   useEffect(() => {
     if (showHistory && user) {
       loadHistoryCharts();
     }
-  }, [showHistory, user]);
+  }, [showHistory, user, loadHistoryCharts]);
 
   if (loading) {
     return (
@@ -360,7 +347,7 @@ const Dashboard = () => {
                             onClick={handleSaveChartWithAnalysis}
                             disabled={saving}
                           >
-                             {saving ? '...' : t('dashboard.actions.save')}
+                            {saving ? '...' : t('dashboard.actions.save')}
                           </button>
                         </div>
                       )}
@@ -424,9 +411,9 @@ const Dashboard = () => {
                               <div style={{ fontSize: '13px', fontWeight: '600' }}>
                                 {getSunSignEmoji(chart.sun_sign)} {chart.name || 'Карта'}
                               </div>
-                               <button
-                                 onClick={(e) => handleDeleteFromHistory(chart, e)}
-                                 style={{
+                              <button
+                                onClick={(e) => handleDeleteFromHistory(chart, e)}
+                                style={{
                                   background: 'none',
                                   border: 'none',
                                   fontSize: '14px',
@@ -477,12 +464,30 @@ const Dashboard = () => {
                   border: 'none',
                   borderRadius: '8px',
                   fontSize: '16px',
-                  fontWeight: '600',
+                  fontWeight: '500',
                   cursor: 'pointer',
                   marginTop: '20px'
                 }}
               >
                 {t('dashboard.actions.newChart')}
+              </button>
+
+              <button
+                onClick={handleLogout}
+                style={{
+                  width: '100%',
+                  background: 'transparent',
+                  color: 'var(--text-primary)',
+                  padding: '14px 24px',
+                  border: '1px solid var(--border)',
+                  borderRadius: '8px',
+                  fontSize: '16px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  marginTop: '12px'
+                }}
+              >
+                {t('dashboard.actions.logout')}
               </button>
 
               <button

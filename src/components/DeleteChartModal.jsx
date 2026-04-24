@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { chartsApi } from '../services/chartsApi';
 import ConfirmDeleteModal from './ConfirmDeleteModal';
 
-function DeleteChartModal({ isOpen, onClose, onDeleted, chartToDelete, onConfirmDelete }) {
+function DeleteChartModal({ isOpen, onClose, onDeleted, chartToDelete }) {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [charts, setCharts] = useState([]);
@@ -13,11 +13,23 @@ function DeleteChartModal({ isOpen, onClose, onDeleted, chartToDelete, onConfirm
   const [deleting, setDeleting] = useState(false);
   const [confirmDeleteInModal, setConfirmDeleteInModal] = useState(false);
 
+  const loadCharts = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await chartsApi.getCharts(user.id);
+      setCharts(data);
+    } catch (err) {
+      throw err; // Error loading charts
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
   useEffect(() => {
     if (isOpen && user && !chartToDelete) {
       loadCharts();
     }
-  }, [isOpen, user, chartToDelete]);
+  }, [isOpen, user, chartToDelete, loadCharts]);
 
   useEffect(() => {
     if (chartToDelete) {
@@ -26,18 +38,6 @@ function DeleteChartModal({ isOpen, onClose, onDeleted, chartToDelete, onConfirm
       setSelectedId(null);
     }
   }, [chartToDelete]);
-
-  const loadCharts = async () => {
-    setLoading(true);
-    try {
-      const data = await chartsApi.getCharts(user.id);
-      setCharts(data);
-    } catch (err) {
-      console.error('Load charts error:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleDelete = () => {
     if (!selectedId) return;
@@ -51,8 +51,8 @@ function DeleteChartModal({ isOpen, onClose, onDeleted, chartToDelete, onConfirm
       setConfirmDeleteInModal(false);
       onDeleted?.();
       onClose();
-    } catch (err) {
-      console.error('Delete error:', err);
+    } catch {
+      // Error deleting
     } finally {
       setDeleting(false);
     }

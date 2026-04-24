@@ -75,7 +75,6 @@ const CHARTS_LIMIT = 5;
 export const chartsApi = {
 
   async saveChart(userId: string, chartData: Record<string, unknown>) {
-    console.log('=== SAVE CHART DATA ===', chartData);
     if (!chartData.name) {
       throw new Error('Chart name is required');
     }
@@ -92,8 +91,6 @@ export const chartsApi = {
       chart_data: chartData,
     };
 
-    console.log('=== chartToSave ===', chartToSave);
-
     const { data, error } = await supabase
       .from('natal_charts')
       .insert(chartToSave)
@@ -101,7 +98,6 @@ export const chartsApi = {
       .single();
 
     if (error) {
-      console.error('Supabase error:', error);
       throw error;
     }
     return data;
@@ -159,7 +155,6 @@ export const chartsApi = {
       .single();
 
     if (error && error.code !== 'PGRST116') {
-      console.error('Check chart by name error:', error);
       throw error;
     }
     return data || null;
@@ -184,7 +179,6 @@ export const chartsApi = {
   },
 
   async saveInterpretation(chartId: number, type: string, interpretation: string) {
-    console.log('Saving interpretation for chart:', chartId);
     const { data, error } = await supabase
       .from('chart_interpretations')
       .insert({
@@ -197,7 +191,6 @@ export const chartsApi = {
       .single();
 
     if (error) {
-      console.error('Supabase saveInterpretation error:', error);
       throw error;
     }
     return data;

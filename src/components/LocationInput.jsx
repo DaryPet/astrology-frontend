@@ -59,8 +59,7 @@ const LocationInput = ({
 
       setLocations(results.slice(0, 8));
       setShowLocations(true);
-    } catch (err) {
-      console.error('Geocode autocomplete error:', err);
+    } catch {
       setSearchError(t('home.form.locationErrorService'));
       setLocations([]);
     } finally {
