@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import * as d3 from 'd3';
 import { useTranslation } from 'react-i18next';
 
@@ -22,9 +22,11 @@ const D3NatalChartWheel = ({ chartData, size = 800 }) => {
   const { t } = useTranslation();
   const svgRef = useRef(null);
   const [hoveredElement, setHoveredElement] = useState(null);
-
   // Ключи знаков для переводов
-  const zodiacKeys = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
+  const zodiacKeys = useMemo(() => [
+    'Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
+    'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'
+  ], []);
 
   useEffect(() => {
     if (!chartData || !svgRef.current) return;
@@ -142,7 +144,7 @@ const D3NatalChartWheel = ({ chartData, size = 800 }) => {
         const y = center + planetRadius * Math.sin(angle);
 
         // Планета
-        const planet = planetsGroup.append('circle')
+        planetsGroup.append('circle')
           .attr('cx', x)
           .attr('cy', y)
           .attr('r', size * 0.015)
@@ -212,7 +214,7 @@ const D3NatalChartWheel = ({ chartData, size = 800 }) => {
       });
     }
 
-  }, [chartData, size]);
+  }, [chartData, size, t, zodiacKeys]);
 
   // Тултип
   const renderTooltip = () => {

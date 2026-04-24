@@ -27,8 +27,8 @@ function SaveChartButton({ chartData, onSaved, onLimitReached }) {
       onSaved?.();
 
       setTimeout(() => setShowToast(false), 3000);
-    } catch (err) {
-      console.error('Save chart error:', err);
+    } catch {
+      // Error
     } finally {
       setSaving(false);
     }

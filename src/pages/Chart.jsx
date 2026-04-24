@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import api from '../services/api';
@@ -17,18 +17,18 @@ function Chart() {
 
   useEffect(() => {
     fetchChart();
-  }, [id]);
+  }, [id, fetchChart]);
 
-  const fetchChart = async () => {
+  const fetchChart = useCallback(async () => {
     try {
       const response = await api.get(`/charts/${id}`);
       setChart(response.data);
       setLoading(false);
-    } catch (err) {
+    } catch {
       setError(t('chart.error'));
       setLoading(false);
     }
-  };
+  }, [id, t]);
 
   const getInterpretation = async () => {
     try {
@@ -36,48 +36,36 @@ function Chart() {
         type: 'natal'
       });
       setInterpretation(response.data.interpretation);
-    } catch (err) {
-      console.error(err);
+    } catch (error) {
+      throw error; // Interpretation fetching error
     }
   };
 
-  // Парсим данные планет и аспектов если они в строковом формате
-  const parseChartData = (chart) => {
-    if (!chart) return null;
+  // Helper function to parse chart data (handles string-formatted houses and aspects)
+  const parseChartData = (chartData) => {
+    if (!chartData) return null;
 
-    const parsedChart = { ...chart };
+    const parsed = { ...chartData };
 
-    // Парсим планеты если они в строковом формате
-    if (typeof chart.planets === 'string') {
+    // Parse houses if they are in string format
+    if (typeof parsed.houses === 'string') {
       try {
-        parsedChart.planets = JSON.parse(chart.planets);
-      } catch (e) {
-        console.error('Error parsing planets:', e);
-        parsedChart.planets = {};
+        parsed.houses = JSON.parse(parsed.houses);
+      } catch {
+        parsed.houses = {};
       }
     }
 
-    // Парсим дома если они в строковом формате
-    if (typeof chart.houses === 'string') {
+    // Parse aspects if they are in string format
+    if (typeof parsed.aspects === 'string') {
       try {
-        parsedChart.houses = JSON.parse(chart.houses);
-      } catch (e) {
-        console.error('Error parsing houses:', e);
-        parsedChart.houses = {};
+        parsed.aspects = JSON.parse(parsed.aspects);
+      } catch {
+        parsed.aspects = [];
       }
     }
 
-    // Парсим аспекты если они в строковом формате
-    if (typeof chart.aspects === 'string') {
-      try {
-        parsedChart.aspects = JSON.parse(chart.aspects);
-      } catch (e) {
-        console.error('Error parsing aspects:', e);
-        parsedChart.aspects = [];
-      }
-    }
-
-    return parsedChart;
+    return parsed;
   };
 
   if (loading) {

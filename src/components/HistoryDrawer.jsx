@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { chartsApi } from '../services/chartsApi';
@@ -13,19 +13,19 @@ function HistoryDrawer({ isOpen, onClose, onSelectChart, isMobile = false }) {
     if (isOpen && user) {
       loadCharts();
     }
-  }, [isOpen, user]);
+  }, [isOpen, user, loadCharts]);
 
-  const loadCharts = async () => {
+  const loadCharts = useCallback(async () => {
     setLoading(true);
     try {
       const data = await chartsApi.getCharts(user.id);
       setCharts(data);
-    } catch (err) {
-      console.error('Load charts error:', err);
+    } catch {
+      // Error loading charts
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
   const handleDelete = async (chartId, e) => {
     e.stopPropagation();
@@ -34,8 +34,8 @@ function HistoryDrawer({ isOpen, onClose, onSelectChart, isMobile = false }) {
     try {
       await chartsApi.deleteChart(chartId);
       loadCharts();
-    } catch (err) {
-      console.error('Delete error:', err);
+    } catch {
+      // Error deleting
     }
   };
 

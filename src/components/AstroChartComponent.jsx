@@ -17,7 +17,7 @@ const AstroChartComponent = ({ chartData, size = 700 }) => {
       try {
         const chart = new Chart(containerId, size, size, {
           SHOW_DIGNITIES_TEXT: false,
-          CUSTOM_SYMBOL_FN: (name, x, y, context) => {
+          CUSTOM_SYMBOL_FN: (name, x, y) => {
             if (name === 'Vx') {
               const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
               const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
@@ -66,7 +66,7 @@ const AstroChartComponent = ({ chartData, size = 700 }) => {
         radix.addPointsOfInterest(radixData.planets);
         radix.aspects(calculatedAspects);
       } catch (error) {
-        console.error('Ошибка:', error);
+        throw error; // Chart rendering error
       }
     });
   }, [chartData, size]);
@@ -86,24 +86,12 @@ const AstroChartComponent = ({ chartData, size = 700 }) => {
       'Vertex': 'Vx'
     };
 
-    console.log('=== DEBUG AstroChartComponent ===');
-    console.log('planets keys:', Object.keys(data.planets));
-    console.log('Has Chiron?', 'Chiron' in data.planets);
-    console.log('Chiron data:', data.planets['Chiron']);
-    console.log('Vertex data:', data.vertex);
-    console.log('Fortune data:', data.houses_meta?.pars_fortuna);
-
     Object.entries(data.planets).forEach(([name, p]) => {
       const key = planetMapping[name];
-      console.log(`  ${name} -> key: ${key}, full_degree: ${p?.full_degree}, speed: ${p?.speed}`);
       if (key && p?.full_degree !== undefined) {
-        // Формат: [degree, speed]
-        // speed - скорость планеты (градусы/день). Если < 0, планета ретроградна
         planets[key] = [p.full_degree % 360, p.speed ?? 0];
       }
     });
-
-    console.log('result planets:', Object.keys(planets));
 
     // Вершина (Vertex)
     if (data.vertex && data.vertex.longitude !== undefined) {

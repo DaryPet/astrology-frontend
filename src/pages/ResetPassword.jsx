@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import { useAuth } from '../context/AuthContext';
@@ -8,7 +7,6 @@ import { useTranslation } from 'react-i18next';
 import Header from '../components/Header';
 
 const ResetPassword = () => {
-  const navigate = useNavigate();
   const { updatePassword } = useAuth();
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);

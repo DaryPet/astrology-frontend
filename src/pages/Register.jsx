@@ -42,23 +42,17 @@ const Register = () => {
   });
 
   const handleSubmit = async (values, { setSubmitting }) => {
-    console.log('=== НАЖАТА КНОПКА РЕГИСТРАЦИИ ===', values.email);
     setLoading(true);
     setError('');
     try {
-      console.log('=== ВЫЗЫВАЕМ signUp ===');
       const data = await signUp(values.email, values.password, values.name);
-      console.log('=== ОТВЕТ signUp ===', data);
 
       if (data.session) {
-        console.log('=== ЕСТЬ СЕССИЯ - ПЕРЕХОДИМ НА DASHBOARD ===');
         navigate(`/${currentLang}/dashboard`);
       } else {
-        console.log('=== НЕТ СЕССИИ - ПОКАЗЫВАЕМ message ===');
         setEmailSent(true);
       }
     } catch (err) {
-      console.error('=== ОШИБКА РЕГИСТРАЦИИ ===', err);
       setError(err.message || t('register.errors.registerError'));
     } finally {
       setLoading(false);
@@ -67,15 +61,11 @@ const Register = () => {
   };
 
   const handleGoogleSignIn = async () => {
-    console.log('=== GOOGLE SIGN IN clicked ===');
     setGoogleLoading(true);
     setError('');
     try {
-      console.log('=== call signInWithGoogle ===');
       await signInWithGoogle();
-      console.log('=== signInWithGoogle OK ===');
     } catch (err) {
-      console.error('=== GOOGLE ERROR ===', err);
       setError(err.message || t('register.errors.registerError'));
       setGoogleLoading(false);
     }

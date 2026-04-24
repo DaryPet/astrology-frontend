@@ -18,8 +18,8 @@ const Logout = () => {
         localStorage.removeItem('chartDataForAnalysis');
         localStorage.removeItem('savedChartId');
         await signOut();
-      } catch (error) {
-        console.log('Logout error:', error);
+      } catch {
+        // Logout error
       } finally {
         navigate(`/${currentLang}/`);
       }

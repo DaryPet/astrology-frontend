@@ -8,14 +8,14 @@ import Header from '../components/Header';
 import LocationInput from '../components/LocationInput';
 import PlanetTable from '../components/PlanetTable';
 import PlanetAnalysisModal from '../components/PlanetAnalysisModal';
-import AspectGrid from '../components/AspectGrid';
+// import AspectGrid from '../components/AspectGrid';
 import AstroChartComponent from '../components/AstroChartComponent';
 import ProcessingMessage from '../components/ProcessingMessage';
 
 function Home() {
   const navigate = useNavigate();
   const { lang } = useParams();
-  const { t, i18n: i18nInstance } = useTranslation();
+  const { t} = useTranslation();
   const { isAuthenticated } = useAuth();
 
   const currentLang = lang || i18n.language || 'ru';
@@ -38,7 +38,7 @@ function Home() {
   const [planetAnalysis, setPlanetAnalysis] = useState(null);
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [analysisError, setAnalysisError] = useState('');
-  const [fullAnalysisLoading, setFullAnalysisLoading] = useState(false);
+  const [fullAnalysisLoading] = useState(false);
 
   // Восстанавливаем данные карты из localStorage при загрузке страницы
   useEffect(() => {
@@ -46,13 +46,13 @@ function Home() {
     if (savedChartData && !chartData) {
       try {
         const parsed = JSON.parse(savedChartData);
-        console.log('=== ВОССТАНОВЛЕНА КАРТА ИЗ LOCALSTORAGE ===', parsed);
+        // console.log('=== ВОССТАНОВЛЕНА КАРТА ИЗ LOCALSTORAGE ===', parsed);
         setChartData(parsed);
       } catch (e) {
         console.error('Error parsing saved chart data:', e);
       }
     }
-  }, []);
+  }, [chartData]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -98,14 +98,14 @@ function Home() {
     // Проверяем есть ли сохраненный анализ в localStorage
     const savedAnalysis = localStorage.getItem(`planetAnalysis_${planetData.name}`);
     if (savedAnalysis) {
-      console.log('=== ВОССТАНОВЛЕН АНАЛИЗ ПЛАНЕТЫ ИЗ LOCALSTORAGE ===', planetData.name);
+      // console.log('=== ВОССТАНОВЛЕН АНАЛИЗ ПЛАНЕТЫ ИЗ LOCALSTORAGE ===', planetData.name);
       setPlanetAnalysis(savedAnalysis);
       setAnalysisLoading(false);
       return;
     }
 
     try {
-      console.log('=== PLANET ANALYSIS REQUEST ===', { planet: planetData.name, sign: planetData.sign, degree: planetData.degree, house: planetData.house, is_retrograde: planetData.is_retrograde, language: i18n.language });
+      // console.log('=== PLANET ANALYSIS REQUEST ===', { planet: planetData.name, sign: planetData.sign, degree: planetData.degree, house: planetData.house, is_retrograde: planetData.is_retrograde, language: i18n.language });
       const result = await astrologyAPI.getPlanetAnalysis({
         planet: planetData.name, // English name for API
         sign: planetData.sign,
