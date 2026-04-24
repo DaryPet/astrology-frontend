@@ -2,20 +2,30 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { chartsApi } from '../services/chartsApi';
+import ConfirmDeleteModal from './ConfirmDeleteModal';
 
-function DeleteChartModal({ isOpen, onClose, onDeleted }) {
+function DeleteChartModal({ isOpen, onClose, onDeleted, chartToDelete, onConfirmDelete }) {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [charts, setCharts] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
+  const [confirmDeleteInModal, setConfirmDeleteInModal] = useState(false);
 
   useEffect(() => {
-    if (isOpen && user) {
+    if (isOpen && user && !chartToDelete) {
       loadCharts();
     }
-  }, [isOpen, user]);
+  }, [isOpen, user, chartToDelete]);
+
+  useEffect(() => {
+    if (chartToDelete) {
+      setSelectedId(chartToDelete.id);
+    } else {
+      setSelectedId(null);
+    }
+  }, [chartToDelete]);
 
   const loadCharts = async () => {
     setLoading(true);
@@ -29,12 +39,16 @@ function DeleteChartModal({ isOpen, onClose, onDeleted }) {
     }
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!selectedId) return;
+    setConfirmDeleteInModal(true);
+  };
 
+  const handleConfirmDeleteInModal = async () => {
     setDeleting(true);
     try {
       await chartsApi.deleteChart(selectedId);
+      setConfirmDeleteInModal(false);
       onDeleted?.();
       onClose();
     } catch (err) {
@@ -157,6 +171,14 @@ function DeleteChartModal({ isOpen, onClose, onDeleted }) {
           </button>
         </div>
       </div>
+
+      <ConfirmDeleteModal
+        isOpen={confirmDeleteInModal}
+        onClose={() => setConfirmDeleteInModal(false)}
+        onConfirm={handleConfirmDeleteInModal}
+        chartName={charts.find(c => c.id === selectedId)?.name}
+        deleting={deleting}
+      />
     </div>
   );
 }

@@ -10,6 +10,7 @@ import ProcessingMessage from '../components/ProcessingMessage';
 import MarkdownContent from '../components/MarkdownContent';
 import DeleteChartModal from '../components/DeleteChartModal';
 import DuplicateChartModal from '../components/DuplicateChartModal';
+import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -37,6 +38,9 @@ const Dashboard = () => {
   const [historyCharts, setHistoryCharts] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [pendingSaveName, setPendingSaveName] = useState(null);
+  const [confirmDeleteModal, setConfirmDeleteModal] = useState(false);
+  const [chartToDelete, setChartToDelete] = useState(null);
+  const [deletingChart, setDeletingChart] = useState(false);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -218,14 +222,24 @@ const Dashboard = () => {
     }
   };
 
-  const handleDeleteFromHistory = async (chartId, e) => {
+  const handleDeleteFromHistory = (chart, e) => {
     e.stopPropagation();
-    if (!confirm(t('history.confirmDelete'))) return;
+    setChartToDelete(chart);
+    setConfirmDeleteModal(true);
+  };
+
+  const handleConfirmDeleteFromHistory = async () => {
+    if (!chartToDelete) return;
+    setDeletingChart(true);
     try {
-      await chartsApi.deleteChart(chartId);
+      await chartsApi.deleteChart(chartToDelete.id);
+      setConfirmDeleteModal(false);
+      setChartToDelete(null);
       loadHistoryCharts();
     } catch (err) {
       console.error('Delete error:', err);
+    } finally {
+      setDeletingChart(false);
     }
   };
 
@@ -346,7 +360,7 @@ const Dashboard = () => {
                             onClick={handleSaveChartWithAnalysis}
                             disabled={saving}
                           >
-                            {saving ? '...' : '💾 Сохранить'}
+                             {saving ? '...' : t('dashboard.actions.save')}
                           </button>
                         </div>
                       )}
@@ -410,9 +424,9 @@ const Dashboard = () => {
                               <div style={{ fontSize: '13px', fontWeight: '600' }}>
                                 {getSunSignEmoji(chart.sun_sign)} {chart.name || 'Карта'}
                               </div>
-                              <button
-                                onClick={(e) => handleDeleteFromHistory(chart.id, e)}
-                                style={{
+                               <button
+                                 onClick={(e) => handleDeleteFromHistory(chart, e)}
+                                 style={{
                                   background: 'none',
                                   border: 'none',
                                   fontSize: '14px',
@@ -507,6 +521,17 @@ const Dashboard = () => {
           setPendingSaveName(null);
         }}
         onConfirm={handleDuplicateConfirm}
+      />
+
+      <ConfirmDeleteModal
+        isOpen={confirmDeleteModal}
+        onClose={() => {
+          setConfirmDeleteModal(false);
+          setChartToDelete(null);
+        }}
+        onConfirm={handleConfirmDeleteFromHistory}
+        chartName={chartToDelete?.name}
+        deleting={deletingChart}
       />
     </div>
   );
