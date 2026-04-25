@@ -31,12 +31,12 @@ function ConfirmDeleteModal({ isOpen, onClose, onConfirm, chartName, deleting })
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 style={{ marginBottom: '12px' }}>
-          {t('history.confirmDeleteTitle', 'Delete chart?')}
-        </h3>
-        <p style={{ color: 'var(--text-secondary)', marginBottom: '20px' }}>
-          {t('history.confirmDeleteMessage', `Are you sure you want to delete "${chartName}"?`)}
-        </p>
+         <h3 style={{ marginBottom: '12px' }}>
+           {t('history.confirmDeleteTitle', 'Delete chart?')}
+         </h3>
+         <p style={{ color: 'var(--text-secondary)', marginBottom: '20px' }}>
+           {t('history.confirmDeleteMessage', { name: chartName })}
+         </p>
 
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
           <button

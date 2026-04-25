@@ -323,10 +323,12 @@
     "error": "Error loading analysis",
     "noData": "No data available for this planet"
   },
-  "history": {
+   "history": {
     "saved": "Saved",
     "empty": "History is empty",
     "confirmDelete": "Delete this chart?",
+    "confirmDeleteTitle": "Delete chart?",
+    "confirmDeleteMessage": "Are you sure you want to delete \"{{name}}\"?",
     "limitReached": "Chart limit reached",
     "selectToDelete": "Select a chart to delete",
     "cancel": "Cancel",
