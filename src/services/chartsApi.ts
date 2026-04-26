@@ -1,76 +1,32 @@
-// import { supabase } from '../lib/supabase'
-
-// const CHARTS_LIMIT = 5
-
-// export const chartsApi = {
-//   async saveChart(userId, chartData) {
-//     const chartToSave = {
-//       user_id: userId,
-//       name: chartData.name || 'Карта 1',
-//       sun_sign: chartData.sun_sign,
-//       moon_sign: chartData.moon_sign,
-//       ascendant: chartData.ascendant,
-//       planets: JSON.stringify(chartData.planets),
-//       houses: JSON.stringify(chartData.houses),
-//       aspects: JSON.stringify(chartData.aspects),
-//       chart_data: chartData,
-//       created_at: new Date().toISOString()
-//     }
-
-//     const { data, error } = await supabase
-//       .from('natal_charts')
-//       .insert(chartToSave)
-//       .select()
-//       .single()
-
-//     if (error) throw error
-//     return data
-//   },
-
-//   async getCharts(userId) {
-//     const { data, error } = await supabase
-//       .from('natal_charts')
-//       .select('*')
-//       .eq('user_id', userId)
-//       .order('created_at', { ascending: false })
-
-//     if (error) throw error
-//     return data || []
-//   },
-
-//   async deleteChart(chartId) {
-//     const { error } = await supabase
-//       .from('natal_charts')
-//       .delete()
-//       .eq('id', chartId)
-
-//     if (error) throw error
-//     return true
-//   },
-
-//   async getChartsCount(userId) {
-//     const { count, error } = await supabase
-//       .from('natal_charts')
-//       .select('*', { count: 'exact', head: true })
-//       .eq('user_id', userId)
-
-//     if (error) throw error
-//     return count || 0
-//   },
-
-//   async hasReachedLimit(userId) {
-//     const count = await this.getChartsCount(userId)
-//     return count >= CHARTS_LIMIT
-//   },
-
-//   CHARTS_LIMIT
-// }
-
-// export default chartsApi
-
 import { supabase } from '../lib/supabase';
 
 const CHARTS_LIMIT = 5;
+
+// Helper function to generate summary via LLM
+async function generateSummary(interpretation: string): Promise<string> {
+  try {
+    // Assuming there's an API endpoint to generate summaries
+    // This could be a direct LLM API call or a backend proxy
+    const response = await fetch('/api/generate-summary', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        text: interpretation,
+        language: 'en'
+      })
+    });
+    if (!response.ok) {
+      throw new Error('Failed to generate summary');
+    }
+    const data = await response.json();
+    return data.summary || interpretation.substring(0, 500); // Fallback to truncated original
+  } catch (error) {
+    console.error('Error generating summary:', error);
+    return interpretation.substring(0, 500); // Fallback to truncated original
+  }
+}
 
 export const chartsApi = {
 
@@ -191,12 +147,28 @@ export const chartsApi = {
   },
 
   async saveInterpretation(chartId: number, type: string, interpretation: string) {
+    // Verify chart exists
+    const { data: chart, error: chartError } = await supabase
+      .from('natal_charts')
+      .select('id')
+      .eq('id', chartId)
+      .single();
+
+    if (chartError || !chart) {
+      throw new Error(`Chart with id ${chartId} does not exist`);
+    }
+
+    // Generate summary
+    const summary = await generateSummary(interpretation);
+
+    // Insert interpretation + summary in a single operation
     const { data, error } = await supabase
       .from('chart_interpretations')
       .insert({
         chart_id: chartId,
         type,
         interpretation,
+        summary,
         created_at: new Date().toISOString()
       })
       .select()
