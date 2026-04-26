@@ -352,7 +352,7 @@ const Dashboard = () => {
           <div style={{ flex: '1 1 600px' }}>
             <div className="dashboard-content">
               {/* Кнопка "Получить полный анализ" — видна если пользователь залогинен и есть данные карты */}
-              {chartDataForAnalysis && isAuthenticated && (
+              {chartDataForAnalysis && isAuthenticated && !fullAnalysis && !savedChartId && (
                 <button
                   type="button"
                   className="btn-full-analysis"
@@ -381,7 +381,7 @@ const Dashboard = () => {
                     justifyContent: 'center'
                   }}
                 >
-                  {analysisLoading ? t('home.getFullAnalysis') : t('home.getFullAnalysis')}
+                  {t('home.getFullAnalysis')}
                 </button>
               )}
 
