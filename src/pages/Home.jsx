@@ -198,14 +198,13 @@ function Home() {
       pars_fortuna: chartData.houses_meta?.pars_fortuna || null
     };
 
-    const meta = {
+    const meta = chartData.meta || {
       birth_date: formData.birth_date ? `${formData.birth_date}T${formData.birth_time}:00+03:00` : null,
       birth_place: formData.city,
       latitude: formData.latitude,
       longitude: formData.longitude,
       timezone: formData.timezone,
-      jd: chartData.jd,
-      name: chartData.name || formData.name?.trim()
+      jd: chartData.jd
     };
 
     return {
@@ -331,7 +330,15 @@ function Home() {
         vertex: response.houses_meta?.vertex !== undefined
           ? { longitude: response.houses_meta.vertex.longitude }
           : null,
-        name: chartName
+        name: chartName,
+        meta: {
+          birth_date: formData.birth_date ? `${formData.birth_date}T${formData.birth_time}:00+03:00` : null,
+          birth_place: formData.city,
+          latitude: formData.latitude,
+          longitude: formData.longitude,
+          timezone: formData.timezone,
+          jd: response.jd
+        }
       };
 
       setChartData(chartDataToSave);
