@@ -178,6 +178,18 @@ export const chartsApi = {
     return newName;
   },
 
+  async updateChartName(chartId: number, newName: string) {
+    const { data, error } = await supabase
+      .from('natal_charts')
+      .update({ name: newName })
+      .eq('id', chartId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
   async saveInterpretation(chartId: number, type: string, interpretation: string) {
     const { data, error } = await supabase
       .from('chart_interpretations')

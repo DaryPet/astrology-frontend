@@ -41,6 +41,12 @@ const Dashboard = () => {
   const [confirmDeleteModal, setConfirmDeleteModal] = useState(false);
   const [chartToDelete, setChartToDelete] = useState(null);
   const [deletingChart, setDeletingChart] = useState(false);
+  // Rename functionality
+  const [renameChartId, setRenameChartId] = useState(null);
+  const [renameChartName, setRenameChartName] = useState('');
+  const [renaming, setRenaming] = useState(false);
+  const [renameError, setRenameError] = useState(null);
+  const [chartsUpdated, setChartsUpdated] = useState(false);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -124,7 +130,7 @@ const Dashboard = () => {
   const handleSaveChartWithAnalysis = async () => {
     if (!user || !chartDataForAnalysis || !fullAnalysis) return;
 
-    const chartName = chartDataForAnalysis.name || 'Карта';
+    const chartName = chartDataForAnalysis.name || t('dashboard.chart.defaultName');
 
     setSaving(true);
     try {
@@ -197,6 +203,74 @@ const Dashboard = () => {
     setShowDeleteModal(false);
     handleSaveChartWithAnalysis();
   };
+  // Rename functionality
+  const handleSaveRename = async () => {
+    if (!renameChartId || !renameChartName.trim()) return;
+
+    // Validate length
+    if (renameChartName.trim().length > 10) {
+      setRenameError(t('dashboard.rename.maxLength'));
+      return;
+    }
+
+    // Reset error state
+    setRenameError(null);
+
+    setRenaming(true);
+    try {
+      // Check for duplicate names (excluding the current chart being renamed)
+      const existingCharts = await chartsApi.getCharts(user.id);
+      const duplicateExists = existingCharts.some(
+        chart => chart.id !== renameChartId && chart.name.toLowerCase() === renameChartName.trim().toLowerCase()
+      );
+
+      if (duplicateExists) {
+        setRenameError(t('dashboard.rename.exists'));
+        setRenaming(false);
+        return;
+      }
+
+      await chartsApi.updateChartName(renameChartId, renameChartName.trim());
+      // Update the chart name in historyCharts state
+      setHistoryCharts((prevCharts) =>
+        prevCharts.map((chart) =>
+          chart.id === renameChartId
+            ? { ...chart, name: renameChartName.trim() }
+            : chart
+        )
+      );
+      // If renamed chart is the one currently displayed, update chartDataForAnalysis and localStorage
+      if (savedChartId === renameChartId) {
+        setChartDataForAnalysis(prev => ({
+          ...prev,
+          name: renameChartName.trim()
+        }));
+        const updated = { ...chartDataForAnalysis, name: renameChartName.trim() };
+        localStorage.setItem('chartDataForAnalysis', JSON.stringify(updated));
+        localStorage.setItem('savedFullAnalysis', fullAnalysis);
+      }
+      setChartsUpdated((prev) => !prev);
+    } catch (error) {
+      alert(t('dashboard.rename.error') + ': ' + (error.message || error));
+    } finally {
+      setRenaming(false);
+      setRenameChartId(null);
+      setRenameChartName('');
+      setRenameError(null);
+    }
+  };
+
+  const handleCancelRename = () => {
+    setRenameChartId(null);
+    setRenameChartName('');
+  };
+
+  // Trigger UI update after rename
+  useEffect(() => {
+    if (chartsUpdated && user) {
+      loadHistoryCharts();
+    }
+  }, [chartsUpdated, user, loadHistoryCharts]);
 
   const handleSelectChart = (chart) => {
     setShowHistory(false);
@@ -398,34 +472,124 @@ const Dashboard = () => {
                         {historyCharts.map((chart) => (
                           <div
                             key={chart.id}
-                            onClick={() => handleSelectChart(chart)}
+                            onClick={renameChartId === chart.id ? undefined : () => handleSelectChart(chart)}
                             style={{
                               padding: '10px',
                               background: 'var(--bg-card)',
                               borderRadius: '6px',
-                              cursor: 'pointer',
+                              cursor: renameChartId === chart.id ? 'default' : 'pointer',
                               border: '1px solid var(--border)'
                             }}
                           >
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                              <div style={{ fontSize: '13px', fontWeight: '600' }}>
-                                {getSunSignEmoji(chart.sun_sign)} {chart.name || 'Карта'}
+                              <div style={{ fontSize: '13px', fontWeight: '600', flex: 1 }}>
+                                {renameChartId === chart.id ? (
+                                  <>
+                                    <input
+                                      type="text"
+                                      value={renameChartName}
+                                      onChange={(e) => {
+                                        setRenameChartName(e.target.value);
+                                        // Validate length and check for duplicates
+                                        if (e.target.value.length > 10) {
+                                          setRenameError(t('dashboard.rename.maxLength'));
+                                        } else {
+                                          setRenameError(null);
+                                        }
+                                      }}
+                                      maxlength="10"
+                                      style={{
+                                        fontSize: '13px',
+                                        fontWeight: '600',
+                                        padding: '2px',
+                                        border: '1px solid var(--border)',
+                                        borderRadius: '3px',
+                                        width: '100%',
+                                        boxSizing: 'border-box'
+                                      }}
+                                      autoFocus
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          handleSaveRename();
+                                        } else if (e.key === 'Escape') {
+                                          handleCancelRename();
+                                        }
+                                      }}
+                                    />
+                                    <div style={{ fontSize: '11px', color: renameError ? 'var(--error)' : 'var(--text-secondary)', marginTop: '2px' }}>
+                                      {renameError || `${renameChartName.length}/10`}
+                                    </div>
+                                  </>
+                                ) : (
+                                  <>
+                                    {getSunSignEmoji(chart.sun_sign)} {chart.name || t('dashboard.chart.defaultName')}
+                                  </>
+                                )}
                               </div>
-                              <button
-                                onClick={(e) => handleDeleteFromHistory(chart, e)}
-                                style={{
-                                  background: 'none',
-                                  border: 'none',
-                                  fontSize: '14px',
-                                  cursor: 'pointer',
-                                  padding: '2px'
-                                }}
-                              >
-                                🗑️
-                              </button>
+                              <div style={{ display: 'flex', gap: '5px' }}>
+                                {renameChartId !== chart.id ? (
+                                  <>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setRenameChartId(chart.id);
+                                        setRenameChartName(chart.name || '');
+                                      }}
+                                      style={{
+                                        background: 'none',
+                                        border: 'none',
+                                        fontSize: '14px',
+                                        cursor: 'pointer',
+                                        padding: '2px'
+                                      }}
+                                    >
+                                      ✏️
+                                    </button>
+                                    <button
+                                      onClick={(e) => handleDeleteFromHistory(chart, e)}
+                                      style={{
+                                        background: 'none',
+                                        border: 'none',
+                                        fontSize: '14px',
+                                        cursor: 'pointer',
+                                        padding: '2px'
+                                      }}
+                                    >
+                                       🗑️
+                                    </button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <button
+                                      onClick={handleSaveRename}
+                                      style={{
+                                        background: 'none',
+                                        border: 'none',
+                                        fontSize: '14px',
+                                        cursor: 'pointer',
+                                        padding: '2px'
+                                      }}
+                                    >
+                                      {renaming ? t('dashboard.rename.saving') : '💾'}
+                                    </button>
+                                    <button
+                                      onClick={handleCancelRename}
+                                      style={{
+                                        background: 'none',
+                                        border: 'none',
+                                        fontSize: '14px',
+                                        cursor: 'pointer',
+                                        padding: '2px'
+                                      }}
+                                    >
+                                       ❌
+                                    </button>
+                                  </>
+                                )}
+                              </div>
                             </div>
                             <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                              📅 {chart.chart_data?.meta?.birth_date?.split('T')[0] || '—'} • 📍 {chart.chart_data?.meta?.birth_place || '—'}
+                               📅 {chart.chart_data?.meta?.birth_date?.split('T')[0] || '—'} • 📍 {chart.chart_data?.meta?.birth_place || '—'}
                             </div>
                           </div>
                         ))}
