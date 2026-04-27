@@ -238,7 +238,6 @@ const Dashboard = () => {
 
   const handleLogout = async () => {
     // Очищаем localStorage при выходе
-    localStorage.removeItem('savedFullAnalysis');
     localStorage.removeItem('chartDataForAnalysis');
     localStorage.removeItem('savedChartId');
     setChatVisible(false);
@@ -306,13 +305,11 @@ const Dashboard = () => {
       );
       // If renamed chart is the one currently displayed, update chartDataForAnalysis and localStorage
       if (savedChartId === renameChartId) {
-        setChartDataForAnalysis(prev => ({
-          ...prev,
-          name: renameChartName.trim()
-        }));
-        const updated = { ...chartDataForAnalysis, name: renameChartName.trim() };
-        localStorage.setItem('chartDataForAnalysis', JSON.stringify(updated));
-        localStorage.setItem('savedFullAnalysis', fullAnalysis);
+        setChartDataForAnalysis(prev => {
+          const updated = { ...prev, name: renameChartName.trim() };
+          localStorage.setItem('chartDataForAnalysis', JSON.stringify(updated));
+          return updated;
+        });
       }
       setChartsUpdated((prev) => !prev);
     } catch (error) {
@@ -543,11 +540,13 @@ const Dashboard = () => {
                                       >
                                         <strong style={{
                                           color: message.role === 'user' ? '#4CAF50' : '#2196F3',
-                                          marginRight: '10px'
+                                          arginRight: '10px'
                                         }}>
                                           {message.role === 'user' ? t('dashboard.chat.user') : t('dashboard.chat.assistant')}
                                         </strong>
-                                        <div>{message.content}</div>
+                                        <div className="chat-message-content">
+                                          <MarkdownContent content={message.content} />
+                                        </div>
                                       </div>
                                     ))
                                   )}
@@ -564,7 +563,7 @@ const Dashboard = () => {
                                   textarea.style.height = textarea.scrollHeight + 'px';
                                 }}
                                 placeholder={t('dashboard.chat.placeholder')}
-                                maxlength="300"
+                                maxlength="200"
                                 style={{
                                   width: '100%',
                                   minHeight: '20px',
