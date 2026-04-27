@@ -56,7 +56,7 @@ const MarkdownContent = ({ content }) => {
 
     // Detect table rows (lines starting with |)
     if (/^\|.*\|/.test(trimmedLine)) {
-      const cells = trimmedLine.split('|').map(cell => cell.trim()).filter(cell => cell !== '');
+const cells = trimmedLine.split('|').map(cell => cell.trim());
 
       if (!inTable) {
         flushList();
