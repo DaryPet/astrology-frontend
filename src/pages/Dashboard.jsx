@@ -563,7 +563,7 @@ const Dashboard = () => {
                                   textarea.style.height = textarea.scrollHeight + 'px';
                                 }}
                                 placeholder={t('dashboard.chat.placeholder')}
-                                maxlength="300"
+                                maxlength="200"
                                 style={{
                                   width: '100%',
                                   minHeight: '20px',

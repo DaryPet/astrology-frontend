@@ -380,6 +380,7 @@ function Home() {
                     value={formData.name}
                     onChange={handleInputChange}
                     placeholder={t('home.form.namePlaceholder')}
+                    maxlength="10"
                   />
                   {nameError && <div style={{color: 'red', fontSize: '12px', marginTop: '4px'}}>{nameError}</div>}
                 </div>
