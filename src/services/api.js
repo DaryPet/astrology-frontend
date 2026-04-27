@@ -132,6 +132,15 @@ export const astrologyAPI = {
     } catch {
       return 'UTC'; // Fallback на UTC если не удалось определить
     }
+  },
+
+  chatAnalysis: async (chatRequest) => {
+    try {
+      const response = await api.post('/analysis/chat', chatRequest);
+      return response;
+    } catch (error) {
+      throw error;
+    }
   }
 };
 
