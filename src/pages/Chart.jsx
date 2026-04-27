@@ -40,14 +40,14 @@ function Chart() {
       });
 
       const botMessage = {
-        role: 'bot',
+        role: 'assistant',
         content: response.data?.answer || 'Ответ не получен',
         relevant_chunks: response.data?.relevant_chunks || []
       };
       setChatHistory(prev => [...prev, userMessage, botMessage]);
     } catch (error) {
       setChatHistory(prev => [...prev, userMessage, {
-        role: 'bot',
+        role: 'assistant',
         content: 'Ошибка отправки сообщения: ' + error.message
       }]);
     }
