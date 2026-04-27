@@ -22,6 +22,9 @@ const Dashboard = () => {
   const currentLang = lang || i18n.language || 'ru';
 
   const [showFullAnalysis, setShowFullAnalysis] = useState(false);
+  const [chatVisible, setChatVisible] = useState(false);
+  const [chatHistory, setChatHistory] = useState([]);
+  const [chatInput, setChatInput] = useState('');
   const [chartDataForAnalysis, setChartDataForAnalysis] = useState(null);
   const [fullAnalysis, setFullAnalysis] = useState(null);
   const [analysisLoading, setAnalysisLoading] = useState(false);
@@ -31,7 +34,10 @@ const Dashboard = () => {
   //   const saved = localStorage.getItem('savedChartId');
   //   return saved ? parseInt(saved, 10) : null;
   // });
-  const [savedChartId, setSavedChartId] = useState(null);
+  const [savedChartId, setSavedChartId] = useState(() => {
+    const saved = localStorage.getItem('savedChartId');
+    return saved ? parseInt(saved, 10) : null;
+  });
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -107,6 +113,46 @@ const Dashboard = () => {
       setAnalysisLoading(false);
     }
   }, [chartDataForAnalysis, t]);
+
+  const sendChatMessage = useCallback(async () => {
+    if (!chatInput.trim() || !chartDataForAnalysis || !fullAnalysis || !savedChartId) return;
+
+    const questionText = chatInput.trim();
+    const currentHistory = [...chatHistory];
+    const userMessage = { role: 'user', content: questionText };
+
+    setChatHistory(prev => [...prev, userMessage]);
+    setChatInput('');
+
+    try {
+      const response = await astrologyAPI.chatAnalysis({
+        question: questionText,
+        chart_data: chartDataForAnalysis,
+        summary: fullAnalysis,
+        chat_history: currentHistory,
+        language: i18n.language || 'ru'
+      });
+
+      const botMessage = {
+        role: 'bot',
+        content: response.data?.answer || t('dashboard.chat.noAnswer'),
+        relevant_chunks: response.data?.relevant_chunks || []
+      };
+      setChatHistory(prev => [...prev, botMessage]);
+    } catch (error) {
+      setChatHistory(prev => [...prev, {
+        role: 'bot',
+        content: t('dashboard.chat.errorWithDetails', { error: error.message })
+      }]);
+    }
+  }, [chatInput, chartDataForAnalysis, fullAnalysis, savedChartId, chatHistory, t]);
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendChatMessage();
+    }
+  };
 
   useEffect(() => {
     if (showFullAnalysis && chartDataForAnalysis && !fullAnalysis && !analysisLoading) {
@@ -195,6 +241,9 @@ const Dashboard = () => {
     localStorage.removeItem('savedFullAnalysis');
     localStorage.removeItem('chartDataForAnalysis');
     localStorage.removeItem('savedChartId');
+    setChatVisible(false);
+    setChatHistory([]);
+    setChatInput('');
     await signOut();
     navigate(`/${currentLang}/`);
   };
@@ -202,6 +251,22 @@ const Dashboard = () => {
   const handleDeleted = () => {
     setShowDeleteModal(false);
     handleSaveChartWithAnalysis();
+  };
+
+  const handleNewChart = () => {
+    localStorage.removeItem('savedChartData');
+    localStorage.removeItem('chartDataForAnalysis');
+    localStorage.removeItem('savedFullAnalysis');
+    localStorage.removeItem('savedChartId');
+    setChatVisible(false);
+    setChatHistory([]);
+    setChatInput('');
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('planetAnalysis_')) {
+        localStorage.removeItem(key);
+      }
+    });
+    navigate(`/${currentLang}/`);
   };
   // Rename functionality
   const handleSaveRename = async () => {
@@ -275,6 +340,9 @@ const Dashboard = () => {
   const handleSelectChart = (chart) => {
     setShowHistory(false);
     setChartDataForAnalysis(chart.chart_data);
+    setChatVisible(false);
+    setChatHistory([]);
+    setChatInput('');
     const interp = chart.chart_interpretations?.[0];
     if (interp?.interpretation) {
       setFullAnalysis(interp.interpretation);
@@ -426,6 +494,99 @@ const Dashboard = () => {
                         </div>
                       )}
                       <MarkdownContent content={fullAnalysis} />
+
+                      {/* Chat section for saved charts only */}
+                      {savedChartId && (
+                        <>
+                          {!chatVisible && (
+                            <div style={{ textAlign: 'center', marginTop: '20px' }}>
+                              <button
+                                onClick={() => setChatVisible(true)}
+                                className="btn btn-primary"
+                                style={{ maxWidth: '300px' }}
+                                disabled={!fullAnalysis}
+                              >
+                                {t('dashboard.chat.start')}
+                              </button>
+                            </div>
+                          )}
+
+                          {chatVisible && (
+                            <div style={{ marginTop: '30px', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px' }}>
+                              <div style={{ marginBottom: '20px' }}>
+                                <h3 style={{ margin: '0 0 15px 0' }}>{t('dashboard.chat.title')}</h3>
+                                <div style={{
+                                  height: '300px',
+                                  overflowY: 'auto',
+                                  border: '1px solid var(--border)',
+                                  borderRadius: '8px',
+                                  padding: '15px',
+                                  background: 'var(--bg-secondary)'
+                                }}>
+                                  {chatHistory.length === 0 ? (
+                                    <p style={{ color: 'var(--text-secondary)', margin: 0 }}>
+                                      {t('dashboard.chat.placeholder')}
+                                    </p>
+                                  ) : (
+                                    chatHistory.map((message, index) => (
+                                      <div
+                                        key={index}
+                                        style={{
+                                          marginBottom: '15px',
+                                          padding: '10px',
+                                          borderRadius: '8px',
+                                          background: message.role === 'user'
+                                            ? 'var(--bg-primary)'
+                                            : 'var(--bg-secondary)',
+                                          border: '1px solid var(--border)'
+                                        }}
+                                      >
+                                        <strong style={{
+                                          color: message.role === 'user' ? '#4CAF50' : '#2196F3',
+                                          marginRight: '10px'
+                                        }}>
+                                          {message.role === 'user' ? t('dashboard.chat.user') : t('dashboard.chat.assistant')}
+                                        </strong>
+                                        <div>{message.content}</div>
+                                      </div>
+                                    ))
+                                  )}
+                                </div>
+                              </div>
+                              <div style={{ display: 'flex', gap: '10px' }}>
+                                <textarea
+                                  value={chatInput}
+                                  onChange={(e) => setChatInput(e.target.value)}
+                                  onKeyPress={handleKeyPress}
+                                  placeholder={t('dashboard.chat.placeholder')}
+                                  style={{
+                                    flex: 1,
+                                    padding: '10px',
+                                    border: '1px solid var(--border)',
+                                    borderRadius: '8px',
+                                    background: 'var(--bg-secondary)',
+                                    color: 'var(--text-primary)',
+                                    resize: 'vertical',
+                                    minHeight: '50px'
+                                  }}
+                                />
+                                <button
+                                  onClick={sendChatMessage}
+                                  disabled={!chatInput.trim()}
+                                  className="btn btn-primary"
+                                  style={{
+                                    padding: '10px 20px',
+                                    minWidth: '100px',
+                                    height: 'fit-content'
+                                  }}
+                                >
+                                  {t('dashboard.chat.send')}
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
                     </div>
                   )}
                 </>
@@ -608,18 +769,7 @@ const Dashboard = () => {
               </div>
 
               <button
-                onClick={() => {
-                  localStorage.removeItem('savedChartData');
-                  localStorage.removeItem('chartDataForAnalysis');
-                  localStorage.removeItem('savedFullAnalysis');
-                  localStorage.removeItem('savedChartId');
-                  Object.keys(localStorage).forEach(key => {
-                    if (key.startsWith('planetAnalysis_')) {
-                      localStorage.removeItem(key);
-                    }
-                  });
-                  navigate(`/${currentLang}/`);
-                }}
+                onClick={handleNewChart}
                 style={{
                   width: '100%',
                   background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',

@@ -158,6 +158,17 @@
     },
     "fullAnalysis": {
       "title": "Full Astrological Analysis"
+    },
+    "chat": {
+      "title": "Chart Chat",
+      "start": "Start chat",
+      "send": "Send",
+      "placeholder": "Ask a question about your chart above",
+      "user": "You",
+      "assistant": "Astrologer",
+      "noAnswer": "No answer received",
+      "error": "Error sending message",
+      "errorWithDetails": "Error sending message: {{error}}"
     }
   },
   "confirm": {
