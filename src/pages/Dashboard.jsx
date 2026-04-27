@@ -540,11 +540,13 @@ const Dashboard = () => {
                                       >
                                         <strong style={{
                                           color: message.role === 'user' ? '#4CAF50' : '#2196F3',
-                                          marginRight: '10px'
+                                          arginRight: '10px'
                                         }}>
                                           {message.role === 'user' ? t('dashboard.chat.user') : t('dashboard.chat.assistant')}
                                         </strong>
-                                        <div>{message.content}</div>
+                                        <div className="chat-message-content">
+                                          <MarkdownContent content={message.content} />
+                                        </div>
                                       </div>
                                     ))
                                   )}

@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import ProcessingMessage from './ProcessingMessage';
+import MarkdownContent from './MarkdownContent';
 
 const PlanetAnalysisModal = ({ planet, analysis, isOpen, onClose, loading, error }) => {
   const { t } = useTranslation();
@@ -129,12 +130,10 @@ const PlanetAnalysisModal = ({ planet, analysis, isOpen, onClose, loading, error
         )}
 
         {analysis && !loading && (
-          <div style={{
-            lineHeight: '1.7',
-            color: 'var(--text-primary)',
-            fontSize: '15px'
+          <div className="markdown-content" style={{
+            marginTop: '12px'
           }}>
-            {analysis}
+            <MarkdownContent content={analysis} />
           </div>
         )}
       </div>
