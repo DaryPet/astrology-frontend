@@ -134,14 +134,14 @@ const Dashboard = () => {
       });
 
       const botMessage = {
-        role: 'bot',
+        role: 'assistant',
         content: response.data?.answer || t('dashboard.chat.noAnswer'),
         relevant_chunks: response.data?.relevant_chunks || []
       };
       setChatHistory(prev => [...prev, botMessage]);
     } catch (error) {
       setChatHistory(prev => [...prev, {
-        role: 'bot',
+        role: 'assistant',
         content: t('dashboard.chat.errorWithDetails', { error: error.message })
       }]);
     }
@@ -516,8 +516,8 @@ const Dashboard = () => {
                               <div style={{ marginBottom: '20px' }}>
                                 <h3 style={{ margin: '0 0 15px 0' }}>{t('dashboard.chat.title')}</h3>
                                 <div style={{
-                                  height: '300px',
-                                  overflowY: 'auto',
+                                  minHeight: '100px',
+                                  height: 'auto',
                                   border: '1px solid var(--border)',
                                   borderRadius: '8px',
                                   padding: '15px',
@@ -553,36 +553,53 @@ const Dashboard = () => {
                                   )}
                                 </div>
                               </div>
-                              <div style={{ display: 'flex', gap: '10px' }}>
-                                <textarea
-                                  value={chatInput}
-                                  onChange={(e) => setChatInput(e.target.value)}
-                                  onKeyPress={handleKeyPress}
-                                  placeholder={t('dashboard.chat.placeholder')}
-                                  style={{
-                                    flex: 1,
-                                    padding: '10px',
-                                    border: '1px solid var(--border)',
-                                    borderRadius: '8px',
-                                    background: 'var(--bg-secondary)',
-                                    color: 'var(--text-primary)',
-                                    resize: 'vertical',
-                                    minHeight: '50px'
-                                  }}
-                                />
-                                <button
-                                  onClick={sendChatMessage}
-                                  disabled={!chatInput.trim()}
-                                  className="btn btn-primary"
-                                  style={{
-                                    padding: '10px 20px',
-                                    minWidth: '100px',
-                                    height: 'fit-content'
-                                  }}
-                                >
-                                  {t('dashboard.chat.send')}
-                                </button>
-                              </div>
+                              {/* Chat Input */}
+                              <textarea
+                                value={chatInput}
+                                onChange={(e) => setChatInput(e.target.value)}
+                                onKeyPress={handleKeyPress}
+                                onInput={(e) => {
+                                  const textarea = e.target;
+                                  textarea.style.height = 'auto';
+                                  textarea.style.height = textarea.scrollHeight + 'px';
+                                }}
+                                placeholder={t('dashboard.chat.placeholder')}
+                                maxlength="300"
+                                style={{
+                                  width: '100%',
+                                  minHeight: '20px',
+                                  height: '20px',
+                                  resize: 'none',
+                                  padding: '12px',
+                                  border: '1px solid var(--border)',
+                                  borderRadius: '8px',
+                                  background: 'var(--bg-secondary)',
+                                  color: 'var(--text-primary)',
+                                  fontSize: '14px',
+                                  marginBottom: '10px',
+                                  overflowY: 'hidden',
+                                  boxSizing: 'border-box'
+                                }}
+                              />
+                              {/* Send Button */}
+                              <button
+                                onClick={sendChatMessage}
+                                disabled={!chatInput.trim()}
+                                className="btn btn-primary"
+                                style={{
+                                  width: '100%',
+                                  padding: '12px',
+                                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                  border: 'none',
+                                  borderRadius: '8px',
+                                  color: 'white',
+                                  fontSize: '14px',
+                                  fontWeight: '600',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                {t('dashboard.chat.send')}
+                              </button>
                             </div>
                           )}
                         </>

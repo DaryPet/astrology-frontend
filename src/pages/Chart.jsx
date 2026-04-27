@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import i18n from '../i18n';
 import api from '../services/api';
 import { astrologyAPI } from '../services/api';
 import Header from '../components/Header';
@@ -40,14 +41,14 @@ function Chart() {
       });
 
       const botMessage = {
-        role: 'bot',
+        role: 'assistant',
         content: response.data?.answer || 'Ответ не получен',
         relevant_chunks: response.data?.relevant_chunks || []
       };
-      setChatHistory(prev => [...prev, userMessage, botMessage]);
+      setChatHistory(prev => [...prev, botMessage]);
     } catch (error) {
-      setChatHistory(prev => [...prev, userMessage, {
-        role: 'bot',
+      setChatHistory(prev => [...prev, {
+        role: 'assistant',
         content: 'Ошибка отправки сообщения: ' + error.message
       }]);
     }
