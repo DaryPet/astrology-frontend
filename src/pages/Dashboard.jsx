@@ -238,7 +238,6 @@ const Dashboard = () => {
 
   const handleLogout = async () => {
     // Очищаем localStorage при выходе
-    localStorage.removeItem('savedFullAnalysis');
     localStorage.removeItem('chartDataForAnalysis');
     localStorage.removeItem('savedChartId');
     setChatVisible(false);
@@ -306,13 +305,11 @@ const Dashboard = () => {
       );
       // If renamed chart is the one currently displayed, update chartDataForAnalysis and localStorage
       if (savedChartId === renameChartId) {
-        setChartDataForAnalysis(prev => ({
-          ...prev,
-          name: renameChartName.trim()
-        }));
-        const updated = { ...chartDataForAnalysis, name: renameChartName.trim() };
-        localStorage.setItem('chartDataForAnalysis', JSON.stringify(updated));
-        localStorage.setItem('savedFullAnalysis', fullAnalysis);
+        setChartDataForAnalysis(prev => {
+          const updated = { ...prev, name: renameChartName.trim() };
+          localStorage.setItem('chartDataForAnalysis', JSON.stringify(updated));
+          return updated;
+        });
       }
       setChartsUpdated((prev) => !prev);
     } catch (error) {
