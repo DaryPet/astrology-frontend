@@ -25,6 +25,7 @@ const Dashboard = () => {
   const [chatVisible, setChatVisible] = useState(false);
   const [chatHistory, setChatHistory] = useState([]);
   const [chatInput, setChatInput] = useState('');
+  const [chatLoading, setChatLoading] = useState(false);
   const [chartDataForAnalysis, setChartDataForAnalysis] = useState(null);
   const [fullAnalysis, setFullAnalysis] = useState(null);
   const [analysisLoading, setAnalysisLoading] = useState(false);
@@ -115,6 +116,7 @@ const Dashboard = () => {
   }, [chartDataForAnalysis, t]);
 
   const sendChatMessage = useCallback(async () => {
+    if (chatLoading) return;
     if (!chatInput.trim() || !chartDataForAnalysis || !fullAnalysis || !savedChartId) return;
 
     const questionText = chatInput.trim();
@@ -124,6 +126,7 @@ const Dashboard = () => {
     setChatHistory(prev => [...prev, userMessage]);
     setChatInput('');
 
+    setChatLoading(true);
     try {
       const response = await astrologyAPI.chatAnalysis({
         question: questionText,
@@ -144,8 +147,10 @@ const Dashboard = () => {
         role: 'assistant',
         content: t('dashboard.chat.errorWithDetails', { error: error.message })
       }]);
+    } finally {
+      setChatLoading(false);
     }
-  }, [chatInput, chartDataForAnalysis, fullAnalysis, savedChartId, chatHistory, t]);
+  }, [chatInput, chatLoading, chartDataForAnalysis, fullAnalysis, savedChartId, chatHistory, t]);
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -564,6 +569,7 @@ const Dashboard = () => {
                                 }}
                                 placeholder={t('dashboard.chat.placeholder')}
                                 maxlength="200"
+                                disabled={chatLoading}
                                 style={{
                                   width: '100%',
                                   minHeight: '20px',
@@ -583,7 +589,7 @@ const Dashboard = () => {
                               {/* Send Button */}
                               <button
                                 onClick={sendChatMessage}
-                                disabled={!chatInput.trim()}
+                                disabled={!chatInput.trim() || chatLoading}
                                 className="btn btn-primary"
                                 style={{
                                   width: '100%',
@@ -597,7 +603,7 @@ const Dashboard = () => {
                                   cursor: 'pointer'
                                 }}
                               >
-                                {t('dashboard.chat.send')}
+                                {chatLoading ? 'Ответ в пути...' : t('dashboard.chat.send')}
                               </button>
                             </div>
                           )}
