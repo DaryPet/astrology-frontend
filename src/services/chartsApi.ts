@@ -135,9 +135,24 @@ export const chartsApi = {
   },
 
   async updateChartName(chartId: number, newName: string) {
+    const { data: chart, error: fetchError } = await supabase
+      .from('natal_charts')
+      .select('chart_data')
+      .eq('id', chartId)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    const updatedChartData = chart?.chart_data
+      ? { ...chart.chart_data, name: newName }
+      : { name: newName };
+
     const { data, error } = await supabase
       .from('natal_charts')
-      .update({ name: newName })
+      .update({
+        name: newName,
+        chart_data: updatedChartData
+      })
       .eq('id', chartId)
       .select()
       .single();
