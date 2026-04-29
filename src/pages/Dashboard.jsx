@@ -11,14 +11,15 @@ import MarkdownContent from '../components/MarkdownContent';
 import DeleteChartModal from '../components/DeleteChartModal';
 import DuplicateChartModal from '../components/DuplicateChartModal';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
+import Sidebar from '../components/Sidebar';
 // после строки 13:
-import { loadChatHistory, saveChatHistory, clearAllChats, isNearLimit, isAtLimit, MAX_MESSAGES } from '../services/chatStorage';
+import { loadChatHistory, saveChatHistory, isNearLimit, isAtLimit, MAX_MESSAGES } from '../services/chatStorage';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { lang } = useParams();
-  const { user, isAuthenticated, loading, signOut } = useAuth();
+  const { user, isAuthenticated, loading } = useAuth();
   const { t } = useTranslation();
 
   const currentLang = lang || i18n.language || 'ru';
@@ -44,7 +45,6 @@ const Dashboard = () => {
   const [chatLoading, setChatLoading] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
   const [historyCharts, setHistoryCharts] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [pendingSaveName, setPendingSaveName] = useState(null);
@@ -254,18 +254,6 @@ const Dashboard = () => {
     }
   };
 
-  const handleLogout = async () => {
-    // Очищаем localStorage при выходе
-    localStorage.removeItem('chartDataForAnalysis');
-    localStorage.removeItem('savedChartId');
-    clearAllChats();
-    setChatVisible(false);
-    setChatHistory([]);
-    setChatInput('');
-    await signOut();
-    navigate(`/${currentLang}/`);
-  };
-
   const handleDeleted = () => {
     setShowDeleteModal(false);
     handleSaveChartWithAnalysis();
@@ -354,7 +342,6 @@ const Dashboard = () => {
   }, [chartsUpdated, user, loadHistoryCharts]);
 
   const handleSelectChart = (chart) => {
-    setShowHistory(false);
     setChartDataForAnalysis(chart.chart_data);
     setChatVisible(false);
     setChatHistory(loadChatHistory(chart.id));
@@ -406,11 +393,26 @@ const Dashboard = () => {
     return '🌟';
   };
 
+  const handleStartRename = (chart) => {
+    setRenameChartId(chart.id);
+    setRenameChartName(chart.name || '');
+    setRenameError(null);
+  };
+
+  const handleRenameChange = (value) => {
+    setRenameChartName(value);
+    if (value.length > 10) {
+      setRenameError(t('dashboard.rename.maxLength'));
+    } else {
+      setRenameError(null);
+    }
+  };
+
   useEffect(() => {
-    if (showHistory && user) {
+    if (user) {
       loadHistoryCharts();
     }
-  }, [showHistory, user, loadHistoryCharts]);
+  }, [user, loadHistoryCharts]);
 
   if (loading) {
     return (
@@ -431,8 +433,38 @@ const Dashboard = () => {
     <div className="dashboard">
       <Header />
 
-      <div className="container" style={{ paddingTop: '40px' }}>
-        <div style={{ display: 'flex', gap: '30px', flexWrap: 'wrap' }}>
+      {/* Sidebar прижат к левому краю экрана */}
+      <div style={{
+        position: 'fixed',
+        top: '65px',
+        left: 0,
+        width: '260px',
+        minWidth: '260px',
+        maxHeight: 'calc(100vh - 65px)',
+        zIndex: 50,
+      }}>
+        <Sidebar
+          historyCharts={historyCharts}
+          historyLoading={historyLoading}
+          onSelectChart={handleSelectChart}
+          onNewChart={handleNewChart}
+          savedChartId={savedChartId}
+          renameChartId={renameChartId}
+          renameChartName={renameChartName}
+          renaming={renaming}
+          renameError={renameError}
+          onStartRename={handleStartRename}
+          onSaveRename={handleSaveRename}
+          onCancelRename={handleCancelRename}
+          onRenameChange={handleRenameChange}
+          onDeleteChart={handleDeleteFromHistory}
+          getSunSignEmoji={getSunSignEmoji}
+        />
+      </div>
+
+      {/* Основной контент с отступом для Sidebar */}
+      <div className="container" style={{ paddingTop: '40px', marginLeft: '260px' }}>
+        <div style={{ display: 'flex', gap: '30px', flexWrap: 'nowrap', alignItems: 'flex-start' }}>
           {/* Основной контент */}
           <div style={{ flex: '1 1 600px' }}>
             <div className="dashboard-content">
@@ -646,236 +678,6 @@ const Dashboard = () => {
                   )}
                 </>
               )}
-            </div>
-          </div>
-
-          {/* Боковая панель */}
-          <div style={{ width: '300px', flexShrink: 0 }}>
-            <div className="dashboard-card">
-              {t('dashboard.features.title') && <h2>{t('dashboard.features.title')}</h2>}
-              <div className="future-features">
-                <div
-                  className="feature"
-                  onClick={() => setShowHistory(!showHistory)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  <div className="feature-icon">📊</div>
-                  <div className="feature-content" style={{ flex: 1 }}>
-                    <h3>
-                      {t('dashboard.features.history.title')}
-                      <span style={{ float: 'right', fontSize: '12px' }}>
-                        {showHistory ? '▼' : '▶'}
-                      </span>
-                    </h3>
-                  </div>
-                </div>
-
-                {showHistory && (
-                  <div style={{
-                    padding: '12px',
-                    background: 'var(--bg-secondary)',
-                    borderRadius: '8px',
-                    marginTop: '8px'
-                  }}>
-                    {historyLoading ? (
-                      <div className="loading">{t('common.loading')}</div>
-                    ) : historyCharts.length === 0 ? (
-                      <div style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '20px 0' }}>
-                        {t('history.empty')}
-                      </div>
-                    ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        {historyCharts.map((chart) => (
-                          <div
-                            key={chart.id}
-                            onClick={renameChartId === chart.id ? undefined : () => handleSelectChart(chart)}
-                            style={{
-                              padding: '10px',
-                              background: 'var(--bg-card)',
-                              borderRadius: '6px',
-                              cursor: renameChartId === chart.id ? 'default' : 'pointer',
-                              border: '1px solid var(--border)'
-                            }}
-                          >
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                              <div style={{ fontSize: '13px', fontWeight: '600', flex: 1 }}>
-                                {renameChartId === chart.id ? (
-                                  <>
-                                    <input
-                                      type="text"
-                                      value={renameChartName}
-                                      onChange={(e) => {
-                                        setRenameChartName(e.target.value);
-                                        // Validate length and check for duplicates
-                                        if (e.target.value.length > 10) {
-                                          setRenameError(t('dashboard.rename.maxLength'));
-                                        } else {
-                                          setRenameError(null);
-                                        }
-                                      }}
-                                      maxlength="10"
-                                      style={{
-                                        fontSize: '13px',
-                                        fontWeight: '600',
-                                        padding: '2px',
-                                        border: '1px solid var(--border)',
-                                        borderRadius: '3px',
-                                        width: '100%',
-                                        boxSizing: 'border-box'
-                                      }}
-                                      autoFocus
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                          handleSaveRename();
-                                        } else if (e.key === 'Escape') {
-                                          handleCancelRename();
-                                        }
-                                      }}
-                                    />
-                                    <div style={{ fontSize: '11px', color: renameError ? 'var(--error)' : 'var(--text-secondary)', marginTop: '2px' }}>
-                                      {renameError || `${renameChartName.length}/10`}
-                                    </div>
-                                  </>
-                                ) : (
-                                  <>
-                                    {getSunSignEmoji(chart.sun_sign)} {chart.name || t('dashboard.chart.defaultName')}
-                                  </>
-                                )}
-                              </div>
-                              <div style={{ display: 'flex', gap: '5px' }}>
-                                {renameChartId !== chart.id ? (
-                                  <>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setRenameChartId(chart.id);
-                                        setRenameChartName(chart.name || '');
-                                      }}
-                                      style={{
-                                        background: 'none',
-                                        border: 'none',
-                                        fontSize: '14px',
-                                        cursor: 'pointer',
-                                        padding: '2px'
-                                      }}
-                                    >
-                                      ✏️
-                                    </button>
-                                    <button
-                                      onClick={(e) => handleDeleteFromHistory(chart, e)}
-                                      style={{
-                                        background: 'none',
-                                        border: 'none',
-                                        fontSize: '14px',
-                                        cursor: 'pointer',
-                                        padding: '2px'
-                                      }}
-                                    >
-                                       🗑️
-                                    </button>
-                                  </>
-                                ) : (
-                                  <>
-                                    <button
-                                      onClick={handleSaveRename}
-                                      style={{
-                                        background: 'none',
-                                        border: 'none',
-                                        fontSize: '14px',
-                                        cursor: 'pointer',
-                                        padding: '2px'
-                                      }}
-                                    >
-                                      {renaming ? t('dashboard.rename.saving') : '💾'}
-                                    </button>
-                                    <button
-                                      onClick={handleCancelRename}
-                                      style={{
-                                        background: 'none',
-                                        border: 'none',
-                                        fontSize: '14px',
-                                        cursor: 'pointer',
-                                        padding: '2px'
-                                      }}
-                                    >
-                                       ❌
-                                    </button>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                            <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                               📅 {chart.chart_data?.meta?.birth_date?.split('T')[0] || '—'} • 📍 {chart.chart_data?.meta?.birth_place || '—'}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                <div className="feature">
-                  <div className="feature-icon">👥</div>
-                  <div className="feature-content">
-                    <h3>{t('dashboard.features.compare.title')}</h3>
-                    <p>{t('dashboard.features.compare.desc')}</p>
-                  </div>
-                </div>
-              </div>
-
-              <button
-                onClick={handleNewChart}
-                style={{
-                  width: '100%',
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  color: 'white',
-                  padding: '14px 24px',
-                  border: 'none',
-                  borderRadius: '8px',
-                  fontSize: '16px',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  marginTop: '20px'
-                }}
-              >
-                {t('dashboard.actions.newChart')}
-              </button>
-
-              <button
-                onClick={handleLogout}
-                style={{
-                  width: '100%',
-                  background: 'transparent',
-                  color: 'var(--text-primary)',
-                  padding: '14px 24px',
-                  border: '1px solid var(--border)',
-                  borderRadius: '8px',
-                  fontSize: '16px',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  marginTop: '12px'
-                }}
-              >
-                {t('dashboard.actions.logout')}
-              </button>
-
-              <button
-                onClick={() => navigate(`/${currentLang}/synastry`)}
-                style={{
-                  width: '100%',
-                  background: 'transparent',
-                  color: 'var(--text-primary)',
-                  padding: '14px 24px',
-                  border: '1px solid var(--border)',
-                  borderRadius: '8px',
-                  fontSize: '16px',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  marginTop: '12px'
-                }}
-              >
-                {t('dashboard.actions.synastry')}
-              </button>
             </div>
           </div>
         </div>
