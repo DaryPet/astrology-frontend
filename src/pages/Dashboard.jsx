@@ -11,6 +11,8 @@ import MarkdownContent from '../components/MarkdownContent';
 import DeleteChartModal from '../components/DeleteChartModal';
 import DuplicateChartModal from '../components/DuplicateChartModal';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
+// после строки 13:
+import { loadChatHistory, saveChatHistory, clearAllChats, isNearLimit, isAtLimit, MAX_MESSAGES } from '../services/chatStorage';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -23,9 +25,7 @@ const Dashboard = () => {
 
   const [showFullAnalysis, setShowFullAnalysis] = useState(false);
   const [chatVisible, setChatVisible] = useState(false);
-  const [chatHistory, setChatHistory] = useState([]);
-  const [chatInput, setChatInput] = useState('');
-  const [chatLoading, setChatLoading] = useState(false);
+  //   const [chatHistory, setChatHistory] = useState([]);
   const [chartDataForAnalysis, setChartDataForAnalysis] = useState(null);
   const [fullAnalysis, setFullAnalysis] = useState(null);
   const [analysisLoading, setAnalysisLoading] = useState(false);
@@ -39,6 +39,9 @@ const Dashboard = () => {
     const saved = localStorage.getItem('savedChartId');
     return saved ? parseInt(saved, 10) : null;
   });
+  const [chatHistory, setChatHistory] = useState(() => loadChatHistory(savedChartId));
+  const [chatInput, setChatInput] = useState('');
+  const [chatLoading, setChatLoading] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -123,7 +126,12 @@ const Dashboard = () => {
     const currentHistory = [...chatHistory];
     const userMessage = { role: 'user', content: questionText };
 
-    setChatHistory(prev => [...prev, userMessage]);
+    // setChatHistory(prev => [...prev, userMessage]);
+    setChatHistory(prev => {
+      const updated = [...prev, userMessage];
+      saveChatHistory(savedChartId, updated);
+      return updated;
+    });
     setChatInput('');
 
     setChatLoading(true);
@@ -141,7 +149,12 @@ const Dashboard = () => {
         content: response.data?.answer || t('dashboard.chat.noAnswer'),
         relevant_chunks: response.data?.relevant_chunks || []
       };
-      setChatHistory(prev => [...prev, botMessage]);
+        //   setChatHistory(prev => [...prev, botMessage]);
+      setChatHistory(prev => {
+        const updated = [...prev, botMessage];
+        saveChatHistory(savedChartId, updated);
+        return updated;
+      });
     } catch (error) {
       setChatHistory(prev => [...prev, {
         role: 'assistant',
@@ -245,6 +258,7 @@ const Dashboard = () => {
     // Очищаем localStorage при выходе
     localStorage.removeItem('chartDataForAnalysis');
     localStorage.removeItem('savedChartId');
+    clearAllChats();
     setChatVisible(false);
     setChatHistory([]);
     setChatInput('');
@@ -343,7 +357,7 @@ const Dashboard = () => {
     setShowHistory(false);
     setChartDataForAnalysis(chart.chart_data);
     setChatVisible(false);
-    setChatHistory([]);
+    setChatHistory(loadChatHistory(chart.id));
     setChatInput('');
     const interp = chart.chart_interpretations?.[0];
     if (interp?.interpretation) {
@@ -357,6 +371,7 @@ const Dashboard = () => {
       setSavedChartId(chart.id);
     }
   };
+
 
   const handleDeleteFromHistory = (chart, e) => {
     e.stopPropagation();
@@ -508,7 +523,7 @@ const Dashboard = () => {
                                 style={{ maxWidth: '300px' }}
                                 disabled={!fullAnalysis}
                               >
-                                {t('dashboard.chat.start')}
+                                {chatHistory.length > 0 ? t('dashboard.chat.open') : t('dashboard.chat.start')}
                               </button>
                             </div>
                           )}
@@ -558,6 +573,23 @@ const Dashboard = () => {
                                 </div>
                               </div>
                               {/* Chat Input */}
+                              {/* Лимит FREE плана */}
+                              {isNearLimit(chatHistory) && (
+                                <div style={{
+                                  padding: '8px 12px',
+                                  marginBottom: '10px',
+                                  borderRadius: '8px',
+                                  background: isAtLimit(chatHistory) ? 'rgba(244,67,54,0.1)' : 'rgba(255,152,0,0.1)',
+                                  border: `1px solid ${isAtLimit(chatHistory) ? '#f44336' : '#ff9800'}`,
+                                  color: isAtLimit(chatHistory) ? '#f44336' : '#ff9800',
+                                  fontSize: '13px',
+                                  textAlign: 'center'
+                                }}>
+                                  {isAtLimit(chatHistory)
+                                    ? `🔒 Лимит ${MAX_MESSAGES} сообщений достигнут. Перейдите на PRO →`
+                                    : `⚠️ Осталось ${MAX_MESSAGES - chatHistory.length} сообщения в этом чате`}
+                                </div>
+                              )}
                               <textarea
                                 value={chatInput}
                                 onChange={(e) => setChatInput(e.target.value)}
@@ -572,8 +604,8 @@ const Dashboard = () => {
                                 disabled={chatLoading}
                                 style={{
                                   width: '100%',
-                                  minHeight: '20px',
-                                  height: '20px',
+                                  minHeight: '40px',
+                                  height: '40px',
                                   resize: 'none',
                                   padding: '12px',
                                   border: '1px solid var(--border)',
@@ -589,7 +621,8 @@ const Dashboard = () => {
                               {/* Send Button */}
                               <button
                                 onClick={sendChatMessage}
-                                disabled={!chatInput.trim() || chatLoading}
+                                // disabled={!chatInput.trim() || chatLoading}
+                                disabled={!chatInput.trim() || chatLoading || isAtLimit(chatHistory)}
                                 className="btn btn-primary"
                                 style={{
                                   width: '100%',
