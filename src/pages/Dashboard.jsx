@@ -586,8 +586,8 @@ const Dashboard = () => {
                                   textAlign: 'center'
                                 }}>
                                   {isAtLimit(chatHistory)
-                                    ? `🔒 Лимит ${MAX_MESSAGES} сообщений достигнут. Перейдите на PRO →`
-                                    : `⚠️ Осталось ${MAX_MESSAGES - chatHistory.length} сообщения в этом чате`}
+                                    ? t('dashboard.chat.limitReached', { limit: MAX_MESSAGES })
+                                    : t('dashboard.chat.messagesLeft', { count: MAX_MESSAGES - chatHistory.length })}
                                 </div>
                               )}
                               <textarea
@@ -636,7 +636,7 @@ const Dashboard = () => {
                                   cursor: 'pointer'
                                 }}
                               >
-                                {chatLoading ? 'Ответ в пути...' : t('dashboard.chat.send')}
+                                {chatLoading ? t('dashboard.chat.sending') : t('dashboard.chat.send')}
                               </button>
                             </div>
                           )}

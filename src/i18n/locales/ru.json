@@ -169,7 +169,10 @@
       "assistant": "Астролог",
       "noAnswer": "Ответ не получен",
       "error": "Ошибка отправки сообщения",
-      "errorWithDetails": "Ошибка отправки сообщения: {{error}}"
+      "errorWithDetails": "Ошибка отправки сообщения: {{error}}",
+      "limitReached": "🔒 Лимит {{limit}} сообщений достигнут. Перейдите на PRO →",
+      "messagesLeft": "⚠️ Осталось {{count}} сообщения в этом чате",
+      "sending": "Ответ в пути..."
     }
   },
   "confirm": {

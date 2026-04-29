@@ -169,7 +169,10 @@
       "assistant": "Astrologer",
       "noAnswer": "No answer received",
       "error": "Error sending message",
-      "errorWithDetails": "Error sending message: {{error}}"
+      "errorWithDetails": "Error sending message: {{error}}",
+      "limitReached": "🔒 Limit of {{limit}} messages reached. Upgrade to PRO →",
+      "messagesLeft": "⚠️ {{count}} messages left in this chat",
+      "sending": "Sending reply..."
     }
   },
   "confirm": {
