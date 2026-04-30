@@ -174,21 +174,41 @@ const Sidebar = ({
                       </div>
                     </div>
                   ) : (
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden' }}>
-                        <span style={{ fontSize: '14px' }}>{getSunSignEmoji(chart.sun_sign)}</span>
-                        <span style={{
-                          fontSize: '13px',
-                          fontWeight: savedChartId === chart.id ? '600' : '400',
-                          color: savedChartId === chart.id ? 'var(--text-primary)' : 'var(--text-secondary)',
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', overflow: 'hidden', flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden' }}>
+                          <span style={{ fontSize: '14px' }}>{getSunSignEmoji(chart.sun_sign)}</span>
+                          <span style={{
+                            fontSize: '13px',
+                            fontWeight: savedChartId === chart.id ? '600' : '400',
+                            color: savedChartId === chart.id ? 'var(--text-primary)' : 'var(--text-secondary)',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}>
+                            {chart.name || t('dashboard.chart.defaultName')}
+                          </span>
+                        </div>
+                        <div style={{
+                          fontSize: '12px',
+                          color: 'var(--text-secondary)',
                           whiteSpace: 'nowrap',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                         }}>
-                          {chart.name || t('dashboard.chart.defaultName')}
-                        </span>
+                            📅 {chart.chart_data?.meta?.birth_date?.split('T')[0] || '—'}
+                        </div>
+                        <div style={{
+                          fontSize: '12px',
+                          color: 'var(--text-secondary)',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}>
+                            📍 {chart.chart_data?.meta?.birth_place || '—'}
+                        </div>
                       </div>
-                      <div style={{ display: 'flex', gap: '2px', flexShrink: 0 }}>
+                      <div style={{ display: 'flex', gap: '2px', flexShrink: 0, alignItems: 'flex-start' }}>
                         <button
                           onClick={e => { e.stopPropagation(); onStartRename(chart); }}
                           style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px', padding: '2px', opacity: '0.6' }}

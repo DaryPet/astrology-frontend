@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { useNavigate, useLocation, useParams } from 'react-router-dom';
+import { useNavigate, useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { astrologyAPI } from '../services/api';
@@ -19,10 +19,14 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { lang } = useParams();
+  const [searchParams] = useSearchParams();
   const { user, isAuthenticated, loading } = useAuth();
   const { t } = useTranslation();
 
   const currentLang = lang || i18n.language || 'ru';
+
+  // Get chartId from URL
+  const chartIdFromUrl = searchParams.get('chart');
 
   const [showFullAnalysis, setShowFullAnalysis] = useState(false);
   const [chatVisible, setChatVisible] = useState(false);
@@ -64,8 +68,10 @@ const Dashboard = () => {
     }
   }, [loading, isAuthenticated, navigate, currentLang]);
 
-  // Читаем данные из localStorage при загрузке
+  // Читаем данные из localStorage при загрузке (если нет chartId в URL)
   useEffect(() => {
+    if (chartIdFromUrl) return; // Если есть ID в URL, загружаем через API
+
     const savedData = localStorage.getItem('chartDataForAnalysis');
     if (savedData && !chartDataForAnalysis) {
       try {
@@ -83,7 +89,7 @@ const Dashboard = () => {
       setShowFullAnalysis(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [chartIdFromUrl]);
 
   useEffect(() => {
     const state = location.state;
@@ -98,6 +104,36 @@ const Dashboard = () => {
       setChartDataForAnalysis(state.chartDataForAnalysis);
     }
   }, [location.state]);
+
+  // Загрузка карты из URL параметра
+  useEffect(() => {
+    if (!chartIdFromUrl) return;
+
+    const loadChartFromUrl = async () => {
+      try {
+        const chartId = parseInt(chartIdFromUrl, 10);
+        if (isNaN(chartId)) return;
+        const chart = await chartsApi.getChart(chartId);
+        setChartDataForAnalysis(chart.chart_data);
+        setChatVisible(false);
+        setChatHistory(loadChatHistory(chart.id));
+        setChatInput('');
+        const interp = chart.chart_interpretations?.[0];
+        if (interp?.interpretation) {
+          setFullAnalysis(interp.interpretation);
+          setShowFullAnalysis(true);
+          localStorage.setItem('chartDataForAnalysis', JSON.stringify(chart.chart_data));
+          localStorage.setItem('savedFullAnalysis', interp.interpretation);
+          localStorage.setItem('savedChartId', chart.id.toString());
+          setSavedChartId(chart.id);
+        }
+      } catch (error) {
+        console.error('Failed to load chart from URL:', error);
+      }
+    };
+
+    loadChartFromUrl();
+  }, [chartIdFromUrl]);
 
   const loadFullAnalysis = useCallback(async () => {
     if (!chartDataForAnalysis) return;
@@ -350,13 +386,14 @@ const Dashboard = () => {
     if (interp?.interpretation) {
       setFullAnalysis(interp.interpretation);
       setShowFullAnalysis(true);
-      // Сохраняем в localStorage
-      localStorage.setItem('chartDataForAnalysis', JSON.stringify(chart.chart_data));
       localStorage.setItem('savedFullAnalysis', interp.interpretation);
-      // Записываем ID карты чтобы кнопка "Сохранить" не появилась
-      localStorage.setItem('savedChartId', chart.id.toString());
-      setSavedChartId(chart.id);
     }
+    // Сохраняем данные карты и ID в localStorage
+    localStorage.setItem('chartDataForAnalysis', JSON.stringify(chart.chart_data));
+    localStorage.setItem('savedChartId', chart.id.toString());
+    setSavedChartId(chart.id);
+    // Обновляем URL с ID карты
+    navigate(`/${currentLang}/dashboard?chart=${chart.id}`);
   };
 
 

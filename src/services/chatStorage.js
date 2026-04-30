@@ -29,11 +29,11 @@ export const clearChatHistory = (chartId) => {
 };
 
 // Clear ALL chats (on logout)
-export const clearAllChats = () => {
-  Object.keys(localStorage)
-    .filter(key => key.startsWith(CHAT_PREFIX))
-    .forEach(key => localStorage.removeItem(key));
-};
+// export const clearAllChats = () => {
+//   Object.keys(localStorage)
+//     .filter(key => key.startsWith(CHAT_PREFIX))
+//     .forEach(key => localStorage.removeItem(key));
+// };
 
 // Helpers to check chat length against limits
 export const isNearLimit = (messages) => messages.length >= MAX_MESSAGES - 2; // true on the 18th message
