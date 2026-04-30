@@ -70,6 +70,17 @@ export const chartsApi = {
     return data || [];
   },
 
+  async getChart(chartId: number) {
+    const { data, error } = await supabase
+      .from('natal_charts')
+      .select('*, chart_interpretations(*)')
+      .eq('id', chartId)
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
   async deleteChart(chartId: number) {
     // Сначала удаляем интерпретации
     await supabase

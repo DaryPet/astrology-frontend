@@ -1,8 +1,7 @@
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import Home from './pages/Home';
-import Chart from './pages/Chart';
 import Synastry from './pages/Synastry';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
@@ -29,28 +28,37 @@ function LanguageSync() {
   return null;
 }
 
+function ChartRedirect() {
+  const { id } = useParams();
+  const { i18n } = useTranslation();
+  const currentLang = i18n.language || 'ru';
+  return <Navigate to={`/${currentLang}/dashboard?chart=${id}`} replace />;
+}
+
 function AppRoutes() {
   const { i18n } = useTranslation();
   const location = useLocation();
 
-  const specialRoutes = ['/confirm', '/reset-password', '/chart/'];
+  // Extract lang from URL
+  const langMatch = location.pathname.match(/^\/(ru|en)\//);
+  const currentLang = langMatch ? langMatch[1] : i18n.language || 'ru';
+
+  const specialRoutes = ['/confirm', '/reset-password'];
   const isSpecialRoute = specialRoutes.some(route => location.pathname.startsWith(route));
-  const hasLangPrefix = location.pathname.match(/^\/(ru|en)\//);
+  const hasLangPrefix = Boolean(langMatch);
 
   if (!isSpecialRoute && !hasLangPrefix && location.pathname !== '/') {
-    const currentLang = i18n.language || 'ru';
     return <Navigate to={`/${currentLang}${location.pathname}`} replace />;
   }
 
   if (location.pathname === '/') {
-    const currentLang = i18n.language || 'ru';
     return <Navigate to={`/${currentLang}`} replace />;
   }
 
   return (
     <Routes>
       <Route path="/:lang/" element={<Home />} />
-      <Route path="/:lang/chart/:id" element={<Chart />} />
+      <Route path="/:lang/chart/:id" element={<ChartRedirect />} />
       <Route path="/:lang/synastry" element={<Synastry />} />
       <Route path="/:lang/dashboard"  element={<Dashboard key={location.key} />}  />
       <Route path="/:lang/login" element={<Login />} />
