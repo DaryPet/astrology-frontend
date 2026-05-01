@@ -6,9 +6,11 @@ import Header from '../components/Header';
 import LocationInput from '../components/LocationInput';
 import SynastryChartComponent from '../components/SynastryChartComponent';
 import AspectGrid from '../components/AspectGrid';
+import AspectAnalysisModal from '../components/AspectAnalysisModal';
+import { astrologyAPI } from '../services/api';
 
 function Synastry() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [formData, setFormData] = useState({
     person1: { name: '', birth_date: '', birth_time: '12:00', birth_place: '', latitude: null, longitude: null, timezone: 'UTC' },
     person2: { name: '', birth_date: '', birth_time: '12:00', birth_place: '', latitude: null, longitude: null, timezone: 'UTC' }
@@ -17,6 +19,9 @@ function Synastry() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [personNames, setPersonNames] = useState({ p1: '', p2: '' });
+  const [selectedAspectData, setSelectedAspectData] = useState(null);
+  const [aspectAnalysis, setAspectAnalysis] = useState(null);
+  const [aspectLoading, setAspectLoading] = useState(false);
 
   const handleLocationSelect = async (location, personNum) => {
     const lat = parseFloat(location.lat);
@@ -72,6 +77,39 @@ function Synastry() {
       setError(err.response?.data?.detail || err.message || t('home.errors.calcError'));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAspectClick = async (aspect) => {
+    setSelectedAspectData(aspect);
+    setAspectLoading(true);
+
+    const storageKey = `aspectAnalysis_${aspect.planet1}_${aspect.planet2}_${aspect.aspect}`;
+    const savedAnalysis = localStorage.getItem(storageKey);
+    if (savedAnalysis) {
+      setAspectAnalysis(savedAnalysis);
+      setAspectLoading(false);
+      return;
+    }
+
+    setAspectAnalysis(null);
+
+    try {
+      const result = await astrologyAPI.getSynastryAspectAnalysis({
+        planet1: aspect.planet1,
+        planet2: aspect.planet2,
+        aspect_name: aspect.aspect,
+        aspect_name_ru: aspect.aspect_ru || aspect.aspect,
+        orb: aspect.orb,
+        language: i18n.language
+      });
+
+      localStorage.setItem(storageKey, result.analysis);
+      setAspectAnalysis(result.analysis);
+    } catch (err) {
+      console.error('Aspect analysis error:', err);
+    } finally {
+      setAspectLoading(false);
     }
   };
 
@@ -196,7 +234,7 @@ function Synastry() {
             </div>
 
             <div className="result-card" style={{marginTop: '20px'}}>
-              <AspectGrid aspects={synastry.aspects} />
+              <AspectGrid aspects={synastry.aspects} onAspectClick={handleAspectClick} />
             </div>
 
             <button onClick={() => { setSynastry(null); setPersonNames({ p1: '', p2: '' }); }} className="btn btn-primary" style={{ maxWidth: '300px', margin: '40px auto 0', display: 'block' }}>
@@ -205,6 +243,13 @@ function Synastry() {
           </div>
         )}
       </div>
+      <AspectAnalysisModal
+        aspect={selectedAspectData}
+        analysis={aspectAnalysis}
+        isOpen={!!selectedAspectData}
+        onClose={() => setSelectedAspectData(null)}
+        loading={aspectLoading}
+      />
     </div>
   );
 }
