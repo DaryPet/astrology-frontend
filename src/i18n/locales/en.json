@@ -336,11 +336,13 @@
     "aspects": {
       "title": "Planetary Aspects",
       "notFound": "No aspects found",
-      "notFoundDesc": "This chart has no significant aspects between planets"
+      "notFoundDesc": "This chart has no significant aspects between planets",
+      "type": "Aspect Type"
     }
   },
   "analysis": {
     "planetAnalysis": "Planet Analysis",
+    "aspectAnalysis": "Aspect Analysis",
     "loading": "Loading analysis...",
     "processing": "Your analysis is being processed",
     "processingHint": "This may take 2-5 minutes. Please wait...",

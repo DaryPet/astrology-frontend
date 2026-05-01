@@ -121,6 +121,15 @@ export const astrologyAPI = {
     }
   },
 
+  getSynastryAspectAnalysis: async (aspectData) => {
+    try {
+      const response = await api.post('/synastry/aspect', aspectData);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
   getFullChartAnalysis: async (chartData, language = 'ru', topBooks = 5) => {
     try {
       const response = await api.post('/analysis/full', {

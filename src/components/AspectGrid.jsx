@@ -6,7 +6,7 @@ const ASPECT_COLORS = {
   'Square': '#FF6347', 'Sextile': '#1E90FF', 'Quincunx': '#9370DB'
 };
 
-const AspectGrid = ({ aspects, _planets }) => {
+const AspectGrid = ({ aspects, _planets, onAspectClick }) => {
   const { t, i18n } = useTranslation();
   const [selectedAspect, setSelectedAspect] = useState(null);
 
@@ -100,7 +100,7 @@ const AspectGrid = ({ aspects, _planets }) => {
                 position: 'relative',
                 overflow: 'hidden'
               }}
-              onClick={() => setSelectedAspect(isSelected ? null : index)}
+              onClick={() => { setSelectedAspect(isSelected ? null : index); onAspectClick && onAspectClick(aspect); }}
               onMouseEnter={(e) => {
                 if (!isSelected) {
                   e.currentTarget.style.transform = 'translateY(-4px)';
