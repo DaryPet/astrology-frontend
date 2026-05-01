@@ -19,6 +19,8 @@ const Sidebar = ({
   onRenameChange,
   onDeleteChart,
   getSunSignEmoji,
+  onTogglePlanetAnalysis,
+  isPlanetTableVisible,
 }) => {
   const navigate = useNavigate();
   const { lang } = useParams();
@@ -230,6 +232,43 @@ const Sidebar = ({
           </div>
         )}
       </div>
+
+      {/* Divider */}
+      <div style={{ height: '1px', background: 'var(--border)', margin: '4px 0' }} />
+
+      {/* Planet Analysis */}
+      <button
+        onClick={onTogglePlanetAnalysis}
+        style={{
+          width: '100%',
+          background: isPlanetTableVisible ? 'rgba(124, 58, 237, 0.15)' : 'none',
+          border: isPlanetTableVisible ? '1px solid rgba(124, 58, 237, 0.3)' : '1px solid var(--border)',
+          borderRadius: '10px',
+          color: isPlanetTableVisible ? 'var(--text-primary)' : 'var(--text-secondary)',
+          padding: '10px 16px',
+          fontSize: '14px',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          transition: 'all 0.15s',
+        }}
+        onMouseEnter={e => {
+          if (!isPlanetTableVisible) {
+            e.currentTarget.style.borderColor = 'var(--accent)';
+            e.currentTarget.style.color = 'var(--text-primary)';
+          }
+        }}
+        onMouseLeave={e => {
+          if (!isPlanetTableVisible) {
+            e.currentTarget.style.borderColor = 'var(--border)';
+            e.currentTarget.style.color = 'var(--text-secondary)';
+          }
+        }}
+      >
+        <span>🪐</span>
+        {t('dashboard.actions.planetAnalysis')}
+      </button>
 
       {/* Divider */}
       <div style={{ height: '1px', background: 'var(--border)', margin: '4px 0' }} />

@@ -172,7 +172,7 @@ export const chartsApi = {
     return data;
   },
 
-  async saveInterpretation(chartId: number, type: string, interpretation: string) {
+  async saveInterpretation(chartId: number, type: string, interpretation: string, name: string = '') {
     // Verify chart exists
     const { data: chart, error: chartError } = await supabase
       .from('natal_charts')
@@ -187,15 +187,19 @@ export const chartsApi = {
     // Generate summary
     const summary = await generateSummary(interpretation);
 
-    // Insert interpretation + summary in a single operation
+    // Upsert interpretation (update if exists, insert if not)
+    // Conflict target: (chart_id, type, name) - ensures unique analysis per chart+type+planet
     const { data, error } = await supabase
       .from('chart_interpretations')
-      .insert({
+      .upsert({
         chart_id: chartId,
         type,
         interpretation,
         summary,
+        name, // planet name for type='planet'
         created_at: new Date().toISOString()
+      }, {
+        onConflict: 'chart_id,type,name'
       })
       .select()
       .single();
@@ -206,9 +210,30 @@ export const chartsApi = {
     return data;
   },
 
-  async saveChartWithInterpretation(userId: string, chartData: Record<string, unknown>, interpretation: string) {
+  async savePlanetAnalysis(chartId: number, planetName: string, analysis: string) {
+    return this.saveInterpretation(chartId, 'planet', analysis, planetName);
+  },
+
+  async getPlanetAnalyses(chartId: number) {
+    const { data, error } = await supabase
+      .from('chart_interpretations')
+      .select('*')
+      .eq('chart_id', chartId)
+      .eq('type', 'planet');
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  async saveChartWithInterpretation(userId: string, chartData: Record<string, unknown>, interpretation: string, planetAnalyses: Array<{planetName: string, analysis: string}> = []) {
     const chart = await this.saveChart(userId, chartData);
     await this.saveInterpretation(chart.id, 'full', interpretation);
+
+    // Save planet analyses
+    for (const { planetName, analysis } of planetAnalyses) {
+      await this.savePlanetAnalysis(chart.id, planetName, analysis);
+    }
+
     return chart;
   },
 
