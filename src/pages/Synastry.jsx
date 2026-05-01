@@ -1,58 +1,47 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import api from '../services/api';
+import { geocodeAPI } from '../services/api';
 import Header from '../components/Header';
+import LocationInput from '../components/LocationInput';
+import SynastryChartComponent from '../components/SynastryChartComponent';
+import AspectGrid from '../components/AspectGrid';
 
 function Synastry() {
   const { t } = useTranslation();
   const [formData, setFormData] = useState({
-    person1: { name: '', birth_date: '', birth_time: '12:00', birth_place: '', latitude: null, longitude: null, timezone: 'Europe/Moscow' },
-    person2: { name: '', birth_date: '', birth_time: '12:00', birth_place: '', latitude: null, longitude: null, timezone: 'Europe/Moscow' }
+    person1: { name: '', birth_date: '', birth_time: '12:00', birth_place: '', latitude: null, longitude: null, timezone: 'UTC' },
+    person2: { name: '', birth_date: '', birth_time: '12:00', birth_place: '', latitude: null, longitude: null, timezone: 'UTC' }
   });
   const [synastry, setSynastry] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [personNames, setPersonNames] = useState({ p1: '', p2: '' });
 
-  const [locations1, setLocations1] = useState([]);
-  const [locations2, setLocations2] = useState([]);
-  const [showLoc1, setShowLoc1] = useState(false);
-  const [showLoc2, setShowLoc2] = useState(false);
-  const loc1Ref = useRef(null);
-  const loc2Ref = useRef(null);
+  const handleLocationSelect = async (location, personNum) => {
+    const lat = parseFloat(location.lat);
+    const lon = parseFloat(location.lon);
+    let timezone = location.timezone || 'UTC';
 
-  const searchLocation = async (query, setLocations) => {
-    if (query.length < 2) { setLocations([]); return; }
-    try {
-      const res = await api.get(`/geocode/search?q=${encodeURIComponent(query)}`);
-      setLocations(res.data.slice(0, 8));
-    } catch { }
-  };
+    if (lat && lon) {
+      try {
+        const detected = await geocodeAPI.detectTimezone(lat, lon);
+        if (detected && detected !== 'UTC') timezone = detected;
+      } catch (e) { console.warn('Timezone detection warning:', e); }
+    }
 
-  const selectLocation = (loc, personNum) => {
-    const name = loc.display_name.split(',')[0];
-    const data = personNum === 1 ? formData.person1 : formData.person2;
-    const setPerson = personNum === 1
-      ? (p) => setFormData({...formData, person1: p})
-      : (p) => setFormData({...formData, person2: p});
+    const updater = personNum === 1
+      ? (p) => setFormData(f => ({...f, person1: p}))
+      : (p) => setFormData(f => ({...f, person2: p}));
 
-    setPerson({
-      ...data,
-      birth_place: name,
-      latitude: parseFloat(loc.lat),
-      longitude: parseFloat(loc.lon)
+    updater({
+      ...formData[`person${personNum}`],
+      birth_place: location.display_name,
+      latitude: lat,
+      longitude: lon,
+      timezone: timezone
     });
-    if (personNum === 1) { setShowLoc1(false); setLocations1([]); }
-    else { setShowLoc2(false); setLocations2([]); }
   };
-
-  useEffect(() => {
-    const handleClick = (e) => {
-      if (loc1Ref.current && !loc1Ref.current.contains(e.target)) setShowLoc1(false);
-      if (loc2Ref.current && !loc2Ref.current.contains(e.target)) setShowLoc2(false);
-    };
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -78,6 +67,7 @@ function Synastry() {
         chart2: parseForm(formData.person2)
       });
       setSynastry(res.data);
+      setPersonNames({ p1: formData.person1.name, p2: formData.person2.name });
     } catch (err) {
       setError(err.response?.data?.detail || err.message || t('home.errors.calcError'));
     } finally {
@@ -113,33 +103,14 @@ function Synastry() {
                     <input type="time" value={formData.person1.birth_time} onChange={(e) => setFormData({...formData, person1: {...formData.person1, birth_time: e.target.value}})} />
                   </div>
                 </div>
-                <div className="form-group" ref={loc1Ref} style={{position: 'relative'}}>
+                <div className="form-group">
                   <label>{t('synastry.form.birthPlace')}</label>
-                  <input type="text" value={formData.person1.birth_place} onChange={(e) => {
-                    setFormData({...formData, person1: {...formData.person1, birth_place: e.target.value}});
-                    searchLocation(e.target.value, setLocations1);
-                    setShowLoc1(true);
-                  }} placeholder={t('synastry.form.birthPlacePlaceholder')} required />
-                  {showLoc1 && locations1.length > 0 && (
-                    <div className="autocomplete-dropdown">
-                      {locations1.map(loc => (
-                        <div key={loc.place_id} className="autocomplete-item" onClick={() => selectLocation(loc, 1)}>
-                          <div className="autocomplete-name">{loc.display_name.split(',')[0]}</div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>{t('synastry.form.timezone')}</label>
-                    <select value={formData.person1.timezone} onChange={(e) => setFormData({...formData, person1: {...formData.person1, timezone: e.target.value}})}>
-                      <option value="Europe/Moscow">Moscow</option>
-                      <option value="Europe/Kiev">Kiev</option>
-                      <option value="Europe/London">London</option>
-                      <option value="America/New_York">New York</option>
-                    </select>
-                  </div>
+                  <LocationInput
+                    value={formData.person1.birth_place}
+                    onLocationSelect={(loc) => handleLocationSelect(loc, 1)}
+                    placeholder={t('synastry.form.birthPlacePlaceholder')}
+                    required
+                  />
                 </div>
               </div>
 
@@ -159,33 +130,14 @@ function Synastry() {
                     <input type="time" value={formData.person2.birth_time} onChange={(e) => setFormData({...formData, person2: {...formData.person2, birth_time: e.target.value}})} />
                   </div>
                 </div>
-                <div className="form-group" ref={loc2Ref} style={{position: 'relative'}}>
+                <div className="form-group">
                   <label>{t('synastry.form.birthPlace')}</label>
-                  <input type="text" value={formData.person2.birth_place} onChange={(e) => {
-                    setFormData({...formData, person2: {...formData.person2, birth_place: e.target.value}});
-                    searchLocation(e.target.value, setLocations2);
-                    setShowLoc2(true);
-                  }} placeholder={t('synastry.form.birthPlacePlaceholder')} required />
-                  {showLoc2 && locations2.length > 0 && (
-                    <div className="autocomplete-dropdown">
-                      {locations2.map(loc => (
-                        <div key={loc.place_id} className="autocomplete-item" onClick={() => selectLocation(loc, 2)}>
-                          <div className="autocomplete-name">{loc.display_name.split(',')[0]}</div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>{t('synastry.form.timezone')}</label>
-                    <select value={formData.person2.timezone} onChange={(e) => setFormData({...formData, person2: {...formData.person2, timezone: e.target.value}})}>
-                      <option value="Europe/Moscow">Moscow</option>
-                      <option value="Europe/Kiev">Kiev</option>
-                      <option value="Europe/London">London</option>
-                      <option value="America/New_York">New York</option>
-                    </select>
-                  </div>
+                  <LocationInput
+                    value={formData.person2.birth_place}
+                    onLocationSelect={(loc) => handleLocationSelect(loc, 2)}
+                    placeholder={t('synastry.form.birthPlacePlaceholder')}
+                    required
+                  />
                 </div>
               </div>
             </div>
@@ -196,35 +148,58 @@ function Synastry() {
           </form>
         ) : (
           <div>
-            <div className="results-grid">
-              <div className="result-card">
-                <h3>{t('synastry.person1')}</h3>
-                <p>{t('chart.sun')}: {synastry.chart1.sun_sign}</p>
-                <p>{t('chart.moon')}: {synastry.chart1.moon_sign}</p>
-                <p>{t('chart.ascendant')}: {synastry.chart1.ascendant}</p>
+            <div className="result-card" style={{ marginBottom: '30px' }}>
+              <h3 style={{ textAlign: 'center', marginBottom: '20px' }}>{t('synastry.title')}</h3>
+
+              {/* Individual Info side by side */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+                <div>
+                  <h4 style={{ color: '#3b82f6', marginBottom: '10px' }}>{personNames.p1 || t('synastry.person1')}</h4>
+                  <div style={{ display: 'flex', justifyContent: 'center', color: 'var(--text-secondary)', fontSize: '14px' }}>
+                    <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+                      <div><strong>{t('chart.sun')}:</strong> {synastry.chart1?.sun_sign ? t('planets.signs.' + synastry.chart1.sun_sign) : '—'}</div>
+                      <div><strong>{t('chart.moon')}:</strong> {synastry.chart1?.moon_sign ? t('planets.signs.' + synastry.chart1.moon_sign) : '—'}</div>
+                      <div><strong>{t('chart.ascendant')}:</strong> {synastry.chart1?.ascendant ? t('planets.signs.' + synastry.chart1.ascendant) : '—'}</div>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <h4 style={{ color: '#ef4444', marginBottom: '10px' }}>{personNames.p2 || t('synastry.person2')}</h4>
+                  <div style={{ display: 'flex', justifyContent: 'center', color: 'var(--text-secondary)', fontSize: '14px' }}>
+                    <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+                      <div><strong>{t('chart.sun')}:</strong> {synastry.chart2?.sun_sign ? t('planets.signs.' + synastry.chart2.sun_sign) : '—'}</div>
+                      <div><strong>{t('chart.moon')}:</strong> {synastry.chart2?.moon_sign ? t('planets.signs.' + synastry.chart2.moon_sign) : '—'}</div>
+                      <div><strong>{t('chart.ascendant')}:</strong> {synastry.chart2?.ascendant ? t('planets.signs.' + synastry.chart2.ascendant) : '—'}</div>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="result-card">
-                <h3>{t('synastry.person2')}</h3>
-                <p>{t('chart.sun')}: {synastry.chart2.sun_sign}</p>
-                <p>{t('chart.moon')}: {synastry.chart2.moon_sign}</p>
-                <p>{t('chart.ascendant')}: {synastry.chart2.ascendant}</p>
+
+              {/* Legend */}
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '30px', marginBottom: '20px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#3b82f6' }}></div>
+                  <span style={{ color: 'var(--text-primary)', fontSize: '14px' }}>{personNames.p1 || t('synastry.person1')}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#ef4444' }}></div>
+                  <span style={{ color: 'var(--text-primary)', fontSize: '14px' }}>{personNames.p2 || t('synastry.person2')}</span>
+                </div>
+              </div>
+
+              {/* Single Combined Chart */}
+              <div style={{ display: 'flex', justifyContent: 'center' }}>
+                {synastry.chart1 && synastry.chart2 && (
+                  <SynastryChartComponent chart1={synastry.chart1} chart2={synastry.chart2} size={700} />
+                )}
               </div>
             </div>
 
             <div className="result-card" style={{marginTop: '20px'}}>
-              <h3>{t('synastry.aspects')} ({synastry.total_aspects})</h3>
-              <div className="aspects-list">
-                {synastry.aspects && synastry.aspects.map((aspect, idx) => (
-                  <div key={idx} className="aspect-item">
-                    <span className="aspect-planets">{aspect.planet1} {aspect.aspect} {aspect.planet2}</span>
-                    <span className="aspect-type">{aspect.aspect_ru}</span>
-                    <span className="aspect-orb">orb: {aspect.orb}</span>
-                  </div>
-                ))}
-              </div>
+              <AspectGrid aspects={synastry.aspects} />
             </div>
 
-            <button onClick={() => setSynastry(null)} className="btn btn-primary" style={{ maxWidth: '300px', margin: '40px auto 0', display: 'block' }}>
+            <button onClick={() => { setSynastry(null); setPersonNames({ p1: '', p2: '' }); }} className="btn btn-primary" style={{ maxWidth: '300px', margin: '40px auto 0', display: 'block' }}>
               {t('synastry.calculateAgain')}
             </button>
           </div>

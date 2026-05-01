@@ -7,7 +7,7 @@ const ASPECT_COLORS = {
 };
 
 const AspectGrid = ({ aspects, _planets }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [selectedAspect, setSelectedAspect] = useState(null);
 
   if (!aspects || aspects.length === 0) {
@@ -75,6 +75,18 @@ const AspectGrid = ({ aspects, _planets }) => {
           const aspectColor = ASPECT_COLORS[aspect.aspect] || '#7c3aed';
           const isSelected = selectedAspect === index;
 
+          // Determine aspect name based on language
+          const aspectName = (i18n.language === 'ru' && aspect.aspect_ru) ? aspect.aspect_ru : aspect.aspect;
+
+          // Helper to translate planet names
+          const getPlanetName = (planet) => {
+            const key = `planets.names.${planet}`;
+            const translated = t(key);
+            return translated !== key ? translated : planet;
+          };
+          const planet1Name = getPlanetName(aspect.planet1);
+          const planet2Name = getPlanetName(aspect.planet2);
+
           return (
             <div
               key={index}
@@ -130,7 +142,7 @@ const AspectGrid = ({ aspects, _planets }) => {
                       fontWeight: 'bold',
                       marginBottom: '4px'
                     }}>
-                      {aspect.aspect}
+                      {aspectName}
                     </div>
                     <div style={{
                       fontSize: '12px',
@@ -158,7 +170,7 @@ const AspectGrid = ({ aspects, _planets }) => {
                     color: 'var(--text-primary)',
                     marginBottom: '4px'
                   }}>
-                    {aspect.planet1}
+                    {planet1Name}
                   </div>
                 </div>
 
@@ -178,7 +190,7 @@ const AspectGrid = ({ aspects, _planets }) => {
                     color: 'var(--text-primary)',
                     marginBottom: '4px'
                   }}>
-                    {aspect.planet2}
+                    {planet2Name}
                   </div>
                 </div>
               </div>
