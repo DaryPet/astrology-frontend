@@ -150,7 +150,8 @@
       "newChart": "Calculate new chart",
       "synastry": "Calculate synastry",
       "logout": "Sign out",
-      "save": "Save"
+      "save": "Save",
+      "planetAnalysis": "Planet Analysis"
     },
     "errors": {
       "loadError": "Error loading dashboard data",
