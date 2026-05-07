@@ -143,6 +143,20 @@ export const astrologyAPI = {
     }
   },
 
+  getFullSynastryAnalysis: async (synastryData, language = 'ru', topBooks = 5) => {
+    try {
+      const response = await api.post('/analysis/synastry/full', {
+        chart1: synastryData.chart1,
+        chart2: synastryData.chart2,
+        language,
+        top_k_per_book: topBooks
+      });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
   chatAnalysis: async (chatRequest) => {
     try {
       const response = await api.post('/analysis/chat', chatRequest);
