@@ -284,7 +284,11 @@
     "calculate": "Calculate Compatibility",
     "calculating": "Calculating...",
     "calculateAgain": "Calculate Again",
-    "aspects": "Aspects"
+    "aspects": "Aspects",
+    "getFullAnalysis": "Get Full Compatibility Analysis",
+    "fullAnalysis": {
+      "title": "Full Synastry Analysis"
+    }
   },
   "planets": {
     "title": "Planets in Signs",

@@ -1,16 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
-import { geocodeAPI } from '../services/api';
+import { geocodeAPI, astrologyAPI } from '../services/api';
 import Header from '../components/Header';
 import LocationInput from '../components/LocationInput';
 import SynastryChartComponent from '../components/SynastryChartComponent';
 import AspectGrid from '../components/AspectGrid';
 import AspectAnalysisModal from '../components/AspectAnalysisModal';
-import { astrologyAPI } from '../services/api';
 
 function Synastry() {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const [formData, setFormData] = useState({
     person1: { name: '', birth_date: '', birth_time: '12:00', birth_place: '', latitude: null, longitude: null, timezone: 'UTC' },
     person2: { name: '', birth_date: '', birth_time: '12:00', birth_place: '', latitude: null, longitude: null, timezone: 'UTC' }
@@ -22,6 +25,29 @@ function Synastry() {
   const [selectedAspectData, setSelectedAspectData] = useState(null);
   const [aspectAnalysis, setAspectAnalysis] = useState(null);
   const [aspectLoading, setAspectLoading] = useState(false);
+
+  // Восстановление синастрии из localStorage при загрузке
+  useEffect(() => {
+    const savedSynastry = localStorage.getItem('savedSynastry');
+    const savedNames = localStorage.getItem('savedPersonNames');
+
+    if (savedSynastry && !synastry) {
+      try {
+        const parsed = JSON.parse(savedSynastry);
+        setSynastry(parsed);
+      } catch (e) {
+        console.error('Error parsing saved synastry:', e);
+      }
+    }
+
+    if (savedNames && !personNames.p1) {
+      try {
+        setPersonNames(JSON.parse(savedNames));
+      } catch (e) {
+        console.error('Error parsing saved names:', e);
+      }
+    }
+  }, [synastry, personNames]);
 
   const handleLocationSelect = async (location, personNum) => {
     const lat = parseFloat(location.lat);
@@ -63,16 +89,29 @@ function Synastry() {
           birth_place: p.birth_place,
           latitude: p.latitude || 55.7558,
           longitude: p.longitude || 37.6173,
-          timezone: p.timezone
+          timezone: p.timezone,
+          house_system: 'Placidus'
         };
       };
 
+      const chart1Data = parseForm(formData.person1);
+      const chart2Data = parseForm(formData.person2);
+
       const res = await api.post('/synastry/direct', {
-        chart1: parseForm(formData.person1),
-        chart2: parseForm(formData.person2)
+        chart1: chart1Data,
+        chart2: chart2Data
       });
-      setSynastry(res.data);
+
+      const synastryWithFormData = {
+        ...res.data,
+        chart1_input: chart1Data,
+        chart2_input: chart2Data
+      };
+
+      setSynastry(synastryWithFormData);
+      localStorage.setItem('savedSynastry', JSON.stringify(synastryWithFormData));
       setPersonNames({ p1: formData.person1.name, p2: formData.person2.name });
+      localStorage.setItem('savedPersonNames', JSON.stringify({ p1: formData.person1.name, p2: formData.person2.name }));
     } catch (err) {
       setError(err.response?.data?.detail || err.message || t('home.errors.calcError'));
     } finally {
@@ -110,6 +149,48 @@ function Synastry() {
       console.error('Aspect analysis error:', err);
     } finally {
       setAspectLoading(false);
+    }
+  };
+
+  // const prepareSynastryDataForAnalysis = (synastryData, personNames) => {
+  //   return {
+  //     chart1: { ...(synastryData.chart1_input || {}), ...synastryData.chart1 },
+  //     chart2: { ...(synastryData.chart2_input || {}), ...synastryData.chart2 },
+  //     person1_name: personNames.p1,
+  //     person2_name: personNames.p2,
+  //     type: 'synastry'
+  //   };
+  // };
+
+  const prepareSynastryDataForAnalysis = (synastryData, personNames) => {
+    return {
+      chart1: synastryData.chart1_input,  // только input данные
+      chart2: synastryData.chart2_input,  // только input данные
+      person1_name: personNames.p1,
+      person2_name: personNames.p2,
+      type: 'synastry'
+    };
+  };
+
+  const chart1Data = useMemo(() => synastry?.chart1, [synastry?.chart1 ? JSON.stringify(synastry.chart1) : null]);
+  const chart2Data = useMemo(() => synastry?.chart2, [synastry?.chart2 ? JSON.stringify(synastry.chart2) : null]);
+
+  const handleFullSynastryAnalysisClick = () => {
+    const synastryDataForAnalysis = prepareSynastryDataForAnalysis(synastry, personNames);
+
+    localStorage.removeItem('savedFullAnalysis');
+    localStorage.removeItem('savedChartId');
+    localStorage.removeItem('chartDataForAnalysis');
+    localStorage.setItem('chartDataForAnalysis', JSON.stringify(synastryDataForAnalysis));
+
+    if (!isAuthenticated) {
+      navigate(`/${i18n.language}/login`, {
+        state: { from: '/synastry', chartDataForAnalysis: synastryDataForAnalysis, showFullAnalysis: true }
+      });
+    } else {
+      navigate(`/${i18n.language}/dashboard`, {
+        state: { showFullAnalysis: true, chartDataForAnalysis: synastryDataForAnalysis }
+      });
     }
   };
 
@@ -227,8 +308,8 @@ function Synastry() {
 
               {/* Single Combined Chart */}
               <div style={{ display: 'flex', justifyContent: 'center' }}>
-                {synastry.chart1 && synastry.chart2 && (
-                  <SynastryChartComponent chart1={synastry.chart1} chart2={synastry.chart2} size={700} />
+                {chart1Data && chart2Data && (
+                  <SynastryChartComponent chart1={chart1Data} chart2={chart2Data} size={700} />
                 )}
               </div>
             </div>
@@ -237,7 +318,35 @@ function Synastry() {
               <AspectGrid aspects={synastry.aspects} onAspectClick={handleAspectClick} />
             </div>
 
-            <button onClick={() => { setSynastry(null); setPersonNames({ p1: '', p2: '' }); }} className="btn btn-primary" style={{ maxWidth: '300px', margin: '40px auto 0', display: 'block' }}>
+            {!loading && synastry && (
+              <div style={{ textAlign: 'center', marginTop: '30px' }}>
+                <button
+                  type="button"
+                  className="btn-full-analysis"
+                  onClick={handleFullSynastryAnalysisClick}
+                  style={{
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    color: 'white',
+                    padding: '14px 28px',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    marginBottom: '20px'
+                  }}
+                >
+                  {t('synastry.getFullAnalysis')}
+                </button>
+              </div>
+            )}
+
+            <button onClick={() => {
+              setSynastry(null);
+              setPersonNames({ p1: '', p2: '' });
+              localStorage.removeItem('savedSynastry');
+              localStorage.removeItem('savedPersonNames');
+            }} className="btn btn-primary" style={{ maxWidth: '300px', margin: '40px auto 0', display: 'block' }}>
               {t('synastry.calculateAgain')}
             </button>
           </div>

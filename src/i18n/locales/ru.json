@@ -284,7 +284,11 @@
     "calculate": "Рассчитать совместимость",
     "calculating": "Расчёт...",
     "calculateAgain": "Рассчитать снова",
-    "aspects": "Аспекты"
+    "aspects": "Аспекты",
+    "getFullAnalysis": "Получить полный анализ совместимости",
+    "fullAnalysis": {
+      "title": "Полный анализ синастрии"
+    }
   },
   "planets": {
     "title": "Планеты в знаках",

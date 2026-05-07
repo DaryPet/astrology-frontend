@@ -156,15 +156,42 @@ const Dashboard = () => {
     setAnalysisLoading(true);
     setAnalysisError('');
     try {
-      const result = await astrologyAPI.getFullChartAnalysis(
-        chartDataForAnalysis,
-        i18n.language,
-        5
-      );
+      let result;
+
+      if (chartDataForAnalysis.type === 'synastry') {
+        console.log('SYNASTRY DATA:', JSON.stringify(chartDataForAnalysis, null, 2));
+        // result = await astrologyAPI.getFullSynastryAnalysis(
+        //   chartDataForAnalysis,
+        //   i18n.language,
+        //   5
+        // );
+        result = await astrologyAPI.getFullSynastryAnalysis(
+          {
+            chart1: chartDataForAnalysis.chart1,
+            chart2: chartDataForAnalysis.chart2
+          },
+          i18n.language,
+          5
+        );
+      } else {
+        result = await astrologyAPI.getFullChartAnalysis(
+          chartDataForAnalysis,
+          i18n.language,
+          5
+        );
+      }
+
       setFullAnalysis(result.analysis);
       localStorage.setItem('savedFullAnalysis', result.analysis);
     } catch (err) {
-      setAnalysisError(err.response?.data?.detail || t('dashboard.errors.analysisError'));
+      const errorDetail = err.response?.data?.detail;
+      if (typeof errorDetail === 'string') {
+        setAnalysisError(errorDetail);
+      } else if (Array.isArray(errorDetail)) {
+        setAnalysisError(errorDetail.map(e => e.msg || JSON.stringify(e)).join(', '));
+      } else {
+        setAnalysisError(t('dashboard.errors.analysisError'));
+      }
     } finally {
       setAnalysisLoading(false);
     }
@@ -729,12 +756,21 @@ const Dashboard = () => {
               {showFullAnalysis && !showPlanetTable && (
                 <>
                   <h2 style={{ marginBottom: '20px' }}>
-                    {chartDataForAnalysis?.name && (
-                      <span style={{ fontWeight: '500', marginRight: '10px' }}>
-                        {chartDataForAnalysis.name}
-                      </span>
+                    {chartDataForAnalysis?.type === 'synastry' ? (
+                      <>
+                        {chartDataForAnalysis.person1_name} / {chartDataForAnalysis.person2_name}: {' '}
+                        {t('synastry.fullAnalysis.title')}
+                      </>
+                    ) : (
+                      <>
+                        {chartDataForAnalysis?.name && (
+                          <span style={{ fontWeight: '500', marginRight: '10px' }}>
+                            {chartDataForAnalysis.name}
+                          </span>
+                        )}
+                        {t('dashboard.fullAnalysis.title')}
+                      </>
                     )}
-                    {t('dashboard.fullAnalysis.title')}
                   </h2>
 
                   {analysisLoading && (

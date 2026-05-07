@@ -1,16 +1,68 @@
 import React, { useEffect, useRef } from 'react';
 
+const convertSynastryToRadixFormat = (data1, data2) => {
+  if (!data1 || !data1.planets || !data1.houses || !data2 || !data2.planets || !data2.houses) return null;
+
+  const planets = {};
+  const cusps = new Array(12);
+
+  const planetMapping = {
+    'Sun': 'Sun', 'Moon': 'Moon', 'Mercury': 'Mercury',
+    'Venus': 'Venus', 'Mars': 'Mars', 'Jupiter': 'Jupiter',
+    'Saturn': 'Saturn', 'Uranus': 'Uranus', 'Neptune': 'Neptune',
+    'Pluto': 'Pluto', 'Chiron': 'Chiron', 'Lilith': 'Lilith',
+    'NorthNode': 'NNode', 'SouthNode': 'SNode',
+    'Vertex': 'Vx'
+  };
+
+  Object.entries(data1.planets).forEach(([name, p]) => {
+    const key = planetMapping[name];
+    if (key && p?.full_degree !== undefined) {
+      planets['P1_' + key] = [p.full_degree % 360, p.speed ?? 0];
+    }
+  });
+
+  Object.entries(data2.planets).forEach(([name, p]) => {
+    const key = planetMapping[name];
+    if (key && p?.full_degree !== undefined) {
+      planets['P2_' + key] = [p.full_degree % 360, p.speed ?? 0];
+    }
+  });
+
+  Object.entries(data1.houses).forEach(([houseNum, h]) => {
+    if (h?.cusp_longitude !== undefined) {
+      cusps[parseInt(houseNum) - 1] = h.cusp_longitude % 360;
+    }
+  });
+
+  return { planets, cusps };
+};
+
 const SynastryChartComponent = ({ chart1, chart2, size = 700 }) => {
   const containerRef = useRef(null);
+  const renderIdRef = useRef(0);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => { isMountedRef.current = false; };
+  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined' || !chart1 || !chart2 || !containerRef.current) return;
+    if (!isMountedRef.current) return;
+
+    renderIdRef.current += 1;
+    const currentRenderId = renderIdRef.current;
 
     containerRef.current.innerHTML = '';
     const containerId = `synastry-chart-${Date.now()}`;
     containerRef.current.id = containerId;
 
     import('@astrodraw/astrochart').then(module => {
+      if (!isMountedRef.current) return;
+      if (currentRenderId !== renderIdRef.current) return;
+
       const Chart = module.Chart;
 
       try {
@@ -19,7 +71,6 @@ const SynastryChartComponent = ({ chart1, chart2, size = 700 }) => {
           CUSTOM_SYMBOL_FN: (name, x, y) => {
             const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
 
-            // Person 1 - Blue Circle
             if (name.startsWith('P1_')) {
               const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
               circle.setAttribute('cx', x);
@@ -40,9 +91,7 @@ const SynastryChartComponent = ({ chart1, chart2, size = 700 }) => {
               text.textContent = name.replace('P1_', '');
               g.appendChild(text);
               return g;
-            }
-            // Person 2 - Red Circle
-            else if (name.startsWith('P2_')) {
+            } else if (name.startsWith('P2_')) {
               const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
               circle.setAttribute('cx', x);
               circle.setAttribute('cy', y);
@@ -72,7 +121,6 @@ const SynastryChartComponent = ({ chart1, chart2, size = 700 }) => {
 
         const radix = chart.radix(radixData);
 
-        // Settings for aspects
         const aspectsSettings = {
           ASPECTS: {
             conjunction: { degree: 0, orbit: 12, color: '#FFD700' },
@@ -94,46 +142,13 @@ const SynastryChartComponent = ({ chart1, chart2, size = 700 }) => {
     });
   }, [chart1, chart2, size]);
 
-  const convertSynastryToRadixFormat = (data1, data2) => {
-    if (!data1 || !data1.planets || !data1.houses || !data2 || !data2.planets || !data2.houses) return null;
-
-    const planets = {};
-    const cusps = new Array(12);
-
-    const planetMapping = {
-      'Sun': 'Sun', 'Moon': 'Moon', 'Mercury': 'Mercury',
-      'Venus': 'Venus', 'Mars': 'Mars', 'Jupiter': 'Jupiter',
-      'Saturn': 'Saturn', 'Uranus': 'Uranus', 'Neptune': 'Neptune',
-      'Pluto': 'Pluto', 'Chiron': 'Chiron', 'Lilith': 'Lilith',
-      'NorthNode': 'NNode', 'SouthNode': 'SNode',
-      'Vertex': 'Vx'
+  useEffect(() => {
+    return () => {
+      if (containerRef.current) {
+        containerRef.current.innerHTML = '';
+      }
     };
-
-    // Person 1 planets (Blue)
-    Object.entries(data1.planets).forEach(([name, p]) => {
-      const key = planetMapping[name];
-      if (key && p?.full_degree !== undefined) {
-        planets['P1_' + key] = [p.full_degree % 360, p.speed ?? 0];
-      }
-    });
-
-    // Person 2 planets (Red)
-    Object.entries(data2.planets).forEach(([name, p]) => {
-      const key = planetMapping[name];
-      if (key && p?.full_degree !== undefined) {
-        planets['P2_' + key] = [p.full_degree % 360, p.speed ?? 0];
-      }
-    });
-
-    // Houses (using chart1's houses)
-    Object.entries(data1.houses).forEach(([houseNum, h]) => {
-      if (h?.cusp_longitude !== undefined) {
-        cusps[parseInt(houseNum) - 1] = h.cusp_longitude % 360;
-      }
-    });
-
-    return { planets, cusps };
-  };
+  }, []);
 
   return (
     <div ref={containerRef} style={{ display: 'flex', justifyContent: 'center' }} />
