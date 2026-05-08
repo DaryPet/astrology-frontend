@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
@@ -164,16 +164,28 @@ function Synastry() {
 
   const prepareSynastryDataForAnalysis = (synastryData, personNames) => {
     return {
-      chart1: synastryData.chart1_input,  // только input данные
-      chart2: synastryData.chart2_input,  // только input данные
+      chart1: {
+        ...synastryData.chart1_input,
+        sun_sign: synastryData.chart1?.sun_sign,
+        moon_sign: synastryData.chart1?.moon_sign,
+        ascendant: synastryData.chart1?.ascendant,
+        planets: synastryData.chart1?.planets
+      },
+      chart2: {
+        ...synastryData.chart2_input,
+        sun_sign: synastryData.chart2?.sun_sign,
+        moon_sign: synastryData.chart2?.moon_sign,
+        ascendant: synastryData.chart2?.ascendant,
+        planets: synastryData.chart2?.planets
+      },
       person1_name: personNames.p1,
       person2_name: personNames.p2,
       type: 'synastry'
     };
   };
 
-  const chart1Data = useMemo(() => synastry?.chart1, [synastry?.chart1 ? JSON.stringify(synastry.chart1) : null]);
-  const chart2Data = useMemo(() => synastry?.chart2, [synastry?.chart2 ? JSON.stringify(synastry.chart2) : null]);
+  const chart1Data = synastry?.chart1;
+  const chart2Data = synastry?.chart2;
 
   const handleFullSynastryAnalysisClick = () => {
     const synastryDataForAnalysis = prepareSynastryDataForAnalysis(synastry, personNames);

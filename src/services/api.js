@@ -3,7 +3,7 @@ import i18n from '../i18n';
 
 const api = axios.create({
   baseURL: '/api',
-  timeout: 120000,
+  timeout: 300000,
   headers: {
     'Content-Type': 'application/json'
   }
