@@ -66,9 +66,9 @@ const Dashboard = () => {
   // Planet Analysis functionality
   const [showPlanetTable, setShowPlanetTable] = useState(false);
   const [selectedPlanet, setSelectedPlanet] = useState(null);
-   const [planetAnalysis, setPlanetAnalysis] = useState(null);
-   const [planetAnalysisLoading, setPlanetAnalysisLoading] = useState(false);
-   const [planetAnalysisError, setPlanetAnalysisError] = useState('');
+  const [planetAnalysis, setPlanetAnalysis] = useState(null);
+  const [planetAnalysisLoading, setPlanetAnalysisLoading] = useState(false);
+  const [planetAnalysisError, setPlanetAnalysisError] = useState('');
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -168,7 +168,9 @@ const Dashboard = () => {
         result = await astrologyAPI.getFullSynastryAnalysis(
           {
             chart1: chartDataForAnalysis.chart1,
-            chart2: chartDataForAnalysis.chart2
+            chart2: chartDataForAnalysis.chart2,
+            aspects: chartDataForAnalysis.aspects,
+            overlays: chartDataForAnalysis.overlays
           },
           i18n.language,
           5
