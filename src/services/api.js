@@ -148,6 +148,8 @@ export const astrologyAPI = {
       const response = await api.post('/analysis/synastry/full', {
         chart1: synastryData.chart1,
         chart2: synastryData.chart2,
+        aspects: synastryData.aspects,
+        overlays: synastryData.overlays,
         language,
         top_k_per_book: topBooks
       });

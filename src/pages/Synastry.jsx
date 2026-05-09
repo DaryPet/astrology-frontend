@@ -178,6 +178,8 @@ function Synastry() {
         ascendant: synastryData.chart2?.ascendant,
         planets: synastryData.chart2?.planets
       },
+      overlays: synastryData.overlays,
+      aspects: synastryData.aspects,
       person1_name: personNames.p1,
       person2_name: personNames.p2,
       type: 'synastry'
