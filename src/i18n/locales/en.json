@@ -109,11 +109,11 @@
     }
   },
   "dashboard": {
-    "rename": {
-      "maxLength": "Chart name cannot exceed 10 characters",
-      "exists": "A chart with this name already exists",
-      "saving": "Saving..."
-    },
+     "rename": {
+       "maxLength": "Chart name cannot exceed 15 characters",
+       "exists": "A chart with this name already exists",
+       "saving": "Saving..."
+     },
     "chart": {
       "defaultName": "Chart"
     },

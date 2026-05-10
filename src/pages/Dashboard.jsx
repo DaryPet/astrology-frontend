@@ -126,7 +126,13 @@ const Dashboard = () => {
         setChatVisible(false);
         setChatHistory(loadChatHistory(chart.id));
         setChatInput('');
-        const interp = chart.chart_interpretations?.[0];
+
+        // Определяем тип и ищем нужную интерпретацию
+        const isSynastry = chart.chart_data?.type === 'synastry';
+        const interp = chart.chart_interpretations?.find(
+          i => i.type === (isSynastry ? 'synastry' : 'full')
+        );
+
         if (interp?.interpretation) {
           setFullAnalysis(interp.interpretation);
           setShowFullAnalysis(true);
@@ -136,13 +142,15 @@ const Dashboard = () => {
           setSavedChartId(chart.id);
         }
 
-        // Restore planet analyses from backend
-        const planetAnalyses = await chartsApi.getPlanetAnalyses(chart.id);
-        planetAnalyses.forEach((pa) => {
-          if (pa.name) {
-            localStorage.setItem(`planetAnalysis_${pa.name}`, pa.interpretation);
-          }
-        });
+        // Restore planet analyses только для натальных карт
+        if (!isSynastry) {
+          const planetAnalyses = await chartsApi.getPlanetAnalyses(chart.id);
+          planetAnalyses.forEach((pa) => {
+            if (pa.name) {
+              localStorage.setItem(`planetAnalysis_${pa.name}`, pa.interpretation);
+            }
+          });
+        }
       } catch (error) {
         console.error('Failed to load chart from URL:', error);
       }
@@ -275,18 +283,33 @@ const Dashboard = () => {
   const handleSaveChartWithAnalysis = async () => {
     if (!user || !chartDataForAnalysis || !fullAnalysis) return;
 
-    const chartName = chartDataForAnalysis.name || t('dashboard.chart.defaultName');
+    const isSynastry = chartDataForAnalysis.type === 'synastry';
 
-    // Collect planet analyses from localStorage
-    const planetAnalyses = [];
-    if (chartDataForAnalysis.planets) {
-      Object.keys(chartDataForAnalysis.planets).forEach(planetName => {
-        const analysis = localStorage.getItem(`planetAnalysis_${planetName}`);
-        if (analysis) {
-          planetAnalyses.push({ planetName, analysis });
-        }
-      });
+    // Генерация имени
+    let chartName;
+    if (isSynastry) {
+      const p1 = chartDataForAnalysis.person1_name || '';
+      const p2 = chartDataForAnalysis.person2_name || '';
+      chartName = `${p1} & ${p2}`.trim();
+      if (!chartName) chartName = 'Синастрия';
+      if (chartName.length > 15) chartName = chartName.substring(0, 15);
+    } else {
+      chartName = chartDataForAnalysis.name || t('dashboard.chart.defaultName');
     }
+
+    // Planet analyses только для натальных карт
+    const planetAnalyses = isSynastry ? [] : (() => {
+      const analyses = [];
+      if (chartDataForAnalysis.planets) {
+        Object.keys(chartDataForAnalysis.planets).forEach(planetName => {
+          const analysis = localStorage.getItem(`planetAnalysis_${planetName}`);
+          if (analysis) {
+            analyses.push({ planetName, analysis });
+          }
+        });
+      }
+      return analyses;
+    })();
 
     setSaving(true);
     try {
@@ -305,12 +328,10 @@ const Dashboard = () => {
         return;
       }
 
-      const saved = await chartsApi.saveChartWithInterpretation(
-        user.id,
-        chartDataForAnalysis,
-        fullAnalysis,
-        planetAnalyses
-      );
+      const saved = isSynastry
+        ? await chartsApi.saveSynastryWithInterpretation(user.id, chartDataForAnalysis, fullAnalysis)
+        : await chartsApi.saveChartWithInterpretation(user.id, chartDataForAnalysis, fullAnalysis, planetAnalyses);
+
       setSavedChartId(saved.id);
       localStorage.setItem('savedChartId', saved.id.toString());
     } catch {
@@ -321,16 +342,21 @@ const Dashboard = () => {
   const handleDuplicateConfirm = async () => {
     if (!user || !chartDataForAnalysis || !fullAnalysis || !pendingSaveName) return;
 
-    // Collect planet analyses from localStorage
-    const planetAnalyses = [];
-    if (chartDataForAnalysis.planets) {
-      Object.keys(chartDataForAnalysis.planets).forEach(planetName => {
-        const analysis = localStorage.getItem(`planetAnalysis_${planetName}`);
-        if (analysis) {
-          planetAnalyses.push({ planetName, analysis });
-        }
-      });
-    }
+    const isSynastry = chartDataForAnalysis.type === 'synastry';
+
+    // Planet analyses только для натальных карт
+    const planetAnalyses = isSynastry ? [] : (() => {
+      const analyses = [];
+      if (chartDataForAnalysis.planets) {
+        Object.keys(chartDataForAnalysis.planets).forEach(planetName => {
+          const analysis = localStorage.getItem(`planetAnalysis_${planetName}`);
+          if (analysis) {
+            analyses.push({ planetName, analysis });
+          }
+        });
+      }
+      return analyses;
+    })();
 
     setShowDuplicateModal(false);
     setSaving(true);
@@ -343,12 +369,10 @@ const Dashboard = () => {
         name: uniqueName
       };
 
-      const saved = await chartsApi.saveChartWithInterpretation(
-        user.id,
-        chartDataWithNewName,
-        fullAnalysis,
-        planetAnalyses
-      );
+      const saved = isSynastry
+        ? await chartsApi.saveSynastryWithInterpretation(user.id, chartDataWithNewName, fullAnalysis)
+        : await chartsApi.saveChartWithInterpretation(user.id, chartDataWithNewName, fullAnalysis, planetAnalyses);
+
       setSavedChartId(saved.id);
       localStorage.setItem('savedChartId', saved.id.toString());
       setPendingSaveName(null);
@@ -384,7 +408,7 @@ const Dashboard = () => {
     if (!renameChartId || !renameChartName.trim()) return;
 
     // Validate length
-    if (renameChartName.trim().length > 10) {
+    if (renameChartName.trim().length > 15) {
       setRenameError(t('dashboard.rename.maxLength'));
       return;
     }
@@ -584,27 +608,35 @@ const Dashboard = () => {
     setChatHistory(loadChatHistory(chart.id));
     setChatInput('');
     setShowPlanetTable(false);
-    const interp = chart.chart_interpretations?.[0];
+
+    const isSynastry = chart.chart_data?.type === 'synastry';
+    const interp = chart.chart_interpretations?.find(
+      i => i.type === (isSynastry ? 'synastry' : 'full')
+    );
+
     if (interp?.interpretation) {
       setFullAnalysis(interp.interpretation);
       setShowFullAnalysis(true);
       localStorage.setItem('savedFullAnalysis', interp.interpretation);
     }
+
     // Сохраняем данные карты и ID в localStorage
     localStorage.setItem('chartDataForAnalysis', JSON.stringify(chart.chart_data));
     localStorage.setItem('savedChartId', chart.id.toString());
     setSavedChartId(chart.id);
 
-    // Restore planet analyses from backend
-    chartsApi.getPlanetAnalyses(chart.id).then(planetAnalyses => {
-      planetAnalyses.forEach((pa) => {
-        if (pa.name) {
-          localStorage.setItem(`planetAnalysis_${pa.name}`, pa.interpretation);
-        }
+    // Restore planet analyses только для натальных карт
+    if (!isSynastry) {
+      chartsApi.getPlanetAnalyses(chart.id).then(planetAnalyses => {
+        planetAnalyses.forEach((pa) => {
+          if (pa.name) {
+            localStorage.setItem(`planetAnalysis_${pa.name}`, pa.interpretation);
+          }
+        });
+      }).catch(err => {
+        console.error('Failed to load planet analyses:', err);
       });
-    }).catch(err => {
-      console.error('Failed to load planet analyses:', err);
-    });
+    }
 
     // Обновляем URL с ID карты
     navigate(`/${currentLang}/dashboard?chart=${chart.id}`);
@@ -652,7 +684,7 @@ const Dashboard = () => {
 
   const handleRenameChange = (value) => {
     setRenameChartName(value);
-    if (value.length > 10) {
+    if (value.length > 15) {
       setRenameError(t('dashboard.rename.maxLength'));
     } else {
       setRenameError(null);

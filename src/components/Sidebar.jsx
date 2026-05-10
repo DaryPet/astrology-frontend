@@ -115,119 +115,150 @@ const Sidebar = ({
                 {t('history.empty')}
               </div>
             ) : (
-              historyCharts.map((chart) => (
-                <div
-                  key={chart.id}
-                  onClick={renameChartId === chart.id ? undefined : () => onSelectChart(chart)}
-                  style={{
-                    padding: '10px 12px',
-                    borderRadius: '8px',
-                    cursor: renameChartId === chart.id ? 'default' : 'pointer',
-                    background: savedChartId === chart.id
-                      ? 'rgba(124, 58, 237, 0.15)'
-                      : 'transparent',
-                    border: savedChartId === chart.id
-                      ? '1px solid rgba(124, 58, 237, 0.3)'
-                      : '1px solid transparent',
-                    transition: 'all 0.15s',
-                  }}
-                  onMouseEnter={e => {
-                    if (savedChartId !== chart.id && renameChartId !== chart.id) {
-                      e.currentTarget.style.background = 'var(--bg-secondary)';
-                    }
-                  }}
-                  onMouseLeave={e => {
-                    if (savedChartId !== chart.id) {
-                      e.currentTarget.style.background = 'transparent';
-                    }
-                  }}
-                >
-                  {renameChartId === chart.id ? (
-                    <div onClick={e => e.stopPropagation()}>
-                      <input
-                        type="text"
-                        value={renameChartName}
-                        onChange={e => onRenameChange(e.target.value)}
-                        maxLength="10"
-                        autoFocus
-                        onKeyDown={e => {
-                          if (e.key === 'Enter') onSaveRename();
-                          if (e.key === 'Escape') onCancelRename();
-                        }}
-                        style={{
-                          width: '100%',
-                          fontSize: '13px',
-                          padding: '4px 6px',
-                          border: '1px solid var(--accent)',
-                          borderRadius: '4px',
-                          background: 'var(--bg-secondary)',
-                          color: 'var(--text-primary)',
-                          marginBottom: '4px',
-                        }}
-                      />
-                      <div style={{ fontSize: '11px', color: renameError ? 'var(--error)' : 'var(--text-secondary)' }}>
-                        {renameError || `${renameChartName.length}/10`}
-                      </div>
-                      <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
-                        <button onClick={onSaveRename} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}>
-                          {renaming ? '...' : '💾'}
-                        </button>
-                        <button onClick={onCancelRename} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}>❌</button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', overflow: 'hidden', flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden' }}>
-                          <span style={{ fontSize: '14px' }}>{getSunSignEmoji(chart.sun_sign)}</span>
-                          <span style={{
+              historyCharts.map((chart) => {
+                const chartData = chart.chart_data;
+                const isSynastry = chartData?.type === 'synastry';
+
+                // Имя для отображения (всегда из chart.name, включая переименованные синастрии)
+                const displayName = chart.name || t('dashboard.chart.defaultName');
+
+                // Иконка
+                const icon = isSynastry ? '🔮' : getSunSignEmoji(chart.sun_sign);
+
+                // Дата
+                let dateDisplay;
+                if (isSynastry) {
+                  const date1 = chartData?.chart1?.birth_date?.split('T')[0] || '—';
+                  const date2 = chartData?.chart2?.birth_date?.split('T')[0] || '—';
+                  dateDisplay = `📅 ${date1} / ${date2}`;
+                } else {
+                  dateDisplay = `📅 ${chart.chart_data?.meta?.birth_date?.split('T')[0] || '—'}`;
+                }
+
+                // Место
+                let placeDisplay;
+                if (isSynastry) {
+                  const place1 = chartData?.chart1?.birth_place || '—';
+                  const place2 = chartData?.chart2?.birth_place || '—';
+                  placeDisplay = `📍 ${place1} / ${place2}`;
+                } else {
+                  placeDisplay = `📍 ${chart.chart_data?.meta?.birth_place || '—'}`;
+                }
+
+                return (
+                  <div
+                    key={chart.id}
+                    onClick={renameChartId === chart.id ? undefined : () => onSelectChart(chart)}
+                    style={{
+                      padding: '10px 12px',
+                      borderRadius: '8px',
+                      cursor: renameChartId === chart.id ? 'default' : 'pointer',
+                      background: savedChartId === chart.id
+                        ? 'rgba(124, 58, 237, 0.15)'
+                        : 'transparent',
+                      border: savedChartId === chart.id
+                        ? '1px solid rgba(124, 58, 237, 0.3)'
+                        : '1px solid transparent',
+                      transition: 'all 0.15s',
+                    }}
+                    onMouseEnter={e => {
+                      if (savedChartId !== chart.id && renameChartId !== chart.id) {
+                        e.currentTarget.style.background = 'var(--bg-secondary)';
+                      }
+                    }}
+                    onMouseLeave={e => {
+                      if (savedChartId !== chart.id) {
+                        e.currentTarget.style.background = 'transparent';
+                      }
+                    }}
+                  >
+                    {renameChartId === chart.id ? (
+                      <div onClick={e => e.stopPropagation()}>
+                        <input
+                          type="text"
+                          value={renameChartName}
+                          onChange={e => onRenameChange(e.target.value)}
+                          maxLength="15"
+                          autoFocus
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') onSaveRename();
+                            if (e.key === 'Escape') onCancelRename();
+                          }}
+                          style={{
+                            width: '100%',
                             fontSize: '13px',
-                            fontWeight: savedChartId === chart.id ? '600' : '400',
-                            color: savedChartId === chart.id ? 'var(--text-primary)' : 'var(--text-secondary)',
+                            padding: '4px 6px',
+                            border: '1px solid var(--accent)',
+                            borderRadius: '4px',
+                            background: 'var(--bg-secondary)',
+                            color: 'var(--text-primary)',
+                            marginBottom: '4px',
+                          }}
+                        />
+                        <div style={{ fontSize: '11px', color: renameError ? 'var(--error)' : 'var(--text-secondary)' }}>
+                          {renameError || `${renameChartName.length}/15`}
+                        </div>
+                        <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
+                          <button onClick={onSaveRename} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}>
+                            {renaming ? '...' : '💾'}
+                          </button>
+                          <button onClick={onCancelRename} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}>❌</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', overflow: 'hidden', flex: 1 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden' }}>
+                            <span style={{ fontSize: '14px' }}>{icon}</span>
+                            <span style={{
+                              fontSize: '13px',
+                              fontWeight: savedChartId === chart.id ? '600' : '400',
+                              color: savedChartId === chart.id ? 'var(--text-primary)' : 'var(--text-secondary)',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                            }}>
+                              {displayName}
+                            </span>
+                          </div>
+                          <div style={{
+                            fontSize: '12px',
+                            color: 'var(--text-secondary)',
                             whiteSpace: 'nowrap',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                           }}>
-                            {chart.name || t('dashboard.chart.defaultName')}
-                          </span>
+                            {dateDisplay}
+                          </div>
+                          <div style={{
+                            fontSize: '12px',
+                            color: 'var(--text-secondary)',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}>
+                            {placeDisplay}
+                          </div>
                         </div>
-                        <div style={{
-                          fontSize: '12px',
-                          color: 'var(--text-secondary)',
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                        }}>
-                            📅 {chart.chart_data?.meta?.birth_date?.split('T')[0] || '—'}
-                        </div>
-                        <div style={{
-                          fontSize: '12px',
-                          color: 'var(--text-secondary)',
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                        }}>
-                            📍 {chart.chart_data?.meta?.birth_place || '—'}
+                        <div style={{ display: 'flex', gap: '2px', flexShrink: 0, alignItems: 'flex-start' }}>
+                          <button
+                            onClick={e => { e.stopPropagation(); onStartRename(chart); }}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px', padding: '2px', opacity: '0.6' }}
+                            onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+                            onMouseLeave={e => e.currentTarget.style.opacity = '0.6'}
+                          >✏️</button>
+                          <button
+                            onClick={e => onDeleteChart(chart, e)}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px', padding: '2px', opacity: '0.6' }}
+                            onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+                            onMouseLeave={e => e.currentTarget.style.opacity = '0.6'}
+                          >🗑️</button>
                         </div>
                       </div>
-                      <div style={{ display: 'flex', gap: '2px', flexShrink: 0, alignItems: 'flex-start' }}>
-                        <button
-                          onClick={e => { e.stopPropagation(); onStartRename(chart); }}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px', padding: '2px', opacity: '0.6' }}
-                          onMouseEnter={e => e.currentTarget.style.opacity = '1'}
-                          onMouseLeave={e => e.currentTarget.style.opacity = '0.6'}
-                        >✏️</button>
-                        <button
-                          onClick={e => onDeleteChart(chart, e)}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px', padding: '2px', opacity: '0.6' }}
-                          onMouseEnter={e => e.currentTarget.style.opacity = '1'}
-                          onMouseLeave={e => e.currentTarget.style.opacity = '0.6'}
-                        >🗑️</button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))
+                    )}
+                  </div>
+                );
+              })
             )}
           </div>
         )}

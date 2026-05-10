@@ -23,6 +23,7 @@ async function generateSummary(interpretation: string): Promise<string> {
     const data = await response.json();
     return data.summary || interpretation.substring(0, 500); // Fallback to truncated original
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error('Error generating summary:', error);
     return interpretation.substring(0, 500); // Fallback to truncated original
   }
@@ -235,6 +236,45 @@ export const chartsApi = {
     }
 
     return chart;
+  },
+
+  async saveSynastryWithInterpretation(userId: string, synastryData: Record<string, unknown>, interpretation: string) {
+    // Если name уже передан (например, при дубликате), используем его
+    let name = synastryData.name as string | undefined;
+
+    if (!name) {
+      const p1 = synastryData.person1_name || '';
+      const p2 = synastryData.person2_name || '';
+      name = `${p1} & ${p2}`.trim();
+      if (!name) name = 'Синастрия';
+      if (name.length > 15) name = name.substring(0, 15);
+    }
+
+    // Удаляем name из chart_data, если есть
+    const { name: _, ...chartDataWithoutName } = synastryData;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const chart1 = synastryData.chart1 as any;
+
+    const chartToSave = {
+      user_id: userId,
+      name,
+      sun_sign: chart1?.sun_sign || null,
+      moon_sign: chart1?.moon_sign || null,
+      ascendant: chart1?.ascendant || null,
+      chart_data: chartDataWithoutName,
+    };
+
+    const { data, error } = await supabase
+      .from('natal_charts')
+      .insert(chartToSave)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    await this.saveInterpretation(data.id, 'synastry', interpretation);
+    return data;
   },
 
   CHARTS_LIMIT,
