@@ -742,8 +742,6 @@ const Dashboard = () => {
           onRenameChange={handleRenameChange}
           onDeleteChart={handleDeleteFromHistory}
           getSunSignEmoji={getSunSignEmoji}
-          onTogglePlanetAnalysis={handleTogglePlanetTable}
-          isPlanetTableVisible={showPlanetTable}
         />
       </div>
 
@@ -806,6 +804,37 @@ const Dashboard = () => {
                       </>
                     )}
                   </h2>
+
+                  <button
+                    onClick={handleTogglePlanetTable}
+                    style={{
+                      width: '100%',
+                      maxWidth: '400px',
+                      background: 'none',
+                      border: '1px solid var(--border)',
+                      borderRadius: '10px',
+                      color: 'var(--text-secondary)',
+                      padding: '10px 16px',
+                      fontSize: '14px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      transition: 'all 0.15s',
+                      marginBottom: '12px',
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.borderColor = 'var(--accent)';
+                      e.currentTarget.style.color = 'var(--text-primary)';
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.borderColor = 'var(--border)';
+                      e.currentTarget.style.color = 'var(--text-secondary)';
+                    }}
+                  >
+                    <span>🪐</span>
+                    {t('dashboard.actions.planetAnalysis')}
+                  </button>
 
                   {analysisLoading && (
                     <div style={{ marginTop: '40px' }}>
