@@ -151,7 +151,8 @@
       "synastry": "Рассчитать синастрию",
       "logout": "Выйти из системы",
       "save": "Сохранить",
-      "planetAnalysis": "Анализ планет"
+      "planetAnalysis": "Анализ планет",
+      "fullAnalysis": "Полный анализ"
     },
     "errors": {
       "loadError": "Ошибка при загрузке данных dashboard",

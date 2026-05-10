@@ -146,12 +146,13 @@
         "desc": "Compare your chart with other users"
       }
     },
-    "actions": {
+"actions": {
       "newChart": "Calculate new chart",
       "synastry": "Calculate synastry",
       "logout": "Sign out",
       "save": "Save",
-      "planetAnalysis": "Planet Analysis"
+      "planetAnalysis": "Planet Analysis",
+      "fullAnalysis": "Full Analysis"
     },
     "errors": {
       "loadError": "Error loading dashboard data",

@@ -784,8 +784,8 @@ const Dashboard = () => {
                 </button>
               )}
 
-              {/* Full Analysis section - HIDE when planet table is shown */}
-              {showFullAnalysis && !showPlanetTable && (
+              {/* Full Analysis section */}
+              {showFullAnalysis && (
                 <>
                   <h2 style={{ marginBottom: '20px' }}>
                     {chartDataForAnalysis?.type === 'synastry' ? (
@@ -832,87 +832,91 @@ const Dashboard = () => {
                       e.currentTarget.style.color = 'var(--text-secondary)';
                     }}
                   >
-                    <span>🪐</span>
-                    {t('dashboard.actions.planetAnalysis')}
+                    <span>{showPlanetTable ? '📊' : '🪐'}</span>
+                    {showPlanetTable ? t('dashboard.actions.fullAnalysis') : t('dashboard.actions.planetAnalysis')}
                   </button>
 
-                  {analysisLoading && (
-                    <div style={{ marginTop: '40px' }}>
-                      <ProcessingMessage />
-                    </div>
-                  )}
-
-                  {analysisError && (
-                    <div className="error-message" style={{ marginTop: '20px' }}>
-                      {analysisError}
-                    </div>
-                  )}
-
-                  {fullAnalysis && (
-                    <div style={{ marginTop: '40px', lineHeight: '2', fontSize: '16px' }}>
-                      {!savedChartId && !analysisLoading && (
-                        <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
-                          <button className="btn btn-primary" onClick={handleSaveChartWithAnalysis} disabled={saving}>
-                            {saving ? '...' : t('dashboard.actions.save')}
-                          </button>
+                  {!showPlanetTable && (
+                    <>
+                      {analysisLoading && (
+                        <div style={{ marginTop: '40px' }}>
+                          <ProcessingMessage />
                         </div>
                       )}
-                      <MarkdownContent content={fullAnalysis} />
 
-                      {savedChartId && (
-                        <>
-                          {!chatVisible && (
-                            <div style={{ textAlign: 'center', marginTop: '20px' }}>
-                              <button onClick={() => setChatVisible(true)} className="btn btn-primary" style={{ maxWidth: '300px' }} disabled={!fullAnalysis}>
-                                {chatHistory.length > 0 ? t('dashboard.chat.open') : t('dashboard.chat.start')}
+                      {analysisError && (
+                        <div className="error-message" style={{ marginTop: '20px' }}>
+                          {analysisError}
+                        </div>
+                      )}
+
+                      {fullAnalysis && (
+                        <div style={{ marginTop: '40px', lineHeight: '2', fontSize: '16px' }}>
+                          {!savedChartId && !analysisLoading && (
+                            <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
+                              <button className="btn btn-primary" onClick={handleSaveChartWithAnalysis} disabled={saving}>
+                                {saving ? '...' : t('dashboard.actions.save')}
                               </button>
                             </div>
                           )}
+                          <MarkdownContent content={fullAnalysis} />
 
-                          {chatVisible && (
-                            <div style={{ marginTop: '30px', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px' }}>
-                              <div style={{ marginBottom: '20px' }}>
-                                <h3 style={{ margin: '0 0 15px 0' }}>{t('dashboard.chat.title')}</h3>
-                                <div style={{ minHeight: '100px', height: 'auto', border: '1px solid var(--border)', borderRadius: '8px', padding: '15px', background: 'var(--bg-secondary)' }}>
-                                  {chatHistory.length === 0 ? (
-                                    <p style={{ color: 'var(--text-secondary)', margin: '0' }}>{t('dashboard.chat.placeholder')}</p>
-                                  ) : (
-                                    chatHistory.map((message, index) => (
-                                      <div key={index} style={{ marginBottom: '15px', padding: '10px', borderRadius: '8px', background: message.role === 'user' ? 'var(--bg-primary)' : 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
-                                        <strong style={{ color: message.role === 'user' ? '#4CAF50' : '#2196F3', marginRight: '10px' }}>
-                                          {message.role === 'user' ? t('dashboard.chat.user') : t('dashboard.chat.assistant')}
-                                        </strong>
-                                        <div className="chat-message-content">
-                                          <MarkdownContent content={message.content} />
-                                        </div>
-                                      </div>
-                                    ))
-                                  )}
-                                </div>
-                              </div>
-                              {isNearLimit(chatHistory) && (
-                                <div style={{ padding: '8px 12px', marginBottom: '10px', borderRadius: '8px', background: isAtLimit(chatHistory) ? 'rgba(244,67,54,0.1)' : 'rgba(255,152,0,0.1)', border: `1px solid ${isAtLimit(chatHistory) ? '#f44336' : '#ff9800'}`, color: isAtLimit(chatHistory) ? '#f44336' : '#ff9800', fontSize: '13px', textAlign: 'center' }}>
-                                  {isAtLimit(chatHistory) ? t('dashboard.chat.limitReached', { limit: MAX_MESSAGES }) : t('dashboard.chat.messagesLeft', { count: MAX_MESSAGES - chatHistory.length })}
+                          {savedChartId && (
+                            <>
+                              {!chatVisible && (
+                                <div style={{ textAlign: 'center', marginTop: '20px' }}>
+                                  <button onClick={() => setChatVisible(true)} className="btn btn-primary" style={{ maxWidth: '300px' }} disabled={!fullAnalysis}>
+                                    {chatHistory.length > 0 ? t('dashboard.chat.open') : t('dashboard.chat.start')}
+                                  </button>
                                 </div>
                               )}
-                              <textarea
-                                value={chatInput}
-                                onChange={(e) => setChatInput(e.target.value)}
-                                onKeyPress={handleKeyPress}
-                                onInput={(e) => { const textarea = e.target; textarea.style.height = 'auto'; textarea.style.height = textarea.scrollHeight + 'px'; }}
-                                placeholder={t('dashboard.chat.placeholder')}
-                                maxLength="200"
-                                disabled={chatLoading}
-                                style={{ width: '100%', minHeight: '40px', height: '40px', resize: 'none', padding: '12px', border: '1px solid var(--border)', borderRadius: '8px', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontSize: '14px', marginBottom: '10px', overflowY: 'hidden', boxSizing: 'border-box' }}
-                              />
-                              <button onClick={sendChatMessage} disabled={!chatInput.trim() || chatLoading || isAtLimit(chatHistory)} className="btn btn-primary" style={{ width: '100%', padding: '12px', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', border: 'none', borderRadius: '8px', color: 'white', fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}>
-                                {chatLoading ? t('dashboard.chat.sending') : t('dashboard.chat.send')}
-                              </button>
-                            </div>
+
+                              {chatVisible && (
+                                <div style={{ marginTop: '30px', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px' }}>
+                                  <div style={{ marginBottom: '20px' }}>
+                                    <h3 style={{ margin: '0 0 15px 0' }}>{t('dashboard.chat.title')}</h3>
+                                    <div style={{ minHeight: '100px', height: 'auto', border: '1px solid var(--border)', borderRadius: '8px', padding: '15px', background: 'var(--bg-secondary)' }}>
+                                      {chatHistory.length === 0 ? (
+                                        <p style={{ color: 'var(--text-secondary)', margin: '0' }}>{t('dashboard.chat.placeholder')}</p>
+                                      ) : (
+                                        chatHistory.map((message, index) => (
+                                          <div key={index} style={{ marginBottom: '15px', padding: '10px', borderRadius: '8px', background: message.role === 'user' ? 'var(--bg-primary)' : 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
+                                            <strong style={{ color: message.role === 'user' ? '#4CAF50' : '#2196F3', marginRight: '10px' }}>
+                                              {message.role === 'user' ? t('dashboard.chat.user') : t('dashboard.chat.assistant')}
+                                            </strong>
+                                            <div className="chat-message-content">
+                                              <MarkdownContent content={message.content} />
+                                            </div>
+                                          </div>
+                                        ))
+                                      )}
+                                    </div>
+                                  </div>
+                                  {isNearLimit(chatHistory) && (
+                                    <div style={{ padding: '8px 12px', marginBottom: '10px', borderRadius: '8px', background: isAtLimit(chatHistory) ? 'rgba(244,67,54,0.1)' : 'rgba(255,152,0,0.1)', border: `1px solid ${isAtLimit(chatHistory) ? '#f44336' : '#ff9800'}`, color: isAtLimit(chatHistory) ? '#f44336' : '#ff9800', fontSize: '13px', textAlign: 'center' }}>
+                                      {isAtLimit(chatHistory) ? t('dashboard.chat.limitReached', { limit: MAX_MESSAGES }) : t('dashboard.chat.messagesLeft', { count: MAX_MESSAGES - chatHistory.length })}
+                                    </div>
+                                  )}
+                                  <textarea
+                                    value={chatInput}
+                                    onChange={(e) => setChatInput(e.target.value)}
+                                    onKeyPress={handleKeyPress}
+                                    onInput={(e) => { const textarea = e.target; textarea.style.height = 'auto'; textarea.style.height = textarea.scrollHeight + 'px'; }}
+                                    placeholder={t('dashboard.chat.placeholder')}
+                                    maxLength="200"
+                                    disabled={chatLoading}
+                                    style={{ width: '100%', minHeight: '40px', height: '40px', resize: 'none', padding: '12px', border: '1px solid var(--border)', borderRadius: '8px', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontSize: '14px', marginBottom: '10px', overflowY: 'hidden', boxSizing: 'border-box' }}
+                                  />
+                                  <button onClick={sendChatMessage} disabled={!chatInput.trim() || chatLoading || isAtLimit(chatHistory)} className="btn btn-primary" style={{ width: '100%', padding: '12px', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', border: 'none', borderRadius: '8px', color: 'white', fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}>
+                                    {chatLoading ? t('dashboard.chat.sending') : t('dashboard.chat.send')}
+                                  </button>
+                                </div>
+                              )}
+                            </>
                           )}
-                        </>
+                        </div>
                       )}
-                    </div>
+                    </>
                   )}
                 </>
               )}
