@@ -18,13 +18,14 @@ function Synastry() {
     person1: { name: '', birth_date: '', birth_time: '12:00', birth_place: '', latitude: null, longitude: null, timezone: 'UTC' },
     person2: { name: '', birth_date: '', birth_time: '12:00', birth_place: '', latitude: null, longitude: null, timezone: 'UTC' }
   });
-  const [synastry, setSynastry] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [personNames, setPersonNames] = useState({ p1: '', p2: '' });
-  const [selectedAspectData, setSelectedAspectData] = useState(null);
-  const [aspectAnalysis, setAspectAnalysis] = useState(null);
-  const [aspectLoading, setAspectLoading] = useState(false);
+   const [synastry, setSynastry] = useState(null);
+   const [loading, setLoading] = useState(false);
+   const [error, setError] = useState('');
+   const [personNames, setPersonNames] = useState({ p1: '', p2: '' });
+   const [selectedAspectData, setSelectedAspectData] = useState(null);
+   const [aspectAnalysis, setAspectAnalysis] = useState(null);
+   const [aspectLoading, setAspectLoading] = useState(false);
+   const [isNavigating, setIsNavigating] = useState(false);
 
   // Восстановление синастрии из localStorage при загрузке
   useEffect(() => {
@@ -197,15 +198,20 @@ function Synastry() {
     localStorage.removeItem('chartDataForAnalysis');
     localStorage.setItem('chartDataForAnalysis', JSON.stringify(synastryDataForAnalysis));
 
-    if (!isAuthenticated) {
-      navigate(`/${i18n.language}/login`, {
-        state: { from: '/synastry', chartDataForAnalysis: synastryDataForAnalysis, showFullAnalysis: true }
-      });
-    } else {
-      navigate(`/${i18n.language}/dashboard`, {
-        state: { showFullAnalysis: true, chartDataForAnalysis: synastryDataForAnalysis }
-      });
-    }
+    setIsNavigating(true); // Hide button immediately
+
+    // Defer navigation to next event loop to allow React to flush state update
+    setTimeout(() => {
+      if (!isAuthenticated) {
+        navigate(`/${i18n.language}/login`, {
+          state: { from: '/synastry', chartDataForAnalysis: synastryDataForAnalysis, showFullAnalysis: true }
+        });
+      } else {
+        navigate(`/${i18n.language}/dashboard`, {
+          state: { showFullAnalysis: true, chartDataForAnalysis: synastryDataForAnalysis }
+        });
+      }
+    }, 0);
   };
 
   const handleNewCalculation = () => {
@@ -339,15 +345,15 @@ function Synastry() {
                 </div>
               </div>
 
-              {/* Single Combined Chart */}
-              <div style={{ display: 'flex', justifyContent: 'center' }}>
-                {chart1Data && chart2Data && (
-                  <SynastryChartComponent chart1={chart1Data} chart2={chart2Data} size={700} />
-                )}
-              </div>
+               {/* Single Combined Chart */}
+               <div style={{ display: 'flex', justifyContent: 'center' }}>
+                 {chart1Data && chart2Data && (
+                   <SynastryChartComponent chart1={chart1Data} chart2={chart2Data} size={700} />
+                 )}
+               </div>
 
-              {!loading && synastry && (
-                <div style={{ textAlign: 'center', marginTop: '24px' }}>
+               {!loading && !isNavigating && synastry && (
+                 <div style={{ textAlign: 'center', marginTop: '24px' }}>
                   <button
                     type="button"
                     className="btn-full-analysis"

@@ -798,7 +798,7 @@ const Dashboard = () => {
           <div style={{ flex: '1 1 600px' }}>
             <div className="dashboard-content">
               {/* Full Analysis button */}
-              {chartDataForAnalysis && isAuthenticated && !fullAnalysis && !savedChartId && (
+              {chartDataForAnalysis && isAuthenticated && !fullAnalysis && !savedChartId && !showFullAnalysis && (
                 <button
                   type="button"
                   className="btn-full-analysis"
