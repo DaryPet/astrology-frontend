@@ -340,6 +340,9 @@ const Dashboard = () => {
 
       setSavedChartId(saved.id);
       localStorage.setItem('savedChartId', saved.id.toString());
+
+      // Refresh the history list to include the newly saved chart
+      await loadHistoryCharts();
     } catch {
       setSaving(false);
     }
@@ -381,6 +384,10 @@ const Dashboard = () => {
 
       setSavedChartId(saved.id);
       localStorage.setItem('savedChartId', saved.id.toString());
+
+      // Refresh the history list to include the newly saved chart
+      await loadHistoryCharts();
+
       setPendingSaveName(null);
     } catch {
       // Error

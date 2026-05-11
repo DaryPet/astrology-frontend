@@ -18,14 +18,14 @@ function Synastry() {
     person1: { name: '', birth_date: '', birth_time: '12:00', birth_place: '', latitude: null, longitude: null, timezone: 'UTC' },
     person2: { name: '', birth_date: '', birth_time: '12:00', birth_place: '', latitude: null, longitude: null, timezone: 'UTC' }
   });
-   const [synastry, setSynastry] = useState(null);
-   const [loading, setLoading] = useState(false);
-   const [error, setError] = useState('');
-   const [personNames, setPersonNames] = useState({ p1: '', p2: '' });
-   const [selectedAspectData, setSelectedAspectData] = useState(null);
-   const [aspectAnalysis, setAspectAnalysis] = useState(null);
-   const [aspectLoading, setAspectLoading] = useState(false);
-   const [isNavigating, setIsNavigating] = useState(false);
+  const [synastry, setSynastry] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [personNames, setPersonNames] = useState({ p1: '', p2: '' });
+  const [selectedAspectData, setSelectedAspectData] = useState(null);
+  const [aspectAnalysis, setAspectAnalysis] = useState(null);
+  const [aspectLoading, setAspectLoading] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   // Восстановление синастрии из localStorage при загрузке
   useEffect(() => {
@@ -345,15 +345,15 @@ function Synastry() {
                 </div>
               </div>
 
-               {/* Single Combined Chart */}
-               <div style={{ display: 'flex', justifyContent: 'center' }}>
-                 {chart1Data && chart2Data && (
-                   <SynastryChartComponent chart1={chart1Data} chart2={chart2Data} size={700} />
-                 )}
-               </div>
+              {/* Single Combined Chart */}
+              <div style={{ display: 'flex', justifyContent: 'center' }}>
+                {chart1Data && chart2Data && (
+                  <SynastryChartComponent chart1={chart1Data} chart2={chart2Data} size={700} />
+                )}
+              </div>
 
-               {!loading && !isNavigating && synastry && (
-                 <div style={{ textAlign: 'center', marginTop: '24px' }}>
+              {!loading && !isNavigating && synastry && (
+                <div style={{ textAlign: 'center', marginTop: '24px' }}>
                   <button
                     type="button"
                     className="btn-full-analysis"
