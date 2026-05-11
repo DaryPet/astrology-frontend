@@ -108,50 +108,52 @@
       "passwordsMismatch": "Passwords must match"
     }
   },
-  "dashboard": {
-     "rename": {
-       "maxLength": "Chart name cannot exceed 15 characters",
-       "exists": "A chart with this name already exists",
-       "saving": "Saving..."
+   "dashboard": {
+      "rename": {
+        "maxLength": "Chart name cannot exceed 15 characters",
+        "exists": "A chart with this name already exists",
+        "saving": "Saving..."
+      },
+     "chart": {
+       "defaultName": "Chart"
      },
-    "chart": {
-      "defaultName": "Chart"
-    },
-    "title": "My Chart",
-    "subtitle": "Welcome to your personal account",
-    "userInfo": {
-      "title": "User Information",
-      "email": "Email",
-      "name": "Name",
-      "createdAt": "Registration date",
-      "notSpecified": "Not specified",
-      "unknown": "Unknown"
-    },
-    "features": {
-      "title": "",
-      "history": {
-        "title": "Calculation History",
-        "desc": "View all your previous astrological chart calculations"
-      },
-      "favorites": {
-        "title": "Favorites",
-        "desc": "Save your favorite charts and interpretations"
-      },
-      "notifications": {
-        "title": "Notifications",
-        "desc": "Alerts for important transits and astrological events"
-      },
-      "compare": {
-        "title": "Chart Comparison",
-        "desc": "Compare your chart with other users"
-      }
-    },
-    "actions": {
+     "title": "My Chart",
+     "subtitle": "Welcome to your personal account",
+     "userInfo": {
+       "title": "User Information",
+       "email": "Email",
+       "name": "Name",
+       "createdAt": "Registration date",
+       "notSpecified": "Not specified",
+       "unknown": "Unknown"
+     },
+     "features": {
+       "title": "",
+       "history": {
+         "title": "Calculation History",
+         "desc": "View all your previous astrological chart calculations"
+       },
+       "favorites": {
+         "title": "Favorites",
+         "desc": "Save your favorite charts and interpretations"
+       },
+       "notifications": {
+         "title": "Notifications",
+         "desc": "Alerts for important transits and astrological events"
+       },
+       "compare": {
+         "title": "Chart Comparison",
+         "desc": "Compare your chart with other users"
+       }
+     },
+"actions": {
       "newChart": "Calculate new chart",
       "synastry": "Calculate synastry",
       "logout": "Sign out",
       "save": "Save",
-      "planetAnalysis": "Planet Analysis"
+      "planetAnalysis": "Planet Analysis",
+      "aspectAnalysis": "Aspect Analysis",
+      "fullAnalysis": "Full Analysis"
     },
     "errors": {
       "loadError": "Error loading dashboard data",
