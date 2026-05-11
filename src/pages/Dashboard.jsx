@@ -14,7 +14,8 @@ import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
 import Sidebar from '../components/Sidebar';
 import PlanetTable from '../components/PlanetTable';
 import PlanetAnalysisModal from '../components/PlanetAnalysisModal';
-// после строки 13:
+import AspectGrid from '../components/AspectGrid';
+import AspectAnalysisModal from '../components/AspectAnalysisModal';
 import { loadChatHistory, saveChatHistory, isNearLimit, isAtLimit, MAX_MESSAGES } from '../services/chatStorage';
 
 const Dashboard = () => {
@@ -69,6 +70,11 @@ const Dashboard = () => {
   const [planetAnalysis, setPlanetAnalysis] = useState(null);
   const [planetAnalysisLoading, setPlanetAnalysisLoading] = useState(false);
   const [planetAnalysisError, setPlanetAnalysisError] = useState('');
+  // Aspect Analysis functionality
+  const [selectedAspect, setSelectedAspect] = useState(null);
+  const [aspectAnalysis, setAspectAnalysis] = useState(null);
+  const [aspectLoading, setAspectLoading] = useState(false);
+  const [aspectError, setAspectError] = useState('');
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -397,7 +403,7 @@ const Dashboard = () => {
     setChatHistory([]);
     setChatInput('');
     Object.keys(localStorage).forEach(key => {
-      if (key.startsWith('planetAnalysis_')) {
+      if (key.startsWith('planetAnalysis_') || key.startsWith('aspectAnalysis_')) {
         localStorage.removeItem(key);
       }
     });
@@ -593,6 +599,47 @@ const Dashboard = () => {
     setSelectedPlanet(null);
     setPlanetAnalysis(null);
     setPlanetAnalysisError('');
+  };
+
+  const handleAspectClick = async (aspect) => {
+    setSelectedAspect(aspect);
+    setAspectLoading(true);
+    setAspectError('');
+
+    const storageKey = `aspectAnalysis_${aspect.planet1}_${aspect.planet2}_${aspect.aspect}`;
+    const savedAnalysis = localStorage.getItem(storageKey);
+    if (savedAnalysis) {
+      setAspectAnalysis(savedAnalysis);
+      setAspectLoading(false);
+      return;
+    }
+
+    setAspectAnalysis(null);
+
+    try {
+      const result = await astrologyAPI.getSynastryAspectAnalysis({
+        planet1: aspect.planet1,
+        planet2: aspect.planet2,
+        aspect_name: aspect.aspect,
+        aspect_name_ru: aspect.aspect_ru || aspect.aspect,
+        orb: aspect.orb,
+        language: i18n.language
+      });
+
+      localStorage.setItem(storageKey, result.analysis);
+      setAspectAnalysis(result.analysis);
+    } catch (err) {
+      const errorDetail = err.response?.data?.detail;
+      if (typeof errorDetail === 'string') {
+        setAspectError(errorDetail);
+      } else if (Array.isArray(errorDetail)) {
+        setAspectError(errorDetail.map(e => e.msg || JSON.stringify(e)).join(', '));
+      } else {
+        setAspectError(t('analysis.error'));
+      }
+    } finally {
+      setAspectLoading(false);
+    }
   };
 
   // Trigger UI update after rename
@@ -833,7 +880,7 @@ const Dashboard = () => {
                     }}
                   >
                     <span>{showPlanetTable ? '📊' : '🪐'}</span>
-                    {showPlanetTable ? t('dashboard.actions.fullAnalysis') : t('dashboard.actions.planetAnalysis')}
+                    {showPlanetTable ? t('dashboard.actions.fullAnalysis') : (chartDataForAnalysis?.type === 'synastry' ? t('dashboard.actions.aspectAnalysis') : t('dashboard.actions.planetAnalysis'))}
                   </button>
 
                   {!showPlanetTable && (
@@ -921,14 +968,45 @@ const Dashboard = () => {
                 </>
               )}
 
-              {/* Planet Table Section - shown when planet table is toggled */}
+              {/* Planet/Aspect Table Section - shown when planet/aspect table is toggled */}
               {showPlanetTable && chartDataForAnalysis && (
                 <div style={{ background: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border)', padding: '30px', marginTop: '30px' }}>
-                  <h3 style={{ marginBottom: '20px', color: 'var(--text-primary)' }}>{t('planets.title')}</h3>
+                  <h3 style={{ marginBottom: '20px', color: 'var(--text-primary)' }}>
+                    {chartDataForAnalysis.type === 'synastry' ? t('planets.aspects.title') : t('planets.title')}
+                  </h3>
                   <div style={{ marginBottom: '40px' }}>
-                    <PlanetTable planets={chartDataForAnalysis.planets} houses={chartDataForAnalysis.houses} onPlanetClick={handlePlanetClick} />
+                    {chartDataForAnalysis.type === 'synastry' ? (
+                      <AspectGrid
+                        aspects={chartDataForAnalysis.aspects}
+                        onAspectClick={handleAspectClick}
+                      />
+                    ) : (
+                      <PlanetTable
+                        planets={chartDataForAnalysis.planets}
+                        houses={chartDataForAnalysis.houses}
+                        onPlanetClick={handlePlanetClick}
+                      />
+                    )}
                   </div>
-                  <PlanetAnalysisModal planet={selectedPlanet} analysis={planetAnalysis} isOpen={!!selectedPlanet} onClose={handleClosePlanetAnalysis} loading={planetAnalysisLoading} error={planetAnalysisError} />
+                  {chartDataForAnalysis.type === 'synastry' ? (
+                    <AspectAnalysisModal
+                      aspect={selectedAspect}
+                      analysis={aspectAnalysis}
+                      isOpen={!!selectedAspect}
+                      onClose={() => setSelectedAspect(null)}
+                      loading={aspectLoading}
+                      error={aspectError}
+                    />
+                  ) : (
+                    <PlanetAnalysisModal
+                      planet={selectedPlanet}
+                      analysis={planetAnalysis}
+                      isOpen={!!selectedPlanet}
+                      onClose={handleClosePlanetAnalysis}
+                      loading={planetAnalysisLoading}
+                      error={planetAnalysisError}
+                    />
+                  )}
                 </div>
               )}
             </div>
