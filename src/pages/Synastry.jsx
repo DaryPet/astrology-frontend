@@ -208,6 +208,25 @@ function Synastry() {
     }
   };
 
+  const handleNewCalculation = () => {
+    setFormData({
+      person1: { name: '', birth_date: '', birth_time: '12:00', birth_place: '', latitude: null, longitude: null, timezone: 'UTC' },
+      person2: { name: '', birth_date: '', birth_time: '12:00', birth_place: '', latitude: null, longitude: null, timezone: 'UTC' }
+    });
+    setSynastry(null);
+    setPersonNames({ p1: '', p2: '' });
+    setSelectedAspectData(null);
+    setAspectAnalysis(null);
+    setError('');
+    localStorage.removeItem('savedSynastry');
+    localStorage.removeItem('savedPersonNames');
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('aspectAnalysis_')) {
+        localStorage.removeItem(key);
+      }
+    });
+  };
+
   return (
     <div className="synastry-page">
       <Header />
@@ -355,12 +374,7 @@ function Synastry() {
               </div>
             )}
 
-            <button onClick={() => {
-              setSynastry(null);
-              setPersonNames({ p1: '', p2: '' });
-              localStorage.removeItem('savedSynastry');
-              localStorage.removeItem('savedPersonNames');
-            }} className="btn btn-primary" style={{ maxWidth: '300px', margin: '40px auto 0', display: 'block' }}>
+            <button onClick={handleNewCalculation} className="btn btn-primary" style={{ maxWidth: '300px', margin: '40px auto 0', display: 'block' }}>
               {t('synastry.calculateAgain')}
             </button>
           </div>
