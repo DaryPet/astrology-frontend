@@ -345,38 +345,66 @@ function Synastry() {
                   <SynastryChartComponent chart1={chart1Data} chart2={chart2Data} size={700} />
                 )}
               </div>
+
+              {!loading && synastry && (
+                <div style={{ textAlign: 'center', marginTop: '24px' }}>
+                  <button
+                    type="button"
+                    className="btn-full-analysis"
+                    onClick={handleFullSynastryAnalysisClick}
+                    disabled={loading}
+                    style={{
+                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      color: 'white',
+                      padding: '14px 28px',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      cursor: loading ? 'default' : 'pointer',
+                      transition: 'transform 0.2s, box-shadow 0.2s',
+                      opacity: loading ? 0.8 : 1,
+                      minWidth: '280px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginLeft: 'auto',
+                      marginRight: 'auto'
+                    }}
+                  >
+                    {t('synastry.getFullAnalysis')}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleNewCalculation}
+                    style={{
+                      marginTop: '16px',
+                      marginLeft: 'auto',
+                      marginRight: 'auto',
+                      background: 'transparent',
+                      color: 'var(--text-primary)',
+                      padding: '12px 24px',
+                      border: '1px solid var(--border)',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      cursor: 'pointer',
+                      transition: 'background 0.2s',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    {t('synastry.calculateAgain')}
+                  </button>
+                </div>
+              )}
             </div>
 
-            <div className="result-card" style={{marginTop: '20px'}}>
+            <div className="result-card" style={{ marginTop: '20px' }}>
               <AspectGrid aspects={synastry.aspects} onAspectClick={handleAspectClick} />
             </div>
-
-            {!loading && synastry && (
-              <div style={{ textAlign: 'center', marginTop: '30px' }}>
-                <button
-                  type="button"
-                  className="btn-full-analysis"
-                  onClick={handleFullSynastryAnalysisClick}
-                  style={{
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    color: 'white',
-                    padding: '14px 28px',
-                    border: 'none',
-                    borderRadius: '8px',
-                    fontSize: '16px',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    marginBottom: '20px'
-                  }}
-                >
-                  {t('synastry.getFullAnalysis')}
-                </button>
-              </div>
-            )}
-
-            <button onClick={handleNewCalculation} className="btn btn-primary" style={{ maxWidth: '300px', margin: '40px auto 0', display: 'block' }}>
-              {t('synastry.calculateAgain')}
-            </button>
           </div>
         )}
       </div>

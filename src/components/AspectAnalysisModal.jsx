@@ -4,7 +4,7 @@ import ProcessingMessage from './ProcessingMessage';
 import MarkdownContent from './MarkdownContent';
 
 const AspectAnalysisModal = ({ aspect, analysis, isOpen, onClose, loading, error }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   if (!isOpen) return null;
 
@@ -93,9 +93,9 @@ const AspectAnalysisModal = ({ aspect, analysis, isOpen, onClose, loading, error
             fontSize: '14px',
             color: '#fff'
           }}>
-            △
+             △
           </span>
-          {t('analysis.aspectAnalysis')}: {aspect?.planet1} / {aspect?.planet2}
+          {t('analysis.aspectAnalysis')}: {aspect?.planet1 ? t(`planets.names.${aspect.planet1}`, aspect.planet1) : ''} / {aspect?.planet2 ? t(`planets.names.${aspect.planet2}`, aspect.planet2) : ''}
         </h2>
 
         {aspect && (
@@ -107,7 +107,7 @@ const AspectAnalysisModal = ({ aspect, analysis, isOpen, onClose, loading, error
             fontSize: '14px',
             color: 'var(--text-secondary)'
           }}>
-            <div><strong>{t('planets.aspects.type')}:</strong> {aspect.aspect}</div>
+            <div><strong>{t('planets.aspects.type')}:</strong> {i18n.language === 'ru' && aspect.aspect_ru ? aspect.aspect_ru : aspect.aspect}</div>
             <div><strong>{t('planets.orb')}:</strong> {aspect.orb}°</div>
           </div>
         )}
