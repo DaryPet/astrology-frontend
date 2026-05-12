@@ -95,7 +95,7 @@ const PlanetAnalysisModal = ({ planet, analysis, isOpen, onClose, loading, error
           }}>
             {planet?.name?.substring(0, 2)}
           </span>
-          {t('analysis.planetAnalysis')}: {planet?.name}
+          {t('analysis.planetAnalysis')}: {planet?.name ? t(`planets.names.${planet.name}`, planet.name) : ''}
         </h2>
 
         {planet && (
@@ -107,7 +107,7 @@ const PlanetAnalysisModal = ({ planet, analysis, isOpen, onClose, loading, error
             fontSize: '14px',
             color: 'var(--text-secondary)'
           }}>
-            {planet.sign && <span>{planet.sign}</span>}
+            {planet.sign && <span>{t(`planets.signs.${planet.sign}`, planet.sign)}</span>}
             {planet.degree !== undefined && <span> {planet.degree.toFixed(2)}°</span>}
             {planet.house && <span> — {t('planets.house')} {planet.house}</span>}
           </div>
