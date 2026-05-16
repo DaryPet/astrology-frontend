@@ -6,7 +6,7 @@ import api from '../services/api';
 import { geocodeAPI, astrologyAPI } from '../services/api';
 import Header from '../components/Header';
 import LocationInput from '../components/LocationInput';
-import SynastryChartComponent from '../components/SynastryChartComponent';
+import SynastryChartComponent from '../components/SynastryChartComponent-draft';
 import AspectGrid from '../components/AspectGrid';
 import AspectAnalysisModal from '../components/AspectAnalysisModal';
 
@@ -348,7 +348,7 @@ function Synastry() {
               {/* Single Combined Chart */}
               <div style={{ display: 'flex', justifyContent: 'center' }}>
                 {chart1Data && chart2Data && (
-                  <SynastryChartComponent chart1={chart1Data} chart2={chart2Data} size={700} />
+                  <SynastryChartComponent chart1={chart1Data} chart2={chart2Data} aspects={synastry.aspects} size={700} />
                 )}
               </div>
 
