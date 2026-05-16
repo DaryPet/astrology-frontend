@@ -155,7 +155,16 @@ const SynastryChartComponent = ({
           .attr('stroke-width', isAngle ? 1.2 : 0.6)
           .attr('stroke-dasharray', isAngle ? 'none' : '3,3');
 
-        const numPt = polarToCart(cx, cy, numR, deg + 15);
+        // const numPt = polarToCart(cx, cy, numR, deg + 15);
+
+        // НАДО — считаем середину между текущим и следующим куспидом:
+        const hNums = Object.keys(houses).map(Number).sort((a, b) => a - b);
+        const currentIdx = hNums.indexOf(Number(hNum));
+        const nextHNum = hNums[(currentIdx + 1) % hNums.length];
+        const nextH = houses[nextHNum];
+        const nextDeg = nextH ? nextH.cusp_longitude - refAsc : deg + 30;
+        const midDeg = deg + (((nextDeg - deg) + 360) % 360) / 2;
+        const numPt = polarToCart(cx, cy, numR, midDeg);
         svg.append('text')
           .attr('x', numPt.x).attr('y', numPt.y)
           .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
