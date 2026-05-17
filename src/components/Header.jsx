@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 
 const languages = [
@@ -11,6 +12,7 @@ const languages = [
 const Header = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, signOut } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const { t, i18n } = useTranslation();
   const { lang } = useParams();
   const [langOpen, setLangOpen] = useState(false);
@@ -114,6 +116,27 @@ const Header = () => {
             </div>
           )}
         </div>
+
+        <button
+          onClick={toggleTheme}
+          title={theme === 'dark' ? t('common.switchToLight') : t('common.switchToDark')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '6px',
+            padding: '8px 12px',
+            background: 'var(--bg-secondary)',
+            color: 'var(--text-primary)',
+            border: '1px solid var(--border)',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '14px',
+            lineHeight: '1'
+          }}
+        >
+          {theme === 'dark' ? '☀️' : '🌙'}
+        </button>
       </div>
     </header>
   );

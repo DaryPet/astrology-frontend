@@ -290,17 +290,18 @@ const SynastryChartComponent = ({
     drawRing(chart1.planets, R_P1_TRACK, R_ZOD_IN, '#2255cc', '#ffffff', '#2255cc', true);
     drawRing(chart2.planets, R_P2_TRACK, (R_P2_TRACK + R_P1_IN) / 2, '#cc2222', '#ffffff', '#cc2222', false);
 
-    // 7. Legend
-    const ly = size - 14;
-    // svg.append('circle').attr('cx', 16).attr('cy', ly).attr('r', 5)
-    //   .attr('fill', '#ffffff').attr('stroke', '#2255cc').attr('stroke-width', 1.5);
-    svg.append('text').attr('x', 26).attr('y', ly)
-      .attr('dominant-baseline', 'middle').attr('fill', '#2255cc').attr('font-size', 11 * fs)
+    // 7. Legend (centered above wheel)
+    const legendY = cy - R_ZOD_OUT - 20; // above the zodiac outer circle
+    const legendOffset = 60 * fs; // horizontal offset from center
+    svg.append('text')
+      .attr('x', cx - legendOffset).attr('y', legendY)
+      .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
+      .attr('fill', '#2255cc').attr('font-size', 11 * fs)
       .text(name1);
-    // svg.append('circle').attr('cx', size / 2).attr('cy', ly).attr('r', 5)
-    //   .attr('fill', '#ffffff').attr('stroke', '#cc2222').attr('stroke-width', 1.5);
-    svg.append('text').attr('x', size / 2 + 10).attr('y', ly)
-      .attr('dominant-baseline', 'middle').attr('fill', '#cc2222').attr('font-size', 11 * fs)
+    svg.append('text')
+      .attr('x', cx + legendOffset).attr('y', legendY)
+      .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
+      .attr('fill', '#cc2222').attr('font-size', 11 * fs)
       .text(name2);
 
   }, [chart1, chart2, aspects, size, name1, name2]);
