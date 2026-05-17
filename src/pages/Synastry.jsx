@@ -312,7 +312,7 @@ function Synastry() {
               {/* Individual Info side by side */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
                 <div>
-                  <h4 style={{ color: '#3b82f6', marginBottom: '10px' }}>{personNames.p1 || t('synastry.person1')}</h4>
+                  <h4 style={{ color: '#3b82f6', marginBottom: '10px', textAlign: 'center' }}>{personNames.p1 || t('synastry.person1')}</h4>
                   <div style={{ display: 'flex', justifyContent: 'center', color: 'var(--text-secondary)', fontSize: '14px' }}>
                     <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
                       <div><strong>{t('chart.sun')}:</strong> {synastry.chart1?.sun_sign ? t('planets.signs.' + synastry.chart1.sun_sign) : '—'}</div>
@@ -322,7 +322,7 @@ function Synastry() {
                   </div>
                 </div>
                 <div>
-                  <h4 style={{ color: '#ef4444', marginBottom: '10px' }}>{personNames.p2 || t('synastry.person2')}</h4>
+                  <h4 style={{ color: '#ef4444', marginBottom: '10px', textAlign: 'center' }}>{personNames.p2 || t('synastry.person2')}</h4>
                   <div style={{ display: 'flex', justifyContent: 'center', color: 'var(--text-secondary)', fontSize: '14px' }}>
                     <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
                       <div><strong>{t('chart.sun')}:</strong> {synastry.chart2?.sun_sign ? t('planets.signs.' + synastry.chart2.sun_sign) : '—'}</div>
