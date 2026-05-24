@@ -104,11 +104,18 @@ const Dashboard = () => {
     }
 
     // Восстанавливаем сохраненный анализ из localStorage
+    // TODO: удалить savedFullAnalysis после миграции на _simple/_advanced (ненужный общий ключ)
     const savedAnalysis = localStorage.getItem('savedFullAnalysis');
-    if (savedAnalysis && !fullAnalysis) {
+    if (savedAnalysis && !fullAnalysis && !simpleAnalysis && !advancedAnalysis) {
       setFullAnalysis(savedAnalysis);
+      setSimpleAnalysis(savedAnalysis);
+      setAdvancedAnalysis(savedAnalysis);
       setShowFullAnalysis(true);
     }
+    const savedSimple = localStorage.getItem('savedFullAnalysis_simple');
+    const savedAdvanced = localStorage.getItem('savedFullAnalysis_advanced');
+    if (savedSimple) setSimpleAnalysis(savedSimple);
+    if (savedAdvanced) setAdvancedAnalysis(savedAdvanced);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chartIdFromUrl]);
 
@@ -121,6 +128,7 @@ const Dashboard = () => {
       setSimpleAnalysis(null);
       setAdvancedAnalysis(null);
       setSavedChartId(null);
+      // TODO: удалить savedFullAnalysis после миграции на _simple/_advanced
       localStorage.removeItem('savedFullAnalysis');
       localStorage.removeItem('savedFullAnalysis_simple');
       localStorage.removeItem('savedFullAnalysis_advanced');
@@ -144,26 +152,31 @@ const Dashboard = () => {
         setChatHistory(loadChatHistory(chart.id));
         setChatInput('');
 
-        // Определяем тип и ищем нужную интерпретацию
+        // Загружаем интерпретации из БД (только режимозависимые типы)
         const isSynastry = chart.chart_data?.type === 'synastry';
+
+        // Получаем интерпретацию для текущего режима
         const interp = chart.chart_interpretations?.find(
-          i => i.type === (isSynastry ? 'synastry' : 'full')
+          i => i.type === (isSynastry ? `synastry_${analysisMode}` : `full_${analysisMode}`)
         );
 
         if (interp?.interpretation) {
           setFullAnalysis(interp.interpretation);
-          setSimpleAnalysis(null);
-          setAdvancedAnalysis(null);
-          const interpSimple = chart.chart_interpretations?.find(i => i.type === (isSynastry ? 'synastry_simple' : 'full_simple'));
-          const interpAdvanced = chart.chart_interpretations?.find(i => i.type === (isSynastry ? 'synastry_advanced' : 'full_advanced'));
-          if (interpSimple?.interpretation) setSimpleAnalysis(interpSimple.interpretation);
-          if (interpAdvanced?.interpretation) setAdvancedAnalysis(interpAdvanced.interpretation);
+          // Кэшируем в режимозависимые стейты
+          if (analysisMode === 'simple') setSimpleAnalysis(interp.interpretation);
+          else setAdvancedAnalysis(interp.interpretation);
           setShowFullAnalysis(true);
-          localStorage.setItem('chartDataForAnalysis', JSON.stringify(chart.chart_data));
-          localStorage.setItem('savedFullAnalysis', interp.interpretation);
-          localStorage.setItem('savedChartId', chart.id.toString());
-          setSavedChartId(chart.id);
         }
+
+        // Также загружаем _simple и _advanced для кэширования
+        const interpSimple = chart.chart_interpretations?.find(i => i.type === (isSynastry ? 'synastry_simple' : 'full_simple'));
+        const interpAdvanced = chart.chart_interpretations?.find(i => i.type === (isSynastry ? 'synastry_advanced' : 'full_advanced'));
+        if (interpSimple?.interpretation) setSimpleAnalysis(interpSimple.interpretation);
+        if (interpAdvanced?.interpretation) setAdvancedAnalysis(interpAdvanced.interpretation);
+
+        localStorage.setItem('chartDataForAnalysis', JSON.stringify(chart.chart_data));
+        localStorage.setItem('savedChartId', chart.id.toString());
+        setSavedChartId(chart.id);
 
         // Restore planet analyses только для натальных карт
         if (!isSynastry) {
@@ -201,7 +214,6 @@ const Dashboard = () => {
       let result;
 
       if (chartDataForAnalysis.type === 'synastry') {
-        console.log('SYNASTRY DATA:', JSON.stringify(chartDataForAnalysis, null, 2));
         result = await astrologyAPI.getFullSynastryAnalysis(
           {
             chart1: chartDataForAnalysis.chart1,
@@ -703,23 +715,28 @@ const Dashboard = () => {
     setChatHistory(loadChatHistory(chart.id));
     setChatInput('');
     setShowPlanetTable(false);
+    setSimpleAnalysis(null);
+    setAdvancedAnalysis(null);
 
     const isSynastry = chart.chart_data?.type === 'synastry';
+
+    // Загружаем интерпретацию для текущего режима
     const interp = chart.chart_interpretations?.find(
-      i => i.type === (isSynastry ? 'synastry' : 'full')
+      i => i.type === (isSynastry ? `synastry_${analysisMode}` : `full_${analysisMode}`)
     );
 
     if (interp?.interpretation) {
       setFullAnalysis(interp.interpretation);
-      setSimpleAnalysis(null);
-      setAdvancedAnalysis(null);
-      const interpSimple = chart.chart_interpretations?.find(i => i.type === (isSynastry ? 'synastry_simple' : 'full_simple'));
-      const interpAdvanced = chart.chart_interpretations?.find(i => i.type === (isSynastry ? 'synastry_advanced' : 'full_advanced'));
-      if (interpSimple?.interpretation) setSimpleAnalysis(interpSimple.interpretation);
-      if (interpAdvanced?.interpretation) setAdvancedAnalysis(interpAdvanced.interpretation);
+      if (analysisMode === 'simple') setSimpleAnalysis(interp.interpretation);
+      else setAdvancedAnalysis(interp.interpretation);
       setShowFullAnalysis(true);
-      localStorage.setItem('savedFullAnalysis', interp.interpretation);
     }
+
+    // Также загружаем _simple и _advanced для кэширования
+    const interpSimple = chart.chart_interpretations?.find(i => i.type === (isSynastry ? 'synastry_simple' : 'full_simple'));
+    const interpAdvanced = chart.chart_interpretations?.find(i => i.type === (isSynastry ? 'synastry_advanced' : 'full_advanced'));
+    if (interpSimple?.interpretation) setSimpleAnalysis(interpSimple.interpretation);
+    if (interpAdvanced?.interpretation) setAdvancedAnalysis(interpAdvanced.interpretation);
 
     // Сохраняем данные карты и ID в localStorage
     localStorage.setItem('chartDataForAnalysis', JSON.stringify(chart.chart_data));

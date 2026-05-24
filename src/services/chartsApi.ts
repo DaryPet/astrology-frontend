@@ -226,9 +226,12 @@ export const chartsApi = {
     return data || [];
   },
 
-  async saveChartWithInterpretation(userId: string, chartData: Record<string, unknown>, interpretation: string, planetAnalyses: Array<{planetName: string, analysis: string}> = []) {
+  // async saveChartWithInterpretation(userId: string, chartData: Record<string, unknown>, interpretation: string, planetAnalyses: Array<{planetName: string, analysis: string}, simpleAnalysis?: string, advancedAnalysis?: string> = []) {
+  async saveChartWithInterpretation(userId: string, chartData: Record<string, unknown>, interpretation: string, planetAnalyses: Array<{planetName: string, analysis: string}> = [], simpleAnalysis?: string, advancedAnalysis?: string) {
     const chart = await this.saveChart(userId, chartData);
-    await this.saveInterpretation(chart.id, 'full', interpretation);
+    // Сохраняем ТОЛЬКО режимозависимые типы (simple + advanced), без общего 'full'
+    if (simpleAnalysis) await this.saveInterpretation(chart.id, 'full_simple', simpleAnalysis);
+    if (advancedAnalysis) await this.saveInterpretation(chart.id, 'full_advanced', advancedAnalysis);
 
     // Save planet analyses
     for (const { planetName, analysis } of planetAnalyses) {
@@ -238,7 +241,8 @@ export const chartsApi = {
     return chart;
   },
 
-  async saveSynastryWithInterpretation(userId: string, synastryData: Record<string, unknown>, interpretation: string) {
+  // async saveSynastryWithInterpretation(userId: string, synastryData: Record<string, unknown>, interpretation: string, simpleAnalysis?: string, advancedAnalysis?: string>) {
+  async saveSynastryWithInterpretation(userId: string, synastryData: Record<string, unknown>, interpretation: string, simpleAnalysis?: string, advancedAnalysis?: string) {
     // Если name уже передан (например, при дубликате), используем его
     let name = synastryData.name as string | undefined;
 
@@ -272,7 +276,9 @@ export const chartsApi = {
 
     if (error) throw error;
 
-    await this.saveInterpretation(data.id, 'synastry', interpretation);
+    // Сохраняем ТОЛЬКО режимозависимые типы (simple + advanced), без общего 'synastry'
+    if (simpleAnalysis) await this.saveInterpretation(data.id, 'synastry_simple', simpleAnalysis);
+    if (advancedAnalysis) await this.saveInterpretation(data.id, 'synastry_advanced', advancedAnalysis);
     return data;
   },
 
