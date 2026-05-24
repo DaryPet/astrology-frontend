@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
@@ -37,12 +37,15 @@ const Dashboard = () => {
   //   const [chatHistory, setChatHistory] = useState([]);
   const [chartDataForAnalysis, setChartDataForAnalysis] = useState(null);
   const [fullAnalysis, setFullAnalysis] = useState(null);
+  const [simpleAnalysis, setSimpleAnalysis] = useState(null);
+  const [advancedAnalysis, setAdvancedAnalysis] = useState(null);
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [analysisError, setAnalysisError] = useState('');
   const [saving, setSaving] = useState(false);
   const [analysisMode, setAnalysisMode] = useState(() => {
     return localStorage.getItem('dashboardAnalysisMode') || 'simple';
   });
+  const pendingModeRef = useRef(null);
   // const [savedChartId, setSavedChartId] = useState(() => {
   //   const saved = localStorage.getItem('savedChartId');
   //   return saved ? parseInt(saved, 10) : null;
@@ -115,8 +118,12 @@ const Dashboard = () => {
     if (state?.showFullAnalysis && state?.chartDataForAnalysis) {
       // Новая карта — сбрасываем всё старое
       setFullAnalysis(null);
+      setSimpleAnalysis(null);
+      setAdvancedAnalysis(null);
       setSavedChartId(null);
       localStorage.removeItem('savedFullAnalysis');
+      localStorage.removeItem('savedFullAnalysis_simple');
+      localStorage.removeItem('savedFullAnalysis_advanced');
       localStorage.removeItem('savedChartId');
       setShowFullAnalysis(true);
       setChartDataForAnalysis(state.chartDataForAnalysis);
@@ -145,6 +152,12 @@ const Dashboard = () => {
 
         if (interp?.interpretation) {
           setFullAnalysis(interp.interpretation);
+          setSimpleAnalysis(null);
+          setAdvancedAnalysis(null);
+          const interpSimple = chart.chart_interpretations?.find(i => i.type === (isSynastry ? 'synastry_simple' : 'full_simple'));
+          const interpAdvanced = chart.chart_interpretations?.find(i => i.type === (isSynastry ? 'synastry_advanced' : 'full_advanced'));
+          if (interpSimple?.interpretation) setSimpleAnalysis(interpSimple.interpretation);
+          if (interpAdvanced?.interpretation) setAdvancedAnalysis(interpAdvanced.interpretation);
           setShowFullAnalysis(true);
           localStorage.setItem('chartDataForAnalysis', JSON.stringify(chart.chart_data));
           localStorage.setItem('savedFullAnalysis', interp.interpretation);
@@ -173,6 +186,17 @@ const Dashboard = () => {
     if (!chartDataForAnalysis) return;
     setAnalysisLoading(true);
     setAnalysisError('');
+
+    // Guard: if the requested mode's analysis already exists in state, use it directly
+    if (mode === 'simple' && simpleAnalysis) {
+      setFullAnalysis(simpleAnalysis);
+      return;
+    }
+    if (mode === 'advanced' && advancedAnalysis) {
+      setFullAnalysis(advancedAnalysis);
+      return;
+    }
+
     try {
       let result;
 
@@ -199,7 +223,16 @@ const Dashboard = () => {
       }
 
       setFullAnalysis(result.analysis);
-      localStorage.setItem('savedFullAnalysis', result.analysis);
+      if (mode === 'simple') setSimpleAnalysis(result.analysis);
+      else setAdvancedAnalysis(result.analysis);
+      localStorage.setItem(`savedFullAnalysis_${mode}`, result.analysis);
+      const currentChartId = parseInt(localStorage.getItem('savedChartId'), 10) || null;
+      if (currentChartId) {
+        const isSynastry = chartDataForAnalysis.type === 'synastry';
+        const type = isSynastry ? `synastry_${mode}` : `full_${mode}`;
+        chartsApi.saveInterpretation(currentChartId, type, result.analysis)
+          .catch(() => {});
+      }
     } catch (err) {
       const errorDetail = err.response?.data?.detail;
       if (typeof errorDetail === 'string') {
@@ -212,7 +245,7 @@ const Dashboard = () => {
     } finally {
       setAnalysisLoading(false);
     }
-  }, [chartDataForAnalysis, t, analysisMode]);
+  }, [chartDataForAnalysis, t, analysisMode, simpleAnalysis, advancedAnalysis]);
 
   const sendChatMessage = useCallback(async () => {
     if (chatLoading) return;
@@ -270,9 +303,14 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (showFullAnalysis && chartDataForAnalysis && !fullAnalysis && !analysisLoading) {
-      loadFullAnalysis();
+      const modeToLoad = pendingModeRef.current || analysisMode;
+      pendingModeRef.current = null;
+      // Guard: return cached if available
+      if (modeToLoad === 'simple' && simpleAnalysis) { setFullAnalysis(simpleAnalysis); return; }
+      if (modeToLoad === 'advanced' && advancedAnalysis) { setFullAnalysis(advancedAnalysis); return; }
+      loadFullAnalysis(modeToLoad);
     }
-  }, [showFullAnalysis, chartDataForAnalysis, fullAnalysis, analysisLoading, loadFullAnalysis]);
+  }, [showFullAnalysis, chartDataForAnalysis, fullAnalysis, analysisLoading, loadFullAnalysis, analysisMode, simpleAnalysis, advancedAnalysis]);
 
   const loadHistoryCharts = useCallback(async () => {
     if (!user) return;
@@ -336,8 +374,8 @@ const Dashboard = () => {
       }
 
       const saved = isSynastry
-        ? await chartsApi.saveSynastryWithInterpretation(user.id, chartDataForAnalysis, fullAnalysis)
-        : await chartsApi.saveChartWithInterpretation(user.id, chartDataForAnalysis, fullAnalysis, planetAnalyses);
+        ? await chartsApi.saveSynastryWithInterpretation(user.id, chartDataForAnalysis, fullAnalysis, simpleAnalysis, advancedAnalysis)
+        : await chartsApi.saveChartWithInterpretation(user.id, chartDataForAnalysis, fullAnalysis, planetAnalyses, simpleAnalysis, advancedAnalysis);
 
       setSavedChartId(saved.id);
       localStorage.setItem('savedChartId', saved.id.toString());
@@ -380,8 +418,8 @@ const Dashboard = () => {
       };
 
       const saved = isSynastry
-        ? await chartsApi.saveSynastryWithInterpretation(user.id, chartDataWithNewName, fullAnalysis)
-        : await chartsApi.saveChartWithInterpretation(user.id, chartDataWithNewName, fullAnalysis, planetAnalyses);
+        ? await chartsApi.saveSynastryWithInterpretation(user.id, chartDataWithNewName, fullAnalysis, simpleAnalysis, advancedAnalysis)
+        : await chartsApi.saveChartWithInterpretation(user.id, chartDataWithNewName, fullAnalysis, planetAnalyses, simpleAnalysis, advancedAnalysis);
 
       setSavedChartId(saved.id);
       localStorage.setItem('savedChartId', saved.id.toString());
@@ -406,6 +444,8 @@ const Dashboard = () => {
     localStorage.removeItem('savedChartData');
     localStorage.removeItem('chartDataForAnalysis');
     localStorage.removeItem('savedFullAnalysis');
+    localStorage.removeItem('savedFullAnalysis_simple');
+    localStorage.removeItem('savedFullAnalysis_advanced');
     localStorage.removeItem('savedChartId');
     setChatVisible(false);
     setChatHistory([]);
@@ -671,6 +711,12 @@ const Dashboard = () => {
 
     if (interp?.interpretation) {
       setFullAnalysis(interp.interpretation);
+      setSimpleAnalysis(null);
+      setAdvancedAnalysis(null);
+      const interpSimple = chart.chart_interpretations?.find(i => i.type === (isSynastry ? 'synastry_simple' : 'full_simple'));
+      const interpAdvanced = chart.chart_interpretations?.find(i => i.type === (isSynastry ? 'synastry_advanced' : 'full_advanced'));
+      if (interpSimple?.interpretation) setSimpleAnalysis(interpSimple.interpretation);
+      if (interpAdvanced?.interpretation) setAdvancedAnalysis(interpAdvanced.interpretation);
       setShowFullAnalysis(true);
       localStorage.setItem('savedFullAnalysis', interp.interpretation);
     }
@@ -813,6 +859,9 @@ const Dashboard = () => {
                     onChange={(val) => {
                       setAnalysisMode(val);
                       localStorage.setItem('dashboardAnalysisMode', val);
+                      pendingModeRef.current = val;
+                      setFullAnalysis(null);
+                      setShowFullAnalysis(true);
                     }}
                   />
                   <button
@@ -874,6 +923,14 @@ const Dashboard = () => {
                       onChange={(val) => {
                         setAnalysisMode(val);
                         localStorage.setItem('dashboardAnalysisMode', val);
+                        if (val === 'simple' && simpleAnalysis) {
+                          setFullAnalysis(simpleAnalysis);
+                        } else if (val === 'advanced' && advancedAnalysis) {
+                          setFullAnalysis(advancedAnalysis);
+                        } else {
+                          pendingModeRef.current = val;
+                          setFullAnalysis(null);
+                        }
                       }}
                     />
                   </div>

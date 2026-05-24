@@ -250,8 +250,7 @@ export const chartsApi = {
       if (name.length > 15) name = name.substring(0, 15);
     }
 
-    // Удаляем name из chart_data, если есть
-    const { name: _, ...chartDataWithoutName } = synastryData;
+    const chartDataWithoutName = (({ name: _, ...rest }: Record<string, unknown>) => rest)(synastryData);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const chart1 = synastryData.chart1 as any;
