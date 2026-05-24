@@ -112,30 +112,37 @@ export const astrologyAPI = {
     }
   },
 
-  getPlanetAnalysis: async (planetData) => {
+  getPlanetAnalysis: async (planetData, mode = 'simple') => {
     try {
-      const response = await api.post('/analysis/planet', planetData);
+      const response = await api.post('/analysis/planet', {
+        ...planetData,
+        mode
+      });
       return response.data;
     } catch (error) {
       throw error;
     }
   },
 
-  getSynastryAspectAnalysis: async (aspectData) => {
+  getSynastryAspectAnalysis: async (aspectData, mode = 'simple') => {
     try {
-      const response = await api.post('/synastry/aspect', aspectData);
+      const response = await api.post('/synastry/aspect', {
+        ...aspectData,
+        mode
+      });
       return response.data;
     } catch (error) {
       throw error;
     }
   },
 
-  getFullChartAnalysis: async (chartData, language = 'ru', topBooks = 5) => {
+  getFullChartAnalysis: async (chartData, language = 'ru', topBooks = 5, mode = 'simple') => {
     try {
       const response = await api.post('/analysis/full', {
         chart_data: chartData,
         language,
-        top_books: topBooks
+        top_books: topBooks,
+        mode
       });
       return response.data;
     } catch {
@@ -143,7 +150,7 @@ export const astrologyAPI = {
     }
   },
 
-  getFullSynastryAnalysis: async (synastryData, language = 'ru', topBooks = 5) => {
+  getFullSynastryAnalysis: async (synastryData, language = 'ru', topBooks = 5, mode = 'simple') => {
     try {
       const response = await api.post('/analysis/synastry/full', {
         chart1: synastryData.chart1,
@@ -151,7 +158,8 @@ export const astrologyAPI = {
         aspects: synastryData.aspects,
         overlays: synastryData.overlays,
         language,
-        top_k_per_book: topBooks
+        top_k_per_book: topBooks,
+        mode
       });
       return response.data;
     } catch (error) {

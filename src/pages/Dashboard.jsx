@@ -16,6 +16,7 @@ import PlanetTable from '../components/PlanetTable';
 import PlanetAnalysisModal from '../components/PlanetAnalysisModal';
 import AspectGrid from '../components/AspectGrid';
 import AspectAnalysisModal from '../components/AspectAnalysisModal';
+import AnalysisModeToggle from '../components/AnalysisModeToggle';
 import { loadChatHistory, saveChatHistory, isNearLimit, isAtLimit, MAX_MESSAGES } from '../services/chatStorage';
 
 const Dashboard = () => {
@@ -39,6 +40,9 @@ const Dashboard = () => {
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [analysisError, setAnalysisError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [analysisMode, setAnalysisMode] = useState(() => {
+    return localStorage.getItem('dashboardAnalysisMode') || 'simple';
+  });
   // const [savedChartId, setSavedChartId] = useState(() => {
   //   const saved = localStorage.getItem('savedChartId');
   //   return saved ? parseInt(saved, 10) : null;
@@ -165,7 +169,7 @@ const Dashboard = () => {
     loadChartFromUrl();
   }, [chartIdFromUrl]);
 
-  const loadFullAnalysis = useCallback(async () => {
+  const loadFullAnalysis = useCallback(async (mode = analysisMode) => {
     if (!chartDataForAnalysis) return;
     setAnalysisLoading(true);
     setAnalysisError('');
@@ -174,11 +178,6 @@ const Dashboard = () => {
 
       if (chartDataForAnalysis.type === 'synastry') {
         console.log('SYNASTRY DATA:', JSON.stringify(chartDataForAnalysis, null, 2));
-        // result = await astrologyAPI.getFullSynastryAnalysis(
-        //   chartDataForAnalysis,
-        //   i18n.language,
-        //   5
-        // );
         result = await astrologyAPI.getFullSynastryAnalysis(
           {
             chart1: chartDataForAnalysis.chart1,
@@ -187,13 +186,15 @@ const Dashboard = () => {
             overlays: chartDataForAnalysis.overlays
           },
           i18n.language,
-          5
+          5,
+          mode
         );
       } else {
         result = await astrologyAPI.getFullChartAnalysis(
           chartDataForAnalysis,
           i18n.language,
-          5
+          5,
+          mode
         );
       }
 
@@ -211,7 +212,7 @@ const Dashboard = () => {
     } finally {
       setAnalysisLoading(false);
     }
-  }, [chartDataForAnalysis, t]);
+  }, [chartDataForAnalysis, t, analysisMode]);
 
   const sendChatMessage = useCallback(async () => {
     if (chatLoading) return;
@@ -555,7 +556,7 @@ const Dashboard = () => {
     // ИЗМЕНИЛ ЗДЕСЬ ПОТОМУ ЧТО savedChartId из React стейта может быть null в момент клика
     const chartId = parseInt(localStorage.getItem('savedChartId'), 10) || null;
 
-    const savedAnalysis = localStorage.getItem(`planetAnalysis_${planetData.name}`);
+    const savedAnalysis = localStorage.getItem(`planetAnalysis_${planetData.name}_${analysisMode}`);
     if (savedAnalysis) {
       setPlanetAnalysis(savedAnalysis);
       setPlanetAnalysisLoading(false);
@@ -577,9 +578,9 @@ const Dashboard = () => {
         aspects: planetData.aspects,
         is_retrograde: planetData.is_retrograde,
         language: i18n.language
-      });
+      }, analysisMode);
 
-      localStorage.setItem(`planetAnalysis_${planetData.name}`, result.analysis);
+      localStorage.setItem(`planetAnalysis_${planetData.name}_${analysisMode}`, result.analysis);
       if (chartId) {
         chartsApi.savePlanetAnalysis(chartId, planetData.name, result.analysis)
           .catch(err => console.error('DB save error:', err));
@@ -613,7 +614,7 @@ const Dashboard = () => {
     setAspectLoading(true);
     setAspectError('');
 
-    const storageKey = `aspectAnalysis_${aspect.planet1}_${aspect.planet2}_${aspect.aspect}`;
+    const storageKey = `aspectAnalysis_${aspect.planet1}_${aspect.planet2}_${aspect.aspect}_${analysisMode}`;
     const savedAnalysis = localStorage.getItem(storageKey);
     if (savedAnalysis) {
       setAspectAnalysis(savedAnalysis);
@@ -631,7 +632,7 @@ const Dashboard = () => {
         aspect_name_ru: aspect.aspect_ru || aspect.aspect,
         orb: aspect.orb,
         language: i18n.language
-      });
+      }, analysisMode);
 
       localStorage.setItem(storageKey, result.analysis);
       setAspectAnalysis(result.analysis);
@@ -806,58 +807,76 @@ const Dashboard = () => {
             <div className="dashboard-content">
               {/* Full Analysis button */}
               {chartDataForAnalysis && isAuthenticated && !fullAnalysis && !savedChartId && !showFullAnalysis && (
-                <button
-                  type="button"
-                  className="btn-full-analysis"
-                  onClick={() => {
-                    setShowFullAnalysis(true);
-                    loadFullAnalysis();
-                  }}
-                  disabled={analysisLoading}
-                  style={{
-                    marginTop: '24px',
-                    marginLeft: 'auto',
-                    marginRight: 'auto',
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    color: 'white',
-                    padding: analysisLoading ? '30px 28px' : '14px 28px',
-                    border: 'none',
-                    borderRadius: '8px',
-                    fontSize: '16px',
-                    fontWeight: '600',
-                    cursor: analysisLoading ? 'default' : 'pointer',
-                    transition: 'transform 0.2s, box-shadow 0.2s',
-                    opacity: analysisLoading ? 0.8 : 1,
-                    minWidth: '280px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
-                >
-                  {t('home.getFullAnalysis')}
-                </button>
+                <div style={{ textAlign: 'center' }}>
+                  <AnalysisModeToggle
+                    value={analysisMode}
+                    onChange={(val) => {
+                      setAnalysisMode(val);
+                      localStorage.setItem('dashboardAnalysisMode', val);
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="btn-full-analysis"
+                    onClick={() => {
+                      setShowFullAnalysis(true);
+                      loadFullAnalysis();
+                    }}
+                    disabled={analysisLoading}
+                    style={{
+                      marginTop: '24px',
+                      marginLeft: 'auto',
+                      marginRight: 'auto',
+                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      color: 'white',
+                      padding: analysisLoading ? '30px 28px' : '14px 28px',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      cursor: analysisLoading ? 'default' : 'pointer',
+                      transition: 'transform 0.2s, box-shadow 0.2s',
+                      opacity: analysisLoading ? 0.8 : 1,
+                      minWidth: '280px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    {t('home.getFullAnalysis')}
+                  </button>
+                </div>
               )}
 
               {/* Full Analysis section */}
               {showFullAnalysis && (
                 <>
-                  <h2 style={{ marginBottom: '20px' }}>
-                    {chartDataForAnalysis?.type === 'synastry' ? (
-                      <>
-                        {chartDataForAnalysis.person1_name} / {chartDataForAnalysis.person2_name}: {' '}
-                        {t('synastry.fullAnalysis.title')}
-                      </>
-                    ) : (
-                      <>
-                        {chartDataForAnalysis?.name && (
-                          <span style={{ fontWeight: '500', marginRight: '10px' }}>
-                            {chartDataForAnalysis.name}
-                          </span>
-                        )}
-                        {t('dashboard.fullAnalysis.title')}
-                      </>
-                    )}
-                  </h2>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
+                    <h2 style={{ margin: 0 }}>
+                      {chartDataForAnalysis?.type === 'synastry' ? (
+                        <>
+                          {chartDataForAnalysis.person1_name} / {chartDataForAnalysis.person2_name}: {' '}
+                          {t('synastry.fullAnalysis.title')}
+                        </>
+                      ) : (
+                        <>
+                          {chartDataForAnalysis?.name && (
+                            <span style={{ fontWeight: '500', marginRight: '10px' }}>
+                              {chartDataForAnalysis.name}
+                            </span>
+                          )}
+                          {t('dashboard.fullAnalysis.title')}
+                        </>
+                      )}
+                    </h2>
+                    <AnalysisModeToggle
+                      value={analysisMode}
+                      onChange={(val) => {
+                        setAnalysisMode(val);
+                        localStorage.setItem('dashboardAnalysisMode', val);
+                      }}
+                    />
+                  </div>
 
                   <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '16px', flexWrap: 'wrap' }}>
                     {savedChartId && fullAnalysis && (
