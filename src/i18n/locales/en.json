@@ -347,15 +347,19 @@
       "type": "Aspect Type"
     }
   },
-  "analysis": {
-    "planetAnalysis": "Planet Analysis",
-    "aspectAnalysis": "Aspect Analysis",
-    "loading": "Loading analysis...",
-    "processing": "Your analysis is being processed",
-    "processingHint": "This may take 2-5 minutes. Please wait...",
-    "error": "Error loading analysis",
-    "noData": "No data available for this planet"
-  },
+"analysis": {
+     "planetAnalysis": "Planet Analysis",
+     "aspectAnalysis": "Aspect Analysis",
+     "loading": "Loading analysis...",
+     "processing": "Your analysis is being processed",
+     "processingHint": "This may take 2-5 minutes. Please wait...",
+     "error": "Error loading analysis",
+     "noData": "No data available for this planet"
+   },
+   "analysisMode": {
+     "simple": "Basic",
+     "advanced": "Advanced"
+   },
    "history": {
     "saved": "Saved",
     "empty": "History is empty",

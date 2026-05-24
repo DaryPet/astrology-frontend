@@ -9,6 +9,7 @@ import LocationInput from '../components/LocationInput';
 import SynastryChartComponent from '../components/SynastryChartComponent-draft';
 import AspectGrid from '../components/AspectGrid';
 import AspectAnalysisModal from '../components/AspectAnalysisModal';
+import AnalysisModeToggle from '../components/AnalysisModeToggle';
 
 function Synastry() {
   const { t, i18n } = useTranslation();
@@ -26,6 +27,9 @@ function Synastry() {
   const [aspectAnalysis, setAspectAnalysis] = useState(null);
   const [aspectLoading, setAspectLoading] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
+  const [analysisMode, setAnalysisMode] = useState(() => {
+    return localStorage.getItem('synastryAnalysisMode') || 'simple';
+  });
 
   // Восстановление синастрии из localStorage при загрузке
   useEffect(() => {
@@ -191,6 +195,7 @@ function Synastry() {
   const chart2Data = synastry?.chart2;
 
   const handleFullSynastryAnalysisClick = () => {
+    localStorage.setItem('synastryAnalysisMode', analysisMode);
     const synastryDataForAnalysis = prepareSynastryDataForAnalysis(synastry, personNames);
 
     localStorage.removeItem('savedFullAnalysis');
@@ -204,11 +209,11 @@ function Synastry() {
     setTimeout(() => {
       if (!isAuthenticated) {
         navigate(`/${i18n.language}/login`, {
-          state: { from: '/synastry', chartDataForAnalysis: synastryDataForAnalysis, showFullAnalysis: true }
+          state: { from: '/synastry', chartDataForAnalysis: synastryDataForAnalysis, showFullAnalysis: true, analysisMode }
         });
       } else {
         navigate(`/${i18n.language}/dashboard`, {
-          state: { showFullAnalysis: true, chartDataForAnalysis: synastryDataForAnalysis }
+          state: { showFullAnalysis: true, chartDataForAnalysis: synastryDataForAnalysis, analysisMode }
         });
       }
     }, 0);
@@ -354,6 +359,7 @@ function Synastry() {
 
               {!loading && !isNavigating && synastry && (
                 <div style={{ textAlign: 'center', marginTop: '24px' }}>
+                  <AnalysisModeToggle value={analysisMode} onChange={setAnalysisMode} />
                   <button
                     type="button"
                     className="btn-full-analysis"

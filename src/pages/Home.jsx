@@ -11,6 +11,7 @@ import PlanetAnalysisModal from '../components/PlanetAnalysisModal';
 // import AspectGrid from '../components/AspectGrid';
 import AstroChartComponent from '../components/AstroChartComponent';
 import ProcessingMessage from '../components/ProcessingMessage';
+import AnalysisModeToggle from '../components/AnalysisModeToggle';
 
 function Home() {
   const navigate = useNavigate();
@@ -39,6 +40,9 @@ function Home() {
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [analysisError, setAnalysisError] = useState('');
   const [fullAnalysisLoading] = useState(false);
+  const [analysisMode, setAnalysisMode] = useState(() => {
+    return localStorage.getItem('analysisMode') || 'simple';
+  });
 
   // Восстанавливаем данные карты из localStorage при загрузке страницы
   useEffect(() => {
@@ -228,6 +232,7 @@ function Home() {
   };
 
   const handleFullAnalysisClick = async () => {
+    localStorage.setItem('analysisMode', analysisMode);
     const chartDataForAnalysis = prepareChartDataForAnalysis(chartData);
     console.log('=== ОТПРАВЛЯЕМ НА ДАШБОРД ===', chartDataForAnalysis);
     // Чистим всё старое ДО перехода
@@ -239,9 +244,9 @@ function Home() {
     localStorage.removeItem('savedChartId');
 
     if (!isAuthenticated) {
-      navigate(`/${currentLang}/login`, { state: { from: '/', chartDataForAnalysis, showFullAnalysis: true } });
+      navigate(`/${currentLang}/login`, { state: { from: '/', chartDataForAnalysis, showFullAnalysis: true, analysisMode } });
     } else {
-      navigate(`/${currentLang}/dashboard`, { state: { showFullAnalysis: true, chartDataForAnalysis } });
+      navigate(`/${currentLang}/dashboard`, { state: { showFullAnalysis: true, chartDataForAnalysis, analysisMode } });
     }
   };
 
@@ -469,6 +474,10 @@ function Home() {
                 <div><strong>{t('home.chart.ascendant')}:</strong> {chartData.ascendant ? t(`planets.signs.${chartData.ascendant}`) : '—'}</div>
                 <div><strong>{t('home.chart.mc')}:</strong> {chartData.mc ? t(`planets.signs.${chartData.mc}`) : '—'}</div>
               </div>
+            </div>
+
+            <div style={{ textAlign: 'center', marginTop: '24px' }}>
+              <AnalysisModeToggle value={analysisMode} onChange={setAnalysisMode} />
             </div>
 
             <button
