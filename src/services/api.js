@@ -142,7 +142,9 @@ export const astrologyAPI = {
         chart_data: chartData,
         language,
         top_books: topBooks,
-        mode
+        mode,
+        birth_date: chartData.meta?.birth_date || null,    // ДОБАВИТЬ
+        birth_place: chartData.meta?.birth_place || null   // ДОБАВИТЬ
       });
       return response.data;
     } catch {

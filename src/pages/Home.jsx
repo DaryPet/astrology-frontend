@@ -8,7 +8,6 @@ import Header from '../components/Header';
 import LocationInput from '../components/LocationInput';
 import PlanetTable from '../components/PlanetTable';
 import PlanetAnalysisModal from '../components/PlanetAnalysisModal';
-// import AspectGrid from '../components/AspectGrid';
 import AstroChartComponent from '../components/AstroChartComponent';
 import ProcessingMessage from '../components/ProcessingMessage';
 import AnalysisModeToggle from '../components/AnalysisModeToggle';
@@ -16,7 +15,7 @@ import AnalysisModeToggle from '../components/AnalysisModeToggle';
 function Home() {
   const navigate = useNavigate();
   const { lang } = useParams();
-  const { t} = useTranslation();
+  const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
 
   const currentLang = lang || i18n.language || 'ru';
@@ -39,18 +38,16 @@ function Home() {
   const [planetAnalysis, setPlanetAnalysis] = useState(null);
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [analysisError, setAnalysisError] = useState('');
-  const [fullAnalysisLoading] = useState(false);
   const [analysisMode, setAnalysisMode] = useState(() => {
     return localStorage.getItem('analysisMode') || 'simple';
   });
+  const [isNavigating, setIsNavigating] = useState(false);
 
-  // Восстанавливаем данные карты из localStorage при загрузке страницы
   useEffect(() => {
     const savedChartData = localStorage.getItem('savedChartData');
     if (savedChartData && !chartData) {
       try {
         const parsed = JSON.parse(savedChartData);
-        // console.log('=== ВОССТАНОВЛЕНА КАРТА ИЗ LOCALSTORAGE ===', parsed);
         setChartData(parsed);
       } catch (e) {
         console.error('Error parsing saved chart data:', e);
@@ -63,7 +60,6 @@ function Home() {
     if (name === 'name') setNameError('');
     setFormData(prev => ({ ...prev, [name]: value }));
   };
-
 
   const handleLocationSelect = async (location) => {
     const lat = parseFloat(location.lat);
@@ -92,26 +88,22 @@ function Home() {
   };
 
   const handlePlanetClick = async (planetData) => {
-    // Перевод названия планеты на текущий язык приложения
     const planetName = t('planets.names.' + planetData.name);
     setSelectedPlanet({ ...planetData, name: planetName });
     setPlanetAnalysis(null);
     setAnalysisError('');
     setAnalysisLoading(true);
 
-    // Проверяем есть ли сохраненный анализ в localStorage
     const savedAnalysis = localStorage.getItem(`planetAnalysis_${planetData.name}`);
     if (savedAnalysis) {
-      // console.log('=== ВОССТАНОВЛЕН АНАЛИЗ ПЛАНЕТЫ ИЗ LOCALSTORAGE ===', planetData.name);
       setPlanetAnalysis(savedAnalysis);
       setAnalysisLoading(false);
       return;
     }
 
     try {
-      // console.log('=== PLANET ANALYSIS REQUEST ===', { planet: planetData.name, sign: planetData.sign, degree: planetData.degree, house: planetData.house, is_retrograde: planetData.is_retrograde, language: i18n.language });
       const result = await astrologyAPI.getPlanetAnalysis({
-        planet: planetData.name, // English name for API
+        planet: planetData.name,
         sign: planetData.sign,
         degree: planetData.degree,
         house: planetData.house,
@@ -120,9 +112,8 @@ function Home() {
         is_retrograde: planetData.is_retrograde,
         language: i18n.language
       });
-      console.log('=== PLANET ANALYSIS RESPONSE ===', result);
+
       setPlanetAnalysis(result.analysis);
-      // Сохраняем анализ планеты в localStorage (ключ - название планеты)
       localStorage.setItem(`planetAnalysis_${planetData.name}`, result.analysis);
     } catch (err) {
       console.error('Planet analysis error:', err);
@@ -231,29 +222,44 @@ function Home() {
     };
   };
 
-  const handleFullAnalysisClick = async () => {
+  // ✅ КАК В SYNASTRY.JSX - БЕЗ ЛИШНИХ localStorage ОПЕРАЦИЙ
+  // const handleFullAnalysisClick = () => {
+  //   localStorage.setItem('analysisMode', analysisMode);
+  //   const chartDataForAnalysis = prepareChartDataForAnalysis(chartData);
+
+  //   setIsNavigating(true);
+
+  const handleFullAnalysisClick = () => {
     localStorage.setItem('analysisMode', analysisMode);
     const chartDataForAnalysis = prepareChartDataForAnalysis(chartData);
-    console.log('=== ОТПРАВЛЯЕМ НА ДАШБОРД ===', chartDataForAnalysis);
-    // Чистим всё старое ДО перехода
-    localStorage.removeItem('savedFullAnalysis');
-    localStorage.removeItem('savedChartId');
-    localStorage.removeItem('chartDataForAnalysis');
-    localStorage.setItem('chartDataForAnalysis', JSON.stringify(chartDataForAnalysis));
-    localStorage.removeItem('savedFullAnalysis');  // ← ДОБАВИТЬ ЭТУ СТРОКУ
-    localStorage.removeItem('savedChartId');
 
-    if (!isAuthenticated) {
-      navigate(`/${currentLang}/login`, { state: { from: '/', chartDataForAnalysis, showFullAnalysis: true, analysisMode } });
-    } else {
-      navigate(`/${currentLang}/dashboard`, { state: { showFullAnalysis: true, chartDataForAnalysis, analysisMode } });
-    }
+    localStorage.removeItem('savedFullAnalysis');        // ДОБАВИТЬ
+    localStorage.removeItem('savedChartId');             // ДОБАВИТЬ
+    localStorage.removeItem('chartDataForAnalysis');     // ДОБАВИТЬ
+    localStorage.setItem('chartDataForAnalysis', JSON.stringify(chartDataForAnalysis)); // ДОБАВИТЬ
+
+    setIsNavigating(true);
+
+    setTimeout(() => {
+      if (!isAuthenticated) {
+        navigate(`/${currentLang}/login`, {
+          state: { from: '/', chartDataForAnalysis, showFullAnalysis: true, analysisMode }
+        });
+      } else {
+        navigate(`/${currentLang}/dashboard`, {
+          state: { showFullAnalysis: true, chartDataForAnalysis, analysisMode }
+        });
+      }
+    }, 0);
   };
 
   const handleNewCalculation = () => {
     localStorage.removeItem('savedChartData');
     localStorage.removeItem('chartDataForAnalysis');
     localStorage.removeItem('savedFullAnalysis');
+    localStorage.removeItem('savedFullAnalysis_simple');
+    localStorage.removeItem('savedFullAnalysis_advanced');
+    localStorage.removeItem('savedChartId');
     Object.keys(localStorage).forEach(key => {
       if (key.startsWith('planetAnalysis_')) {
         localStorage.removeItem(key);
@@ -290,13 +296,10 @@ function Home() {
       timezone: formData.timezone,
       name: formData.name
     };
-    console.log('=== CHART CALCULATION REQUEST ===', JSON.stringify(apiData, null, 2));
 
     try {
       const response = await astrologyAPI.calculateChart(apiData);
-      console.log('=== CHART CALCULATION RESPONSE ===', JSON.stringify(response, null, 2));
 
-      // Добавляем Pars Fortuna и Vertex в planets для отображения в PlanetTable
       const enhancedPlanets = {
         ...response.planets,
         ...(response.houses_meta?.pars_fortuna && {
@@ -347,7 +350,6 @@ function Home() {
       };
 
       setChartData(chartDataToSave);
-      // Сохраняем данные карты в localStorage
       localStorage.setItem('savedChartData', JSON.stringify(chartDataToSave));
       localStorage.removeItem('savedChartId');
     } catch (err) {
@@ -357,6 +359,7 @@ function Home() {
       setLoading(false);
     }
   };
+
   return (
     <div className="home">
       <Header />
@@ -385,7 +388,7 @@ function Home() {
                     value={formData.name}
                     onChange={handleInputChange}
                     placeholder={t('home.form.namePlaceholder')}
-                    maxlength="10"
+                    maxLength="10"
                   />
                   {nameError && <div style={{color: 'red', fontSize: '12px', marginTop: '4px'}}>{nameError}</div>}
                 </div>
@@ -484,28 +487,28 @@ function Home() {
               type="button"
               className="btn-full-analysis"
               onClick={handleFullAnalysisClick}
-              disabled={fullAnalysisLoading}
+              disabled={isNavigating}
               style={{
                 marginTop: '24px',
                 marginLeft: 'auto',
                 marginRight: 'auto',
                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                 color: 'white',
-                padding: fullAnalysisLoading ? '30px 28px' : '14px 28px',
+                padding: isNavigating ? '30px 28px' : '14px 28px',
                 border: 'none',
                 borderRadius: '8px',
                 fontSize: '16px',
                 fontWeight: '600',
-                cursor: fullAnalysisLoading ? 'default' : 'pointer',
+                cursor: isNavigating ? 'default' : 'pointer',
                 transition: 'transform 0.2s, box-shadow 0.2s',
-                opacity: fullAnalysisLoading ? 0.8 : 1,
+                opacity: isNavigating ? 0.8 : 1,
                 minWidth: '280px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center'
               }}
             >
-              {fullAnalysisLoading ? <ProcessingMessage /> : t('home.getFullAnalysis')}
+              {isNavigating ? <ProcessingMessage /> : t('home.getFullAnalysis')}
             </button>
 
             <button
@@ -538,7 +541,7 @@ function Home() {
             marginTop: '30px'
           }}>
             <h3 style={{ marginBottom: '20px', color: 'var(--text-primary)' }}>
-              {t('home.chart.title')}
+              {t('home.planets.title')}
             </h3>
 
             <div style={{ marginBottom: '40px' }}>
