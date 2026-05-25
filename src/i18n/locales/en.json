@@ -31,6 +31,9 @@
       "locationNoResultsTip2": "Select a nearby major city",
       "locationNoResultsTip3": "Specify the name (e.g., 'Moscow, Russia')"
     },
+    "planets": {
+      "title": "Planets Analysis"
+    },
     "chart": {
       "title": "Natal Chart (Swiss Ephemeris)",
       "sun": "Sun",

@@ -31,6 +31,9 @@
       "locationNoResultsTip2": "Выбрать ближайший крупный город",
       "locationNoResultsTip3": "Уточнить название (например, 'Москва, Россия')"
     },
+    "planets": {
+      "title": "Анализ планет"
+    },
     "chart": {
       "title": "Натальная Карта (Swiss Ephemeris)",
       "sun": "Солнце",
