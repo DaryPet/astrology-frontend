@@ -64,6 +64,11 @@ body {
   top: 0;
   z-index: 100;
 }
+[data-theme="light"] .nav-link,
+[data-theme="light"] .user-name,
+[data-theme="light"] .nav a {
+  color: #ffffff;
+}
 
 .header-content {
   display: flex;
