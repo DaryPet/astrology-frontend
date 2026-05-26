@@ -376,5 +376,13 @@
     "duplicateTitle": "Карта с таким именем уже существует",
     "duplicateMessage": "У вас уже есть карта с именем '{{name}}'. Сохранить ещё раз?",
     "saveAnyway": "Да, сохранить"
+  },
+  "relationshipTypes": {
+    "title": "Типы отношений",
+    "romantic_partners": "Вторые половинки",
+    "friends": "Друзья",
+    "business_partners": "Напарники по бизнесу",
+    "spiritual_comrades": "Духовные соратники",
+    "dominant": "Доминирующий тип"
   }
 }

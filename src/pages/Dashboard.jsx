@@ -17,6 +17,7 @@ import PlanetAnalysisModal from '../components/PlanetAnalysisModal';
 import AspectGrid from '../components/AspectGrid';
 import AspectAnalysisModal from '../components/AspectAnalysisModal';
 import AnalysisModeToggle from '../components/AnalysisModeToggle';
+import RelationshipTypesBar from '../components/RelationshipTypesBar';
 import { loadChatHistory, saveChatHistory, isNearLimit, isAtLimit, MAX_MESSAGES } from '../services/chatStorage';
 
 const Dashboard = () => {
@@ -85,6 +86,9 @@ const Dashboard = () => {
   const [aspectLoading, setAspectLoading] = useState(false);
   const [aspectError, setAspectError] = useState('');
   const [showScrollTop, setShowScrollTop] = useState(false);
+  // Relationship Types state
+  const [relationshipTypes, setRelationshipTypes] = useState(null);
+  const [relationshipTypesLoading, setRelationshipTypesLoading] = useState(false);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -328,7 +332,41 @@ const Dashboard = () => {
       if (modeToLoad === 'advanced' && advancedAnalysis) { setFullAnalysis(advancedAnalysis); return; }
       loadFullAnalysis(modeToLoad);
     }
-  }, [showFullAnalysis, chartDataForAnalysis, fullAnalysis, analysisLoading, loadFullAnalysis, analysisMode, simpleAnalysis, advancedAnalysis]);
+}, [showFullAnalysis, chartDataForAnalysis, fullAnalysis, analysisLoading, loadFullAnalysis, analysisMode, simpleAnalysis, advancedAnalysis]);
+
+  // Reset relationship types when chart changes
+  useEffect(() => {
+    setRelationshipTypes(null);
+  }, [savedChartId]);
+
+  // Load relationship types for synastry charts
+  useEffect(() => {
+    if (chartDataForAnalysis?.type === 'synastry' && fullAnalysis && savedChartId && !relationshipTypes) {
+      // Check localStorage cache first
+      const storageKey = `relationshipTypes_${savedChartId}`;
+      const cached = localStorage.getItem(storageKey);
+      if (cached) {
+        try {
+          setRelationshipTypes(JSON.parse(cached));
+          return;
+        } catch { /* ignore parse errors */ }
+      }
+      const loadRelationshipTypes = async () => {
+        setRelationshipTypesLoading(true);
+        try {
+          const result = await astrologyAPI.getRelationshipTypes(fullAnalysis, i18n.language);
+          console.log('Relationship Types Response:', result);
+          setRelationshipTypes(result);
+          localStorage.setItem(storageKey, JSON.stringify(result));
+        } catch (err) {
+          console.error('Failed to load relationship types:', err);
+        } finally {
+          setRelationshipTypesLoading(false);
+        }
+      };
+      loadRelationshipTypes();
+    }
+  }, [chartDataForAnalysis, fullAnalysis, relationshipTypes, savedChartId, i18n.language]);
 
   const loadHistoryCharts = useCallback(async () => {
     if (!user) return;
@@ -397,6 +435,15 @@ const Dashboard = () => {
 
       setSavedChartId(saved.id);
       localStorage.setItem('savedChartId', saved.id.toString());
+
+      // Save relationship types for synastry to DB
+      if (isSynastry && relationshipTypes) {
+        try {
+          await chartsApi.saveRelationshipTypes(saved.id, relationshipTypes);
+        } catch (err) {
+          console.error('Failed to save relationship types to DB:', err);
+        }
+      }
 
       // Refresh the history list to include the newly saved chart
       await loadHistoryCharts();
@@ -960,6 +1007,16 @@ const Dashboard = () => {
                       }}
                     />
                   </div>
+
+                  {/* Relationship Types Bar for Synastry */}
+                  {chartDataForAnalysis?.type === 'synastry' && fullAnalysis && relationshipTypes && !relationshipTypesLoading && (
+                    <div style={{ marginTop: '30px', marginBottom: '20px' }}>
+                      <RelationshipTypesBar
+                        data={relationshipTypes?.relationship_types}
+                        dominantType={relationshipTypes?.dominant_type}
+                      />
+                    </div>
+                  )}
 
                   <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '16px', flexWrap: 'wrap' }}>
                     {savedChartId && fullAnalysis && (

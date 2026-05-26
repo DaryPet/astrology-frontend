@@ -169,6 +169,19 @@ export const astrologyAPI = {
     }
   },
 
+  getRelationshipTypes: async (fullAnalysis, language = 'ru') => {
+    try {
+      const response = await api.post('/synastry/relationship-types', {
+        full_analysis: fullAnalysis,
+        language,
+        stream: false
+      });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
   chatAnalysis: async (chatRequest) => {
     try {
       const response = await api.post('/analysis/chat', chatRequest);
