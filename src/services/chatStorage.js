@@ -1,7 +1,7 @@
 // src/services/chatStorage.js
 // localStorage for FREE plan
 
-export const MAX_MESSAGES = 20;       // limit for  chat (FREE)
+export const MAX_MESSAGES = 50;       // limit for  chat (FREE)
 const CHAT_PREFIX = 'chat_';
 
 // Save chat history

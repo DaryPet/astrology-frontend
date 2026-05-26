@@ -226,6 +226,10 @@ export const chartsApi = {
     return data || [];
   },
 
+  async saveRelationshipTypes(chartId: number, data: unknown) {
+    return this.saveInterpretation(chartId, 'relationship_types', JSON.stringify(data));
+  },
+
   // async saveChartWithInterpretation(userId: string, chartData: Record<string, unknown>, interpretation: string, planetAnalyses: Array<{planetName: string, analysis: string}, simpleAnalysis?: string, advancedAnalysis?: string> = []) {
   async saveChartWithInterpretation(userId: string, chartData: Record<string, unknown>, interpretation: string, planetAnalyses: Array<{planetName: string, analysis: string}> = [], simpleAnalysis?: string, advancedAnalysis?: string) {
     const chart = await this.saveChart(userId, chartData);

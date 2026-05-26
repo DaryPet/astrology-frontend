@@ -376,5 +376,13 @@
     "duplicateTitle": "Chart with this name already exists",
     "duplicateMessage": "You already have a chart named '{{name}}'. Save anyway?",
     "saveAnyway": "Yes, save anyway"
+  },
+  "relationshipTypes": {
+    "title": "Relationship Types",
+    "romantic_partners": "Romantic Partners",
+    "friends": "Friends",
+    "business_partners": "Business Partners",
+    "spiritual_comrades": "Spiritual Comrades",
+    "dominant": "Dominant Type"
   }
 }
