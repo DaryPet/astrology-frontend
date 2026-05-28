@@ -38,6 +38,12 @@ yarn-error.log*
 *.tsbuildinfo
 
 .kilo/
+# Kilo
+.kilo/worktrees/
+.kilocode/
+
+# OpenSpec
+openspec/changes/
 
 # Vite cache
 .vite/
