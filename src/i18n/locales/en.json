@@ -348,6 +348,14 @@
       "notFound": "No aspects found",
       "notFoundDesc": "This chart has no significant aspects between planets",
       "type": "Aspect Type"
+    },
+    "aspectNames": {
+      "Conjunction": "Conjunction",
+      "Opposition": "Opposition",
+      "Trine": "Trine",
+      "Square": "Square",
+      "Sextile": "Sextile",
+      "Quincunx": "Quincunx"
     }
   },
 "analysis": {

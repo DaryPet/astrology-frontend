@@ -1,5 +1,14 @@
 import { supabase } from '../lib/supabase';
 
+export interface ChartResponse {
+  id: string | number;
+  name?: string;
+  sun_sign?: string;
+  chart_data?: Record<string, unknown>;
+  chart_interpretations?: Array<{ type?: string; interpretation?: string; name?: string }>;
+  created_at?: string;
+}
+
 const CHARTS_LIMIT = 5;
 
 // Helper function to generate summary via LLM
@@ -31,7 +40,7 @@ async function generateSummary(interpretation: string): Promise<string> {
 
 export const chartsApi = {
 
-  async saveChart(userId: string, chartData: Record<string, unknown>) {
+  async saveChart(userId: string, chartData: Record<string, unknown>): Promise<ChartResponse> {
     if (!chartData.name) {
       throw new Error('Chart name is required');
     }
@@ -60,7 +69,7 @@ export const chartsApi = {
     return data;
   },
 
-  async getCharts(userId: string) {
+  async getCharts(userId: string): Promise<ChartResponse[]> {
     const { data, error } = await supabase
       .from('natal_charts')
       .select('*, chart_interpretations(*)')
@@ -71,7 +80,7 @@ export const chartsApi = {
     return data || [];
   },
 
-  async getChart(chartId: number) {
+  async getChart(chartId: number): Promise<ChartResponse> {
     const { data, error } = await supabase
       .from('natal_charts')
       .select('*, chart_interpretations(*)')
@@ -128,8 +137,8 @@ export const chartsApi = {
     return data || null;
   },
 
-  getUniqueChartName(baseName: string, existingCharts: Array<{ name: string }>) {
-    const existingNames = new Set(existingCharts.map(c => c.name));
+  getUniqueChartName(baseName: string, existingCharts: Array<{ name?: string }>) {
+    const existingNames = new Set(existingCharts.map(c => c.name || ''));
 
     if (!existingNames.has(baseName)) {
       return baseName;
@@ -234,12 +243,12 @@ export const chartsApi = {
   async saveChartWithInterpretation(userId: string, chartData: Record<string, unknown>, interpretation: string, planetAnalyses: Array<{planetName: string, analysis: string}> = [], simpleAnalysis?: string, advancedAnalysis?: string) {
     const chart = await this.saveChart(userId, chartData);
     // Сохраняем ТОЛЬКО режимозависимые типы (simple + advanced), без общего 'full'
-    if (simpleAnalysis) await this.saveInterpretation(chart.id, 'full_simple', simpleAnalysis);
-    if (advancedAnalysis) await this.saveInterpretation(chart.id, 'full_advanced', advancedAnalysis);
+    if (simpleAnalysis) await this.saveInterpretation(Number(chart.id), 'full_simple', simpleAnalysis);
+    if (advancedAnalysis) await this.saveInterpretation(Number(chart.id), 'full_advanced', advancedAnalysis);
 
     // Save planet analyses
     for (const { planetName, analysis } of planetAnalyses) {
-      await this.savePlanetAnalysis(chart.id, planetName, analysis);
+      await this.savePlanetAnalysis(Number(chart.id), planetName, analysis);
     }
 
     return chart;
