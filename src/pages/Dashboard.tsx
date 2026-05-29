@@ -916,6 +916,80 @@ const Dashboard = () => {
                   <ProcessingMessage size="sm" />
                 </div>
               )}
+              {!chartIdFromUrl && !chartDataForAnalysis && !showFullAnalysis && (
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '60px 20px',
+                  textAlign: 'center',
+                  gap: '20px'
+                }}>
+                  <p style={{
+                    color: 'var(--text-secondary)',
+                    fontSize: '16px',
+                    marginBottom: '10px'
+                  }}>
+                    {t('dashboard.emptyState.selectChart')}
+                  </p>
+                  <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/${currentLang}/`)}
+                      style={{
+                        background: 'linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%)',
+                        color: 'white',
+                        padding: '12px 20px',
+                        border: 'none',
+                        borderRadius: '10px',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        transition: 'opacity 0.2s'
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget as HTMLButtonElement).style.opacity = '0.85'}
+                      onMouseLeave={(e) => (e.currentTarget as HTMLButtonElement).style.opacity = '1'}
+                    >
+                      <span>✦</span>
+                      {t('dashboard.actions.newChart')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/${currentLang}/synastry`)}
+                      style={{
+                        width: '100%',
+                        background: 'none',
+                        border: '1px solid var(--border)',
+                        borderRadius: '10px',
+                        color: 'var(--text-secondary)',
+                        padding: '10px 16px',
+                        fontSize: '14px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        transition: 'all 0.15s',
+                      }}
+                      onMouseEnter={(e) => {
+                        (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--accent)';
+                        (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-primary)';
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--border)';
+                        (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-secondary)';
+                      }}
+                    >
+                      <span>🔮</span>
+                      {t('dashboard.actions.synastry')}
+                    </button>
+                  </div>
+                </div>
+              )}
               {chartDataForAnalysis && isAuthenticated && !fullAnalysis && !savedChartId && !showFullAnalysis && (
                 <div style={{ textAlign: 'center' }}>
                   <AnalysisModeToggle
