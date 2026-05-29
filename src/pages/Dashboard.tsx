@@ -173,6 +173,7 @@ const Dashboard = () => {
   const [renameError, setRenameError] = useState<string | null>(null);
   const [chartsUpdated, setChartsUpdated] = useState(false);
   const [showPlanetTable, setShowPlanetTable] = useState(false);
+  const [chartLoading, setChartLoading] = useState(false);
   const handleTogglePlanetTable = () => {
     setShowPlanetTable(prev => !prev);
   };
@@ -241,6 +242,7 @@ const Dashboard = () => {
     if (!chartIdFromUrl) return;
 
     const loadChartFromUrl = async () => {
+      setChartLoading(true);
       try {
         const chartId = parseInt(chartIdFromUrl, 10);
         if (isNaN(chartId)) return;
@@ -282,6 +284,8 @@ const Dashboard = () => {
         }
       } catch (error) {
         console.error('Failed to load chart from URL:', error);
+      } finally {
+        setChartLoading(false);
       }
     };
 
@@ -907,6 +911,11 @@ const Dashboard = () => {
         <div style={{ display: 'flex', gap: '30px', flexWrap: 'nowrap', alignItems: 'flex-start' }}>
           <div style={{ flex: '1 1 600px' }}>
             <div className="dashboard-content">
+              {chartLoading && chartIdFromUrl && (
+                <div style={{ marginTop: '40px' }}>
+                  <ProcessingMessage size="sm" />
+                </div>
+              )}
               {chartDataForAnalysis && isAuthenticated && !fullAnalysis && !savedChartId && !showFullAnalysis && (
                 <div style={{ textAlign: 'center' }}>
                   <AnalysisModeToggle

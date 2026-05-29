@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import i18n from '../i18n';
+import ProcessingMessage from './ProcessingMessage';
 
 interface ChartItem {
   id: string | number;
@@ -145,11 +146,11 @@ const Sidebar = ({
 
         {historyOpen && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px' }}>
-            {historyLoading ? (
-              <div style={{ color: 'var(--text-secondary)', fontSize: '13px', padding: '8px 4px' }}>
-                {t('common.loading')}
-              </div>
-            ) : historyCharts.length === 0 ? (
+{historyLoading ? (
+               <div style={{ padding: '8px 4px' }}>
+                 <ProcessingMessage size="sm" />
+               </div>
+             ) : historyCharts.length === 0 ? (
               <div style={{ color: 'var(--text-secondary)', fontSize: '13px', padding: '8px 4px' }}>
                 {t('history.empty')}
               </div>
