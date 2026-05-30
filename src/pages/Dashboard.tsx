@@ -153,6 +153,9 @@ const Dashboard = () => {
 
   const pendingModeRef = useRef<string | null>(null);
   const [savedChartId, setSavedChartId] = useState<string | number | null>(() => {
+    // Don't restore savedChartId if there's a pending analysis job
+    const hasPendingJob = localStorage.getItem('pendingAnalysisJob');
+    if (hasPendingJob) return null;
     const saved = localStorage.getItem('savedChartId');
     return saved ? parseInt(saved, 10) : null;
   });
@@ -222,21 +225,39 @@ const Dashboard = () => {
   }, [chartIdFromUrl]);
 
   useEffect(() => {
-    const state = location.state;
+    // Check for pending analysis job (survives navigation during processing)
+    if (chartIdFromUrl) return;
 
-    if (state?.showFullAnalysis && state?.chartDataForAnalysis) {
-      setFullAnalysis(null);
-      setSimpleAnalysis(null);
-      setAdvancedAnalysis(null);
-      setSavedChartId(null);
-      localStorage.removeItem('savedFullAnalysis');
-      localStorage.removeItem('savedFullAnalysis_simple');
-      localStorage.removeItem('savedFullAnalysis_advanced');
-      localStorage.removeItem('savedChartId');
-      setShowFullAnalysis(true);
-      setChartDataForAnalysis(state.chartDataForAnalysis);
+    const pendingJob = localStorage.getItem('pendingAnalysisJob');
+    const pendingResult = localStorage.getItem('pendingAnalysisResult');
+
+    // Only process if we have a pending job AND no chart loaded yet
+    if (pendingJob && !chartDataForAnalysis) {
+      try {
+        const parsed = JSON.parse(pendingJob);
+        if (parsed.chartDataForAnalysis) {
+          setChartDataForAnalysis(parsed.chartDataForAnalysis);
+          if (parsed.analysisMode) {
+            setAnalysisMode(parsed.analysisMode);
+            localStorage.setItem('dashboardAnalysisMode', parsed.analysisMode);
+          }
+          // Clear savedChartId since this is a pending (not yet saved) analysis
+          localStorage.removeItem('savedChartId');
+          setSavedChartId(null);
+          setShowFullAnalysis(true);
+        }
+      } catch {
+      }
     }
-  }, [location.state]);
+
+    // Restore pending analysis result if we have chart data but no analysis yet
+    if (pendingResult && chartDataForAnalysis && !fullAnalysis && !savedChartId) {
+      const pendingMode = localStorage.getItem('dashboardAnalysisMode');
+      setFullAnalysis(pendingResult);
+      if (pendingMode === 'simple') setSimpleAnalysis(pendingResult);
+      if (pendingMode === 'advanced') setAdvancedAnalysis(pendingResult);
+    }
+  }, [chartIdFromUrl, chartDataForAnalysis, fullAnalysis, savedChartId]);
 
   useEffect(() => {
     if (!chartIdFromUrl) return;
@@ -419,6 +440,13 @@ const Dashboard = () => {
     }
   }, [showFullAnalysis, chartDataForAnalysis, fullAnalysis, analysisLoading, loadFullAnalysis, analysisMode, simpleAnalysis, advancedAnalysis]);
 
+  // Save pending analysis result for navigation persistence (only when no saved chart yet)
+  useEffect(() => {
+    if (fullAnalysis && !savedChartId) {
+      localStorage.setItem('pendingAnalysisResult', fullAnalysis);
+    }
+  }, [fullAnalysis, savedChartId]);
+
   useEffect(() => {
     setRelationshipTypes(null);
   }, [savedChartId]);
@@ -515,6 +543,10 @@ const Dashboard = () => {
       setSavedChartId(saved.id);
       localStorage.setItem('savedChartId', String(saved.id));
 
+      // Clear pending analysis items since we've saved the chart
+      localStorage.removeItem('pendingAnalysisJob');
+      localStorage.removeItem('pendingAnalysisResult');
+
       if (isSynastry && relationshipTypes) {
         try {
           await chartsApi.saveRelationshipTypes(saved.id, relationshipTypes);
@@ -565,6 +597,10 @@ const Dashboard = () => {
       setSavedChartId(saved.id);
       localStorage.setItem('savedChartId', saved.id.toString());
 
+      // Clear pending analysis items since we've saved the chart
+      localStorage.removeItem('pendingAnalysisJob');
+      localStorage.removeItem('pendingAnalysisResult');
+
       await loadHistoryCharts();
 
       setPendingSaveName(null);
@@ -586,6 +622,8 @@ const Dashboard = () => {
     localStorage.removeItem('savedFullAnalysis_simple');
     localStorage.removeItem('savedFullAnalysis_advanced');
     localStorage.removeItem('savedChartId');
+    localStorage.removeItem('pendingAnalysisJob');
+    localStorage.removeItem('pendingAnalysisResult');
     setChatVisible(false);
     setChatHistory([]);
     setChatInput('');
