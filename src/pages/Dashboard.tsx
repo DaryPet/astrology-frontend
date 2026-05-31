@@ -369,9 +369,17 @@ const Dashboard = () => {
       // // Clear pendingAnalysisJob after successful analysis to prevent infinite loops
       // localStorage.removeItem('pendingAnalysisJob');
       const currentChartId = parseInt(localStorage.getItem('savedChartId') || '0', 10) || null;
+
+      //изменения ЗДЕСЬ ЕСЛИ НАДО БУДЕТ ОТКАТИТЬ
+      // if (currentChartId) {
+      //   localStorage.setItem(`savedFullAnalysis_${currentChartId}_${mode}`, result.analysis);
+      // }
       if (currentChartId) {
         localStorage.setItem(`savedFullAnalysis_${currentChartId}_${mode}`, result.analysis);
+      } else {
+        localStorage.setItem(`savedFullAnalysis_${mode}`, result.analysis);
       }
+      // ЗДЕСЬ ЗАКНЧИЛОСЬ!
       if (currentChartId) {
         const isSynastry = chartDataForAnalysis.type === 'synastry';
         const type = isSynastry ? `synastry_${mode}` : `full_${mode}`;
