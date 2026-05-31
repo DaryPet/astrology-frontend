@@ -275,10 +275,20 @@ const Dashboard = () => {
 
         const isSynastry = chart.chart_data?.type === 'synastry';
 
+        //ИЗМЕНЕНИЯ ЗДЕСЬ ЕСЛИ НАДО БУДЕТ ОТКАТИТЬ
+
+        // const interp = chart.chart_interpretations?.find(
+        //   (i: { type?: string; interpretation?: string }) => i.type === (isSynastry ? `synastry_${analysisMode}` : `full_${analysisMode}`)
+        // );
+
         const interp = chart.chart_interpretations?.find(
           (i: { type?: string; interpretation?: string }) => i.type === (isSynastry ? `synastry_${analysisMode}` : `full_${analysisMode}`)
+        ) || chart.chart_interpretations?.find(
+          (i: { type?: string; interpretation?: string }) => i.type === (isSynastry ? `synastry_advanced` : `full_advanced`)
+        ) || chart.chart_interpretations?.find(
+          (i: { type?: string; interpretation?: string }) => i.type === (isSynastry ? `synastry_simple` : `full_simple`)
         );
-
+        // ЗДЕСЬ ЗАКНЧИЛОА!
         if (interp?.interpretation) {
           setFullAnalysis(interp.interpretation);
           if (analysisMode === 'simple') setSimpleAnalysis(interp.interpretation);
@@ -311,10 +321,12 @@ const Dashboard = () => {
     };
 
     loadChartFromUrl();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chartIdFromUrl]);
 
   const loadFullAnalysis = useCallback(async (mode = analysisMode) => {
     if (!chartDataForAnalysis) return;
+    setFullAnalysis(null);
     setAnalysisLoading(true);
     setAnalysisError('');
 
@@ -354,6 +366,8 @@ const Dashboard = () => {
       setFullAnalysis(result.analysis);
       if (mode === 'simple') setSimpleAnalysis(result.analysis);
       else setAdvancedAnalysis(result.analysis);
+      // // Clear pendingAnalysisJob after successful analysis to prevent infinite loops
+      // localStorage.removeItem('pendingAnalysisJob');
       const currentChartId = parseInt(localStorage.getItem('savedChartId') || '0', 10) || null;
       if (currentChartId) {
         localStorage.setItem(`savedFullAnalysis_${currentChartId}_${mode}`, result.analysis);
@@ -476,7 +490,8 @@ const Dashboard = () => {
       };
       loadRelationshipTypes();
     }
-  }, [chartDataForAnalysis, fullAnalysis, relationshipTypes, savedChartId, i18n.language]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chartDataForAnalysis, fullAnalysis, relationshipTypes, savedChartId]);
 
   const loadHistoryCharts = useCallback(async () => {
     if (!user) return;
