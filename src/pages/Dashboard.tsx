@@ -154,8 +154,16 @@ const Dashboard = () => {
   const pendingModeRef = useRef<string | null>(null);
   const [savedChartId, setSavedChartId] = useState<string | number | null>(() => {
     // Don't restore savedChartId if there's a pending analysis job
+
+    // ИЗМЕНЕНИЯ ЗДЕСЬ ЕСЛИ НАДО БУДЕТ ОТКАТИТЬ
     const hasPendingJob = localStorage.getItem('pendingAnalysisJob');
     if (hasPendingJob) return null;
+
+//     const hasPendingJob = localStorage.getItem('pendingAnalysisJob');
+// const hasPendingResult = localStorage.getItem('pendingAnalysisResult');
+// if (hasPendingJob || hasPendingResult) return null;
+
+// ЗДЕСЬ ЗАКНЧИЛОСЬ!
     const saved = localStorage.getItem('savedChartId');
     return saved ? parseInt(saved, 10) : null;
   });
@@ -371,14 +379,14 @@ const Dashboard = () => {
       const currentChartId = parseInt(localStorage.getItem('savedChartId') || '0', 10) || null;
 
       //изменения ЗДЕСЬ ЕСЛИ НАДО БУДЕТ ОТКАТИТЬ
-      // if (currentChartId) {
-      //   localStorage.setItem(`savedFullAnalysis_${currentChartId}_${mode}`, result.analysis);
-      // }
       if (currentChartId) {
         localStorage.setItem(`savedFullAnalysis_${currentChartId}_${mode}`, result.analysis);
-      } else {
-        localStorage.setItem(`savedFullAnalysis_${mode}`, result.analysis);
       }
+      // if (currentChartId) {
+      //   localStorage.setItem(`savedFullAnalysis_${currentChartId}_${mode}`, result.analysis);
+      // } else {
+      //   localStorage.setItem(`savedFullAnalysis_${mode}`, result.analysis);
+      // }
       // ЗДЕСЬ ЗАКНЧИЛОСЬ!
       if (currentChartId) {
         const isSynastry = chartDataForAnalysis.type === 'synastry';
