@@ -318,6 +318,13 @@ function Home() {
     localStorage.removeItem('chartDataForAnalysis');
     localStorage.setItem('chartDataForAnalysis', JSON.stringify(chartDataForAnalysis));
 
+    // Persist analysis job to survive navigation during processing
+    localStorage.setItem('pendingAnalysisJob', JSON.stringify({
+      chartDataForAnalysis,
+      analysisMode,
+      timestamp: Date.now()
+    }));
+
     setIsNavigating(true);
 
     setTimeout(() => {

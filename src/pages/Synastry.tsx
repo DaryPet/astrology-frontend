@@ -239,7 +239,20 @@ function Synastry() {
     localStorage.removeItem('savedFullAnalysis');
     localStorage.removeItem('savedChartId');
     localStorage.removeItem('chartDataForAnalysis');
+    // localStorage.removeItem('savedFullAnalysis');
+    // localStorage.removeItem('savedFullAnalysis_simple');
+    // localStorage.removeItem('savedFullAnalysis_advanced');
+    // localStorage.removeItem('savedChartId');
+    // localStorage.removeItem('chartDataForAnalysis');
+    // localStorage.removeItem('pendingAnalysisResult');
     localStorage.setItem('chartDataForAnalysis', JSON.stringify(synastryDataForAnalysis));
+
+    // Persist analysis job to survive navigation during processing
+    localStorage.setItem('pendingAnalysisJob', JSON.stringify({
+      chartDataForAnalysis: synastryDataForAnalysis,
+      analysisMode,
+      timestamp: Date.now()
+    }));
 
     setIsNavigating(true);
 

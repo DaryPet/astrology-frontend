@@ -153,6 +153,17 @@ const Dashboard = () => {
 
   const pendingModeRef = useRef<string | null>(null);
   const [savedChartId, setSavedChartId] = useState<string | number | null>(() => {
+    // Don't restore savedChartId if there's a pending analysis job
+
+    // ИЗМЕНЕНИЯ ЗДЕСЬ ЕСЛИ НАДО БУДЕТ ОТКАТИТЬ
+    const hasPendingJob = localStorage.getItem('pendingAnalysisJob');
+    if (hasPendingJob) return null;
+
+//     const hasPendingJob = localStorage.getItem('pendingAnalysisJob');
+// const hasPendingResult = localStorage.getItem('pendingAnalysisResult');
+// if (hasPendingJob || hasPendingResult) return null;
+
+// ЗДЕСЬ ЗАКНЧИЛОСЬ!
     const saved = localStorage.getItem('savedChartId');
     return saved ? parseInt(saved, 10) : null;
   });
@@ -173,6 +184,7 @@ const Dashboard = () => {
   const [renameError, setRenameError] = useState<string | null>(null);
   const [chartsUpdated, setChartsUpdated] = useState(false);
   const [showPlanetTable, setShowPlanetTable] = useState(false);
+  const [chartLoading, setChartLoading] = useState(false);
   const handleTogglePlanetTable = () => {
     setShowPlanetTable(prev => !prev);
   };
@@ -221,26 +233,45 @@ const Dashboard = () => {
   }, [chartIdFromUrl]);
 
   useEffect(() => {
-    const state = location.state;
+    // Check for pending analysis job (survives navigation during processing)
+    if (chartIdFromUrl) return;
 
-    if (state?.showFullAnalysis && state?.chartDataForAnalysis) {
-      setFullAnalysis(null);
-      setSimpleAnalysis(null);
-      setAdvancedAnalysis(null);
-      setSavedChartId(null);
-      localStorage.removeItem('savedFullAnalysis');
-      localStorage.removeItem('savedFullAnalysis_simple');
-      localStorage.removeItem('savedFullAnalysis_advanced');
-      localStorage.removeItem('savedChartId');
-      setShowFullAnalysis(true);
-      setChartDataForAnalysis(state.chartDataForAnalysis);
+    const pendingJob = localStorage.getItem('pendingAnalysisJob');
+    const pendingResult = localStorage.getItem('pendingAnalysisResult');
+
+    // Only process if we have a pending job AND no chart loaded yet
+    if (pendingJob && !chartDataForAnalysis) {
+      try {
+        const parsed = JSON.parse(pendingJob);
+        if (parsed.chartDataForAnalysis) {
+          setChartDataForAnalysis(parsed.chartDataForAnalysis);
+          if (parsed.analysisMode) {
+            setAnalysisMode(parsed.analysisMode);
+            localStorage.setItem('dashboardAnalysisMode', parsed.analysisMode);
+          }
+          // Clear savedChartId since this is a pending (not yet saved) analysis
+          localStorage.removeItem('savedChartId');
+          setSavedChartId(null);
+          setShowFullAnalysis(true);
+        }
+      } catch {
+      }
     }
-  }, [location.state]);
+
+    // Restore pending analysis result if we have chart data but no analysis yet
+    if (pendingResult && chartDataForAnalysis && !fullAnalysis && !savedChartId) {
+      const pendingMode = localStorage.getItem('dashboardAnalysisMode');
+      setFullAnalysis(pendingResult);
+      if (pendingMode === 'simple') setSimpleAnalysis(pendingResult);
+      if (pendingMode === 'advanced') setAdvancedAnalysis(pendingResult);
+    }
+  }, [chartIdFromUrl, chartDataForAnalysis, fullAnalysis, savedChartId]);
 
   useEffect(() => {
     if (!chartIdFromUrl) return;
 
     const loadChartFromUrl = async () => {
+      setChartLoading(true);
       try {
         const chartId = parseInt(chartIdFromUrl, 10);
         if (isNaN(chartId)) return;
@@ -252,10 +283,20 @@ const Dashboard = () => {
 
         const isSynastry = chart.chart_data?.type === 'synastry';
 
+        //ИЗМЕНЕНИЯ ЗДЕСЬ ЕСЛИ НАДО БУДЕТ ОТКАТИТЬ
+
+        // const interp = chart.chart_interpretations?.find(
+        //   (i: { type?: string; interpretation?: string }) => i.type === (isSynastry ? `synastry_${analysisMode}` : `full_${analysisMode}`)
+        // );
+
         const interp = chart.chart_interpretations?.find(
           (i: { type?: string; interpretation?: string }) => i.type === (isSynastry ? `synastry_${analysisMode}` : `full_${analysisMode}`)
+        ) || chart.chart_interpretations?.find(
+          (i: { type?: string; interpretation?: string }) => i.type === (isSynastry ? `synastry_advanced` : `full_advanced`)
+        ) || chart.chart_interpretations?.find(
+          (i: { type?: string; interpretation?: string }) => i.type === (isSynastry ? `synastry_simple` : `full_simple`)
         );
-
+        // ЗДЕСЬ ЗАКНЧИЛОА!
         if (interp?.interpretation) {
           setFullAnalysis(interp.interpretation);
           if (analysisMode === 'simple') setSimpleAnalysis(interp.interpretation);
@@ -282,14 +323,18 @@ const Dashboard = () => {
         }
       } catch (error) {
         console.error('Failed to load chart from URL:', error);
+      } finally {
+        setChartLoading(false);
       }
     };
 
     loadChartFromUrl();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chartIdFromUrl]);
 
   const loadFullAnalysis = useCallback(async (mode = analysisMode) => {
     if (!chartDataForAnalysis) return;
+    setFullAnalysis(null);
     setAnalysisLoading(true);
     setAnalysisError('');
 
@@ -329,10 +374,20 @@ const Dashboard = () => {
       setFullAnalysis(result.analysis);
       if (mode === 'simple') setSimpleAnalysis(result.analysis);
       else setAdvancedAnalysis(result.analysis);
+      // // Clear pendingAnalysisJob after successful analysis to prevent infinite loops
+      // localStorage.removeItem('pendingAnalysisJob');
       const currentChartId = parseInt(localStorage.getItem('savedChartId') || '0', 10) || null;
+
+      //изменения ЗДЕСЬ ЕСЛИ НАДО БУДЕТ ОТКАТИТЬ
       if (currentChartId) {
         localStorage.setItem(`savedFullAnalysis_${currentChartId}_${mode}`, result.analysis);
       }
+      // if (currentChartId) {
+      //   localStorage.setItem(`savedFullAnalysis_${currentChartId}_${mode}`, result.analysis);
+      // } else {
+      //   localStorage.setItem(`savedFullAnalysis_${mode}`, result.analysis);
+      // }
+      // ЗДЕСЬ ЗАКНЧИЛОСЬ!
       if (currentChartId) {
         const isSynastry = chartDataForAnalysis.type === 'synastry';
         const type = isSynastry ? `synastry_${mode}` : `full_${mode}`;
@@ -415,6 +470,13 @@ const Dashboard = () => {
     }
   }, [showFullAnalysis, chartDataForAnalysis, fullAnalysis, analysisLoading, loadFullAnalysis, analysisMode, simpleAnalysis, advancedAnalysis]);
 
+  // Save pending analysis result for navigation persistence (only when no saved chart yet)
+  useEffect(() => {
+    if (fullAnalysis && !savedChartId) {
+      localStorage.setItem('pendingAnalysisResult', fullAnalysis);
+    }
+  }, [fullAnalysis, savedChartId]);
+
   useEffect(() => {
     setRelationshipTypes(null);
   }, [savedChartId]);
@@ -444,7 +506,8 @@ const Dashboard = () => {
       };
       loadRelationshipTypes();
     }
-  }, [chartDataForAnalysis, fullAnalysis, relationshipTypes, savedChartId, i18n.language]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chartDataForAnalysis, fullAnalysis, relationshipTypes, savedChartId]);
 
   const loadHistoryCharts = useCallback(async () => {
     if (!user) return;
@@ -511,6 +574,10 @@ const Dashboard = () => {
       setSavedChartId(saved.id);
       localStorage.setItem('savedChartId', String(saved.id));
 
+      // Clear pending analysis items since we've saved the chart
+      localStorage.removeItem('pendingAnalysisJob');
+      localStorage.removeItem('pendingAnalysisResult');
+
       if (isSynastry && relationshipTypes) {
         try {
           await chartsApi.saveRelationshipTypes(saved.id, relationshipTypes);
@@ -561,6 +628,10 @@ const Dashboard = () => {
       setSavedChartId(saved.id);
       localStorage.setItem('savedChartId', saved.id.toString());
 
+      // Clear pending analysis items since we've saved the chart
+      localStorage.removeItem('pendingAnalysisJob');
+      localStorage.removeItem('pendingAnalysisResult');
+
       await loadHistoryCharts();
 
       setPendingSaveName(null);
@@ -582,6 +653,8 @@ const Dashboard = () => {
     localStorage.removeItem('savedFullAnalysis_simple');
     localStorage.removeItem('savedFullAnalysis_advanced');
     localStorage.removeItem('savedChartId');
+    localStorage.removeItem('pendingAnalysisJob');
+    localStorage.removeItem('pendingAnalysisResult');
     setChatVisible(false);
     setChatHistory([]);
     setChatInput('');
@@ -907,6 +980,85 @@ const Dashboard = () => {
         <div style={{ display: 'flex', gap: '30px', flexWrap: 'nowrap', alignItems: 'flex-start' }}>
           <div style={{ flex: '1 1 600px' }}>
             <div className="dashboard-content">
+              {chartLoading && chartIdFromUrl && (
+                <div style={{ marginTop: '40px' }}>
+                  <ProcessingMessage size="sm" />
+                </div>
+              )}
+              {!chartIdFromUrl && !chartDataForAnalysis && !showFullAnalysis && (
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '60px 20px',
+                  textAlign: 'center',
+                  gap: '20px'
+                }}>
+                  <p style={{
+                    color: 'var(--text-secondary)',
+                    fontSize: '16px',
+                    marginBottom: '10px'
+                  }}>
+                    {t('dashboard.emptyState.selectChart')}
+                  </p>
+                  <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/${currentLang}/`)}
+                      style={{
+                        background: 'linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%)',
+                        color: 'white',
+                        padding: '12px 20px',
+                        border: 'none',
+                        borderRadius: '10px',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        transition: 'opacity 0.2s'
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget as HTMLButtonElement).style.opacity = '0.85'}
+                      onMouseLeave={(e) => (e.currentTarget as HTMLButtonElement).style.opacity = '1'}
+                    >
+                      <span>✦</span>
+                      {t('dashboard.actions.newChart')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/${currentLang}/synastry`)}
+                      style={{
+                        width: '100%',
+                        background: 'none',
+                        border: '1px solid var(--border)',
+                        borderRadius: '10px',
+                        color: 'var(--text-secondary)',
+                        padding: '10px 16px',
+                        fontSize: '14px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        transition: 'all 0.15s',
+                      }}
+                      onMouseEnter={(e) => {
+                        (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--accent)';
+                        (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-primary)';
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--border)';
+                        (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-secondary)';
+                      }}
+                    >
+                      <span>🔮</span>
+                      {t('dashboard.actions.synastry')}
+                    </button>
+                  </div>
+                </div>
+              )}
               {chartDataForAnalysis && isAuthenticated && !fullAnalysis && !savedChartId && !showFullAnalysis && (
                 <div style={{ textAlign: 'center' }}>
                   <AnalysisModeToggle

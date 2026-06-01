@@ -37,12 +37,13 @@ const AstroChartComponent = ({ chartData, size = 700 }: { chartData: ChartData; 
           // Use any to bypass type checking for the library callback
           const chart = new Chart(containerId, size, size, {
             SHOW_DIGNITIES_TEXT: false,
-            CUSTOM_SYMBOL_FN: (name: string, _x: number, _y: number): any => {
+            CUSTOM_SYMBOL_FN: (name: string, x: number, y: number): any => {
               if (name === 'Vx') {
                 const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                g.setAttribute('transform', `translate(${x}, ${y})`);
                 const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
                 circle.setAttribute('cx', '0');
-                circle.setAttribute('cy', '4');
+                circle.setAttribute('cy', '0');
                 circle.setAttribute('r', '8');
                 circle.setAttribute('fill', 'none');
                 circle.setAttribute('stroke', '#000');
@@ -127,6 +128,10 @@ const AstroChartComponent = ({ chartData, size = 700 }: { chartData: ChartData; 
         ? house.cusp_longitude % 360
         : ((i-1) * 30) % 360;
     }
+
+    // if (cusps[9] !== undefined) {
+    //   cusps[3] = (cusps[9] + 180) % 360;
+    // }
 
     return { planets, cusps };
   };

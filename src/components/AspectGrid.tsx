@@ -46,7 +46,7 @@ const AspectGrid = ({ aspects, _planets, onAspectClick }: AspectGridProps) => {
     );
   }
 
-const getPlanetName = (planet: string) => {
+  const getPlanetName = (planet: string) => {
     const key = `planets.names.${planet}`;
     const translated = t(key);
     return translated !== key ? translated : planet;
@@ -101,7 +101,7 @@ const getPlanetName = (planet: string) => {
           const aspectColor = ASPECT_COLORS[aspect.aspect || ''] || '#7c3aed';
           const isSelected = selectedAspect === index;
 
-const aspectName = getAspectName(aspect.aspect || '');
+          const aspectName = getAspectName(aspect.aspect || '');
 
           const planet1Name = getPlanetName(aspect.planet1 || '');
           const planet2Name = getPlanetName(aspect.planet2 || '');

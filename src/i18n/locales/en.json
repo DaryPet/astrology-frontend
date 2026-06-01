@@ -150,14 +150,17 @@
        }
      },
 "actions": {
-      "newChart": "Calculate new chart",
-      "synastry": "Calculate synastry",
-      "logout": "Sign out",
-      "save": "Save",
-      "planetAnalysis": "Planet Analysis",
-      "aspectAnalysis": "Aspect Analysis",
-      "fullAnalysis": "Full Analysis"
-    },
+       "newChart": "Calculate new chart",
+       "synastry": "Calculate synastry",
+       "logout": "Sign out",
+       "save": "Save",
+       "planetAnalysis": "Planet Analysis",
+       "aspectAnalysis": "Aspect Analysis",
+       "fullAnalysis": "Full Analysis"
+     },
+     "emptyState": {
+       "selectChart": "Select a chart from history to get analysis"
+     },
     "errors": {
       "loadError": "Error loading dashboard data",
       "analysisError": "Error loading analysis"
