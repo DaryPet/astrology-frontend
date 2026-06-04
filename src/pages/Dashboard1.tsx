@@ -1856,7 +1856,7 @@ const Dashboard = () => {
       };
       loadRelationshipTypes();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [chartDataForAnalysis, fullAnalysis, relationshipTypes, savedChartId]);
 
   const loadHistoryCharts = useCallback(async () => {

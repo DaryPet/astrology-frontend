@@ -18,6 +18,7 @@ import AspectGrid, { Aspect } from '../components/AspectGrid';
 import AspectAnalysisModal from '../components/AspectAnalysisModal';
 import AnalysisModeToggle from '../components/AnalysisModeToggle';
 import RelationshipTypesBar from '../components/RelationshipTypesBar';
+import UnsavedAnalysisModal from '../components/UnsavedAnalysisModal';
 import { loadChatHistory, saveChatHistory, isNearLimit, isAtLimit, MAX_MESSAGES, type ChatMessage } from '../services/chatStorage';
 
 interface ChartPlanet {
@@ -159,11 +160,11 @@ const Dashboard = () => {
     const hasPendingJob = localStorage.getItem('pendingAnalysisJob');
     if (hasPendingJob) return null;
 
-//     const hasPendingJob = localStorage.getItem('pendingAnalysisJob');
-// const hasPendingResult = localStorage.getItem('pendingAnalysisResult');
-// if (hasPendingJob || hasPendingResult) return null;
+    //     const hasPendingJob = localStorage.getItem('pendingAnalysisJob');
+    // const hasPendingResult = localStorage.getItem('pendingAnalysisResult');
+    // if (hasPendingJob || hasPendingResult) return null;
 
-// ЗДЕСЬ ЗАКНЧИЛОСЬ!
+    // ЗДЕСЬ ЗАКНЧИЛОСЬ!
     const saved = localStorage.getItem('savedChartId');
     return saved ? parseInt(saved, 10) : null;
   });
@@ -199,6 +200,8 @@ const Dashboard = () => {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [relationshipTypes, setRelationshipTypes] = useState<RelationshipTypesData | null>(null);
   const [relationshipTypesLoading, setRelationshipTypesLoading] = useState(false);
+const [showUnsavedModal, setShowUnsavedModal] = useState(false);
+   const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -292,9 +295,9 @@ const Dashboard = () => {
         const interp = chart.chart_interpretations?.find(
           (i: { type?: string; interpretation?: string }) => i.type === (isSynastry ? `synastry_${analysisMode}` : `full_${analysisMode}`)
         ) || chart.chart_interpretations?.find(
-          (i: { type?: string; interpretation?: string }) => i.type === (isSynastry ? `synastry_advanced` : `full_advanced`)
+          (i: { type?: string; interpretation?: string }) => i.type === (isSynastry ? 'synastry_advanced' : 'full_advanced')
         ) || chart.chart_interpretations?.find(
-          (i: { type?: string; interpretation?: string }) => i.type === (isSynastry ? `synastry_simple` : `full_simple`)
+          (i: { type?: string; interpretation?: string }) => i.type === (isSynastry ? 'synastry_simple' : 'full_simple')
         );
         // ЗДЕСЬ ЗАКНЧИЛОА!
         if (interp?.interpretation) {
@@ -506,7 +509,7 @@ const Dashboard = () => {
       };
       loadRelationshipTypes();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [chartDataForAnalysis, fullAnalysis, relationshipTypes, savedChartId]);
 
   const loadHistoryCharts = useCallback(async () => {
@@ -647,6 +650,30 @@ const Dashboard = () => {
   };
 
   const handleNewChart = () => {
+    if (hasUnsavedAnalysis) {
+      setPendingNavigation(() => () => {
+        localStorage.removeItem('savedChartData');
+        localStorage.removeItem('chartDataForAnalysis');
+        localStorage.removeItem('savedFullAnalysis');
+        localStorage.removeItem('savedFullAnalysis_simple');
+        localStorage.removeItem('savedFullAnalysis_advanced');
+        localStorage.removeItem('savedChartId');
+        localStorage.removeItem('pendingAnalysisJob');
+        localStorage.removeItem('pendingAnalysisResult');
+        setChatVisible(false);
+        setChatHistory([]);
+        setChatInput('');
+        Object.keys(localStorage).forEach(key => {
+          if (key.startsWith('planetAnalysis_') || key.startsWith('aspectAnalysis_')) {
+            localStorage.removeItem(key);
+          }
+        });
+        navigate(`/${currentLang}/`);
+      });
+      setShowUnsavedModal(true);
+      return;
+    }
+
     localStorage.removeItem('savedChartData');
     localStorage.removeItem('chartDataForAnalysis');
     localStorage.removeItem('savedFullAnalysis');
@@ -831,6 +858,56 @@ const Dashboard = () => {
   }, [chartsUpdated, user, loadHistoryCharts]);
 
   const handleSelectChart = (chart: HistoryChart) => {
+    if (hasUnsavedAnalysis) {
+      setPendingNavigation(() => () => {
+        setChartDataForAnalysis(chart.chart_data ?? null);
+        setChatVisible(false);
+        setChatHistory(loadChatHistory(chart.id));
+        setChatInput('');
+        setShowPlanetTable(false);
+        setSimpleAnalysis(null);
+        setAdvancedAnalysis(null);
+
+        const isSynastry = chart.chart_data?.type === 'synastry';
+
+        const interp = chart.chart_interpretations?.find(
+          i => i.type === (isSynastry ? `synastry_${analysisMode}` : `full_${analysisMode}`)
+        );
+
+        if (interp?.interpretation) {
+          setFullAnalysis(interp.interpretation);
+          if (analysisMode === 'simple') setSimpleAnalysis(interp.interpretation);
+          else setAdvancedAnalysis(interp.interpretation);
+          setShowFullAnalysis(true);
+        }
+
+        const interpSimple = chart.chart_interpretations?.find(i => i.type === (isSynastry ? 'synastry_simple' : 'full_simple'));
+        const interpAdvanced = chart.chart_interpretations?.find(i => i.type === (isSynastry ? 'synastry_advanced' : 'full_advanced'));
+        if (interpSimple?.interpretation) setSimpleAnalysis(interpSimple.interpretation);
+        if (interpAdvanced?.interpretation) setAdvancedAnalysis(interpAdvanced.interpretation);
+
+        localStorage.setItem('chartDataForAnalysis', JSON.stringify(chart.chart_data ?? {}));
+        localStorage.setItem('savedChartId', String(chart.id));
+        setSavedChartId(chart.id);
+
+        if (!isSynastry) {
+          chartsApi.getPlanetAnalyses(Number(chart.id)).then(planetAnalyses => {
+            planetAnalyses.forEach((pa) => {
+              if (pa.name) {
+                localStorage.setItem(`planetAnalysis_${chart.id}_${pa.name}`, pa.interpretation);
+              }
+            });
+          }).catch(err => {
+            console.error('Failed to load planet analyses:', err);
+          });
+        }
+
+        navigate(`/${currentLang}/dashboard?chart=${chart.id}`);
+      });
+      setShowUnsavedModal(true);
+      return;
+    }
+
     setChartDataForAnalysis(chart.chart_data ?? null);
     setChatVisible(false);
     setChatHistory(loadChatHistory(chart.id));
@@ -929,6 +1006,38 @@ const Dashboard = () => {
     }
   }, [user, loadHistoryCharts]);
 
+  const hasUnsavedAnalysis = !!fullAnalysis && !savedChartId;
+
+  const clearUnsavedAnalysis = useCallback(() => {
+    localStorage.removeItem('chartDataForAnalysis');
+    localStorage.removeItem('savedFullAnalysis_simple');
+    localStorage.removeItem('savedFullAnalysis_advanced');
+    localStorage.removeItem('pendingAnalysisJob');
+    localStorage.removeItem('pendingAnalysisResult');
+    localStorage.removeItem('dashboardAnalysisMode');
+  }, []);
+
+  const protectedNavigate = useCallback((to: string) => {
+    if (hasUnsavedAnalysis) {
+      setPendingNavigation(() => () => navigate(to));
+      setShowUnsavedModal(true);
+    } else {
+      navigate(to);
+    }
+  }, [hasUnsavedAnalysis, navigate]);
+
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedAnalysis) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedAnalysis]);
+
   if (loading) {
     return (
       <div className="dashboard">
@@ -946,7 +1055,7 @@ const Dashboard = () => {
 
   return (
     <div className="dashboard">
-      <Header />
+      <Header hasUnsavedAnalysis={hasUnsavedAnalysis} onProtectedNavigate={protectedNavigate} />
 
       <div style={{
         position: 'fixed',
@@ -973,6 +1082,8 @@ const Dashboard = () => {
           onRenameChange={handleRenameChange}
           onDeleteChart={handleDeleteFromHistory}
           getSunSignEmoji={getSunSignEmoji}
+          hasUnsavedAnalysis={hasUnsavedAnalysis}
+          onProtectedNavigation={protectedNavigate}
         />
       </div>
 
@@ -1005,7 +1116,7 @@ const Dashboard = () => {
                   <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
                     <button
                       type="button"
-                      onClick={() => navigate(`/${currentLang}/`)}
+                      onClick={() => protectedNavigate(`/${currentLang}/`)}
                       style={{
                         background: 'linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%)',
                         color: 'white',
@@ -1028,7 +1139,7 @@ const Dashboard = () => {
                     </button>
                     <button
                       type="button"
-                      onClick={() => navigate(`/${currentLang}/synastry`)}
+                      onClick={() => protectedNavigate(`/${currentLang}/synastry`)}
                       style={{
                         width: '100%',
                         background: 'none',
@@ -1385,6 +1496,27 @@ const Dashboard = () => {
         onConfirm={handleConfirmDeleteFromHistory}
         chartName={chartToDelete?.name}
         deleting={deletingChart}
+      />
+
+      <UnsavedAnalysisModal
+        isOpen={showUnsavedModal}
+        onSave={() => {
+          setShowUnsavedModal(false);
+          handleSaveChartWithAnalysis();
+        }}
+        onLeave={() => {
+          setShowUnsavedModal(false);
+          clearUnsavedAnalysis();
+          setFullAnalysis(null);
+          setSimpleAnalysis(null);
+          setAdvancedAnalysis(null);
+          setChartDataForAnalysis(null);
+          localStorage.removeItem('savedChartId');
+          setSavedChartId(null);
+          pendingNavigation?.();
+          setPendingNavigation(null);
+        }}
+        saving={saving}
       />
     </div>
   );
