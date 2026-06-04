@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { astrologyAPI } from '../services/api';
 import { chartsApi } from '../services/chartsApi';
+import { getFullAnalysis } from '../services/analysisCache';
 import i18n from '../i18n';
 import Header from '../components/Header';
 import ProcessingMessage from '../components/ProcessingMessage';
@@ -153,6 +154,7 @@ const Dashboard = () => {
   });
 
   const pendingModeRef = useRef<string | null>(null);
+  const isLoadingRef = useRef(false);
   const [savedChartId, setSavedChartId] = useState<string | number | null>(() => {
     // Don't restore savedChartId if there's a pending analysis job
 
@@ -200,8 +202,8 @@ const Dashboard = () => {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [relationshipTypes, setRelationshipTypes] = useState<RelationshipTypesData | null>(null);
   const [relationshipTypesLoading, setRelationshipTypesLoading] = useState(false);
-const [showUnsavedModal, setShowUnsavedModal] = useState(false);
-   const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null);
+  const [showUnsavedModal, setShowUnsavedModal] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -274,6 +276,7 @@ const [showUnsavedModal, setShowUnsavedModal] = useState(false);
     if (!chartIdFromUrl) return;
 
     const loadChartFromUrl = async () => {
+      if (isLoadingRef.current) return;
       setChartLoading(true);
       try {
         const chartId = parseInt(chartIdFromUrl, 10);
@@ -337,7 +340,9 @@ const [showUnsavedModal, setShowUnsavedModal] = useState(false);
 
   const loadFullAnalysis = useCallback(async (mode = analysisMode) => {
     if (!chartDataForAnalysis) return;
-    setFullAnalysis(null);
+    if (isLoadingRef.current) return;
+    isLoadingRef.current = true;
+    // setFullAnalysis(null);
     setAnalysisLoading(true);
     setAnalysisError('');
 
@@ -351,51 +356,21 @@ const [showUnsavedModal, setShowUnsavedModal] = useState(false);
     }
 
     try {
-      let result;
-
-      if (chartDataForAnalysis.type === 'synastry') {
-        result = await astrologyAPI.getFullSynastryAnalysis(
-          {
-            chart1: chartDataForAnalysis.chart1,
-            chart2: chartDataForAnalysis.chart2,
-            aspects: chartDataForAnalysis.aspects,
-            overlays: chartDataForAnalysis.overlays
-          },
-          i18n.language,
-          5,
-          mode
-        );
-      } else {
-        result = await astrologyAPI.getFullChartAnalysis(
-          chartDataForAnalysis,
-          i18n.language,
-          5,
-          mode
-        );
-      }
-
-      setFullAnalysis(result.analysis);
-      if (mode === 'simple') setSimpleAnalysis(result.analysis);
-      else setAdvancedAnalysis(result.analysis);
-      // // Clear pendingAnalysisJob after successful analysis to prevent infinite loops
+      const { analysis } = await getFullAnalysis(chartDataForAnalysis, mode, i18n.language);
+      console.log('analysis received:', analysis?.substring(0, 50));
+      setFullAnalysis(analysis);
+      console.log('setFullAnalysis called');
+      if (mode === 'simple') setSimpleAnalysis(analysis);
+      else setAdvancedAnalysis(analysis);
       // localStorage.removeItem('pendingAnalysisJob');
-      const currentChartId = parseInt(localStorage.getItem('savedChartId') || '0', 10) || null;
+      // localStorage.removeItem('pendingAnalysisResult');
 
-      //изменения ЗДЕСЬ ЕСЛИ НАДО БУДЕТ ОТКАТИТЬ
+      const currentChartId = parseInt(localStorage.getItem('savedChartId') || '0', 10) || null;
       if (currentChartId) {
-        localStorage.setItem(`savedFullAnalysis_${currentChartId}_${mode}`, result.analysis);
-      }
-      // if (currentChartId) {
-      //   localStorage.setItem(`savedFullAnalysis_${currentChartId}_${mode}`, result.analysis);
-      // } else {
-      //   localStorage.setItem(`savedFullAnalysis_${mode}`, result.analysis);
-      // }
-      // ЗДЕСЬ ЗАКНЧИЛОСЬ!
-      if (currentChartId) {
+        localStorage.setItem(`savedFullAnalysis_${currentChartId}_${mode}`, analysis);
         const isSynastry = chartDataForAnalysis.type === 'synastry';
         const type = isSynastry ? `synastry_${mode}` : `full_${mode}`;
-        chartsApi.saveInterpretation(currentChartId, type, result.analysis)
-          .catch(() => {});
+        chartsApi.saveInterpretation(currentChartId, type, analysis).catch(() => {});
       }
     } catch (err) {
       const errorDetail = (err as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
@@ -408,6 +383,7 @@ const [showUnsavedModal, setShowUnsavedModal] = useState(false);
       }
     } finally {
       setAnalysisLoading(false);
+      isLoadingRef.current = false;
     }
   }, [chartDataForAnalysis, t, analysisMode, simpleAnalysis, advancedAnalysis]);
 
@@ -472,6 +448,14 @@ const [showUnsavedModal, setShowUnsavedModal] = useState(false);
       loadFullAnalysis(modeToLoad);
     }
   }, [showFullAnalysis, chartDataForAnalysis, fullAnalysis, analysisLoading, loadFullAnalysis, analysisMode, simpleAnalysis, advancedAnalysis]);
+
+  // useEffect(() => {
+  //   return () => {
+  //     if (chartDataForAnalysis && analysisMode) {
+  //       cancelAnalysis(chartDataForAnalysis, analysisMode as 'simple' | 'advanced');
+  //     }
+  //   };
+  // }, [chartDataForAnalysis, analysisMode]);
 
   // Save pending analysis result for navigation persistence (only when no saved chart yet)
   useEffect(() => {
@@ -1052,6 +1036,8 @@ const [showUnsavedModal, setShowUnsavedModal] = useState(false);
   if (!isAuthenticated) {
     return null;
   }
+
+  console.log('render: fullAnalysis=', !!fullAnalysis, 'showFullAnalysis=', showFullAnalysis, 'analysisLoading=', analysisLoading, 'chartData=', !!chartDataForAnalysis, 'savedChartId=', savedChartId);
 
   return (
     <div className="dashboard">
