@@ -43,6 +43,8 @@ interface SidebarProps {
   onRenameChange: (name: string) => void;
   onDeleteChart: (chart: ChartItem, e: React.MouseEvent) => void;
   getSunSignEmoji?: (sign: string) => string;
+  hasUnsavedAnalysis?: boolean;
+  onProtectedNavigation?: (to: string) => void;
 }
 
 const Sidebar = ({
@@ -61,6 +63,8 @@ const Sidebar = ({
   onRenameChange,
   onDeleteChart,
   getSunSignEmoji,
+  hasUnsavedAnalysis: _hasUnsavedAnalysis,
+  onProtectedNavigation,
 }: SidebarProps) => {
   const navigate = useNavigate();
   const { lang } = useParams();
@@ -306,7 +310,7 @@ const Sidebar = ({
 
       {/* Синастрия */}
       <button
-        onClick={() => navigate(`/${currentLang}/synastry`)}
+        onClick={() => onProtectedNavigation ? onProtectedNavigation(`/${currentLang}/synastry`) : navigate(`/${currentLang}/synastry`)}
         style={{
           width: '100%',
           background: 'none',

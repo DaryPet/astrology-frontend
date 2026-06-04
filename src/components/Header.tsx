@@ -9,12 +9,17 @@ interface Language {
   name: string;
 }
 
+interface HeaderProps {
+  hasUnsavedAnalysis?: boolean;
+  onProtectedNavigate?: (to: string) => void;
+}
+
 const languages: Language[] = [
   { code: 'ru', name: 'Русский' },
   { code: 'en', name: 'English' },
 ];
 
-const Header = () => {
+const Header: React.FC<HeaderProps> = ({ hasUnsavedAnalysis = false, onProtectedNavigate }) => {
   const navigate = useNavigate();
   const { user, isAuthenticated, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
@@ -37,6 +42,13 @@ const Header = () => {
     setLangOpen(false);
   };
 
+  const handleNavClick = (to: string) => (e: React.MouseEvent) => {
+    if (onProtectedNavigate && hasUnsavedAnalysis) {
+      e.preventDefault();
+      onProtectedNavigate(to);
+    }
+  };
+
   return (
     <header className="header">
       <div className="container header-content">
@@ -44,8 +56,8 @@ const Header = () => {
           {t('chart.logo')}
         </div>
         <nav className="nav">
-          <Link to={`/${currentLangCode}/`} className="nav-link">{t('nav.home')}</Link>
-          <Link to={`/${currentLangCode}/synastry`} className="nav-link">{t('nav.synastry')}</Link>
+          <Link to={`/${currentLangCode}/`} className="nav-link" onClick={handleNavClick(`/${currentLangCode}/`)}>{t('nav.home')}</Link>
+          <Link to={`/${currentLangCode}/synastry`} className="nav-link" onClick={handleNavClick(`/${currentLangCode}/synastry`)}>{t('nav.synastry')}</Link>
           {isAuthenticated ? (
             <>
               <Link to={`/${currentLangCode}/dashboard`} className="nav-link">{t('nav.dashboard')}</Link>
