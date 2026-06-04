@@ -174,7 +174,7 @@ export const astrologyAPI = {
     }
   },
 
-  getFullChartAnalysis: async (chartData: ChartData, language = 'ru', topBooks = 5, mode = 'simple') => {
+  getFullChartAnalysis: async (chartData: ChartData, language = 'ru', topBooks = 5, mode = 'simple', options?: { signal?: AbortSignal }) => {
     try {
       const response = await api.post('/analysis/full', {
         chart_data: chartData,
@@ -183,14 +183,14 @@ export const astrologyAPI = {
         mode,
         birth_date: chartData.meta?.birth_date || null,
         birth_place: chartData.meta?.birth_place || null
-      });
+      }, { signal: options?.signal });
       return response.data;
     } catch {
       return 'UTC';
     }
   },
 
-  getFullSynastryAnalysis: async (synastryData: SynastryData, language = 'ru', topBooks = 5, mode = 'simple') => {
+  getFullSynastryAnalysis: async (synastryData: SynastryData, language = 'ru', topBooks = 5, mode = 'simple', options?: { signal?: AbortSignal }) => {
     try {
       const response = await api.post('/analysis/synastry/full', {
         chart1: synastryData.chart1,
@@ -200,7 +200,7 @@ export const astrologyAPI = {
         language,
         top_k_per_book: topBooks,
         mode
-      });
+      }, { signal: options?.signal });
       return response.data;
     } catch (error) {
       throw error;
