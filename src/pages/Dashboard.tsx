@@ -1490,6 +1490,7 @@ const Dashboard = () => {
           setShowUnsavedModal(false);
           handleSaveChartWithAnalysis();
         }}
+        onCancel={() => setShowUnsavedModal(false)}
         onLeave={() => {
           setShowUnsavedModal(false);
           clearUnsavedAnalysis();
