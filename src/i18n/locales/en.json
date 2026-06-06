@@ -392,6 +392,7 @@
     "title": "Unsaved Analysis",
     "message": "You have an unsaved analysis. If you leave now, it will be lost. Save it before navigating away?",
     "save": "Save Analysis",
+    "cancel": "Cancel",
     "leave": "Leave Without Saving"
   },
   "relationshipTypes": {

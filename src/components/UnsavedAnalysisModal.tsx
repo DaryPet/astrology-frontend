@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 interface UnsavedAnalysisModalProps {
   isOpen: boolean;
   onSave: () => void;
+  onCancel: () => void;
   onLeave: () => void;
   saving?: boolean;
 }
@@ -11,6 +12,7 @@ interface UnsavedAnalysisModalProps {
 const UnsavedAnalysisModal: React.FC<UnsavedAnalysisModalProps> = ({
   isOpen,
   onSave,
+  onCancel,
   onLeave,
   saving = false
 }) => {
@@ -48,6 +50,18 @@ const UnsavedAnalysisModal: React.FC<UnsavedAnalysisModalProps> = ({
             }}
           >
             {saving ? '...' : t('unsavedModal.save')}
+          </button>
+          <button
+            onClick={onCancel}
+            disabled={saving}
+            style={{
+              flex: 1, padding: '12px',
+              background: 'none', border: '1px solid var(--border)',
+              borderRadius: '10px', color: 'var(--text-secondary)',
+              fontSize: '14px', cursor: saving ? 'default' : 'pointer'
+            }}
+          >
+            {t('unsavedModal.cancel')}
           </button>
           <button
             onClick={onLeave}
