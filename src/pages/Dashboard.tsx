@@ -387,6 +387,10 @@ const Dashboard = () => {
     }
   }, [chartDataForAnalysis, t, analysisMode, simpleAnalysis, advancedAnalysis]);
 
+  useEffect(() => {
+    isLoadingRef.current = false;
+  }, [chartIdFromUrl]);
+
   const sendChatMessage = useCallback(async () => {
     if (chatLoading) return;
     if (!chatInput.trim() || !chartDataForAnalysis || !fullAnalysis || !savedChartId) return;
