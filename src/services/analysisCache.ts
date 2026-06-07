@@ -91,9 +91,15 @@ export function getFullAnalysis(
   mode: 'simple' | 'advanced',
   language: string
 ): Promise<{ analysis: string }> {
-  const chartName = (chartData.name as string) ?? 'unknown';
+  // const chartName = (chartData.name as string) ?? 'unknown';
+  // const chartType = (chartData.type as string) ?? 'chart';
+  // const key = `${chartType}-${chartName}-${mode}` as AnalysisKey;
+  const chartName = (chartData.name as string)
+  ?? (chartData.type === 'synastry'
+    ? `${chartData.person1_name ?? 'p1'}_${chartData.person2_name ?? 'p2'}`
+    : 'unknown');
   const chartType = (chartData.type as string) ?? 'chart';
-  const key = `${chartType}-${chartName}-${mode}` as AnalysisKey;
+  const key = `${chartType}-${chartName}-${mode}`;
 
   // Если запрос уже идёт — возвращаем тот же промис, новый к LLM не уходит
   const existing = analysisCache.get(key);
@@ -130,7 +136,7 @@ export function getFullAnalysis(
       return { analysis: result.analysis };
     } finally {
       // Чистим в любом случае — успех или ошибка
-      analysisCache.delete(key);
+      // analysisCache.delete(key);
     }
   })();
 
