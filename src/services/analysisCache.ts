@@ -96,7 +96,7 @@ export function getFullAnalysis(
   // const key = `${chartType}-${chartName}-${mode}` as AnalysisKey;
   const chartName = (chartData.name as string)
   ?? (chartData.type === 'synastry'
-    ? `${chartData.person1_name ?? 'p1'}_${chartData.person2_name ?? 'p2'}`
+    ? `${chartData.person1_name ?? 'p1'}_${chartData.person2_name ?? 'p2'}_${chartData.relationship_context ?? 'default'}`
     : 'unknown');
   const chartType = (chartData.type as string) ?? 'chart';
   const key = `${chartType}-${chartName}-${mode}`;
@@ -118,6 +118,7 @@ export function getFullAnalysis(
             chart2: chartData.chart2,
             aspects: chartData.aspects,
             overlays: chartData.overlays,
+            relationship_context: chartData.relationship_context as string | undefined,
           },
           language,
           5,

@@ -296,6 +296,14 @@
     "getFullAnalysis": "Получить полный анализ совместимости",
     "fullAnalysis": {
       "title": "Полный анализ синастрии"
+    },
+    "relationshipContext": {
+      "label": "Тип отношений для анализа",
+      "default": "Стандартный анализ",
+      "relatives": "Родственники",
+      "partner": "Партнеры/пара",
+      "colleagues": "Коллеги/бизнес-партнеры",
+      "friends": "Друзья"
     }
   },
   "planets": {

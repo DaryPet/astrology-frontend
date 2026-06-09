@@ -76,6 +76,9 @@ function Synastry() {
   const [analysisMode, setAnalysisMode] = useState<string>(() => {
     return localStorage.getItem('synastryAnalysisMode') || 'simple';
   });
+  const [relationshipContext, setRelationshipContext] = useState<string>(() => {
+    return localStorage.getItem('synastryRelationshipContext') || 'default';
+  });
 
   useEffect(() => {
     const savedSynastry = localStorage.getItem('savedSynastry');
@@ -223,9 +226,10 @@ function Synastry() {
       aspects: synastryData.aspects || [],
       person1_name: personNames.p1,
       person2_name: personNames.p2,
-      type: 'synastry'
+      type: 'synastry',
+      relationship_context: relationshipContext
     };
-  }, []);
+  }, [relationshipContext]);
 
   const chart1Data = synastry?.chart1;
   const chart2Data = synastry?.chart2;
@@ -235,6 +239,7 @@ function Synastry() {
     if (!synastryDataForAnalysis) return;
 
     localStorage.setItem('synastryAnalysisMode', analysisMode);
+    localStorage.setItem('synastryRelationshipContext', relationshipContext);
 
     localStorage.removeItem('savedFullAnalysis');
     localStorage.removeItem('savedChartId');
@@ -279,8 +284,10 @@ function Synastry() {
     setSelectedAspectData(null);
     setAspectAnalysis(null);
     setError('');
+    setRelationshipContext('default');
     localStorage.removeItem('savedSynastry');
     localStorage.removeItem('savedPersonNames');
+    localStorage.removeItem('synastryRelationshipContext');
     Object.keys(localStorage).forEach(key => {
       if (key.startsWith('aspectAnalysis_')) {
         localStorage.removeItem(key);
@@ -407,6 +414,34 @@ function Synastry() {
               {!loading && !isNavigating && synastry && (
                 <div style={{ textAlign: 'center', marginTop: '24px' }}>
                   <AnalysisModeToggle value={analysisMode} onChange={setAnalysisMode} />
+                  <div style={{ marginTop: '16px', marginBottom: '16px' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-primary)', fontSize: '14px' }}>
+                      {t('synastry.relationshipContext.label')}
+                    </label>
+                    <select
+                      value={relationshipContext}
+                      onChange={(e) => {
+                        setRelationshipContext(e.target.value);
+                        localStorage.setItem('synastryRelationshipContext', e.target.value);
+                      }}
+                      style={{
+                        padding: '8px 12px',
+                        borderRadius: '6px',
+                        border: '1px solid var(--border)',
+                        background: 'var(--background)',
+                        color: 'var(--text-primary)',
+                        fontSize: '14px',
+                        cursor: 'pointer',
+                        minWidth: '200px'
+                      }}
+                    >
+                      <option value="default">{t('synastry.relationshipContext.default')}</option>
+                      <option value="relatives">{t('synastry.relationshipContext.relatives')}</option>
+                      <option value="partner">{t('synastry.relationshipContext.partner')}</option>
+                      <option value="colleagues">{t('synastry.relationshipContext.colleagues')}</option>
+                      <option value="friends">{t('synastry.relationshipContext.friends')}</option>
+                    </select>
+                  </div>
                   <button
                     type="button"
                     className="btn-full-analysis"

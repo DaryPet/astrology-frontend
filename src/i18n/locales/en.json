@@ -296,6 +296,14 @@
     "getFullAnalysis": "Get Full Compatibility Analysis",
     "fullAnalysis": {
       "title": "Full Synastry Analysis"
+    },
+    "relationshipContext": {
+      "label": "Relationship type for analysis",
+      "default": "Default analysis",
+      "relatives": "Relatives",
+      "partner": "Partners/couple",
+      "colleagues": "Colleagues/business partners",
+      "friends": "Friends"
     }
   },
   "planets": {
