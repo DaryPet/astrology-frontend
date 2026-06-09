@@ -42,6 +42,7 @@ interface SynastryData {
   person1_name?: string;
   person2_name?: string;
   name?: string;
+  relationship_context?: string;
   [key: string]: unknown;
 }
 
@@ -199,7 +200,8 @@ export const astrologyAPI = {
         overlays: synastryData.overlays,
         language,
         top_k_per_book: topBooks,
-        mode
+        mode,
+        relationship_context: synastryData.relationship_context
       }, { signal: options?.signal });
       return response.data;
     } catch (error) {
