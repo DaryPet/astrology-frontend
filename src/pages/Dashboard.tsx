@@ -20,7 +20,9 @@ import AspectAnalysisModal from '../components/AspectAnalysisModal';
 import AnalysisModeToggle from '../components/AnalysisModeToggle';
 import RelationshipTypesBar from '../components/RelationshipTypesBar';
 import UnsavedAnalysisModal from '../components/UnsavedAnalysisModal';
-import { loadChatHistory, saveChatHistory, isNearLimit, isAtLimit, MAX_MESSAGES, type ChatMessage } from '../services/chatStorage';
+import ProgressionsPanel from '../components/ProgressionsPanel';
+import type { ProgressionsData } from '../services/api';
+import { isNearLimit, isAtLimit, MAX_MESSAGES, type ChatMessage } from '../services/chatStorage';
 
 interface ChartPlanet {
   full_degree?: number;
@@ -172,7 +174,12 @@ const Dashboard = () => {
   });
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
-  const [chatLoading, setChatLoading] = useState(false);
+  // Карты, для которых сейчас летит запрос к астрологу (ответ приходит в фоне)
+  const [pendingChatCharts, setPendingChatCharts] = useState<Set<number>>(new Set());
+  // Актуальная карта в любой момент — для фоновых ответов чата
+  const savedChartIdRef = useRef<string | number | null>(null);
+  // Индикатор «печатает» только для ТЕКУЩЕЙ карты
+  const chatLoading = savedChartId != null && pendingChatCharts.has(Number(savedChartId));
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [historyCharts, setHistoryCharts] = useState<HistoryChart[]>([]);
@@ -189,7 +196,11 @@ const Dashboard = () => {
   const [showPlanetTable, setShowPlanetTable] = useState(false);
   const [chartLoading, setChartLoading] = useState(false);
   const handleTogglePlanetTable = () => {
-    setShowPlanetTable(prev => !prev);
+    setShowPlanetTable(prev => {
+      const next = !prev;
+      if (next) setShowProgressions(false); // таблица планет и прогрессии — взаимоисключающие виды
+      return next;
+    });
   };
   const [selectedPlanet, setSelectedPlanet] = useState<ChartPlanet | null>(null);
   const [planetAnalysis, setPlanetAnalysis] = useState<string | null>(null);
@@ -204,6 +215,29 @@ const Dashboard = () => {
   const [relationshipTypesLoading, setRelationshipTypesLoading] = useState(false);
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null);
+  // Прогрессии — доступны ТОЛЬКО для сохранённых карт (как чат)
+  const [showProgressions, setShowProgressions] = useState(false);
+  const [progressionsData, setProgressionsData] = useState<ProgressionsData | null>(null);
+  const [progressionsAnalysis, setProgressionsAnalysis] = useState<string | null>(null);
+  const [progressionsLoading, setProgressionsLoading] = useState(false);
+  const [progressionsError, setProgressionsError] = useState<string>('');
+
+  // Держим ref в актуальном состоянии для фоновых ответов чата
+  useEffect(() => {
+    savedChartIdRef.current = savedChartId;
+  }, [savedChartId]);
+
+  const loadChatForChart = async (chartId: number | string) => {
+    try {
+      const dbMessages = await chartsApi.getChatMessages(Number(chartId));
+      // Защита от гонки: пока грузили, юзер мог уйти на другую карту
+      if (Number(savedChartIdRef.current) !== Number(chartId)) return;
+      // Ставим историю ВСЕГДА (включая пустую) — иначе чат предыдущей карты утечёт в новую
+      setChatHistory(dbMessages as ChatMessage[]);
+    } catch (err) {
+      console.error('Failed to load chat history:', err);
+    }
+  };
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -257,6 +291,7 @@ const Dashboard = () => {
           // Clear savedChartId since this is a pending (not yet saved) analysis
           localStorage.removeItem('savedChartId');
           setSavedChartId(null);
+          savedChartIdRef.current = null;
           setShowFullAnalysis(true);
         }
       } catch {
@@ -284,7 +319,15 @@ const Dashboard = () => {
         const chart = await chartsApi.getChart(chartId);
         setChartDataForAnalysis(chart.chart_data ?? null);
         setChatVisible(false);
-        setChatHistory(loadChatHistory(chart.id));
+        resetProgressions();
+        setSavedChartId(chart.id);
+        savedChartIdRef.current = chart.id;
+
+        // Load chat history from database (с предварительной очисткой — без утечки между картами)
+        setChatHistory([]);
+        loadChatForChart(chart.id).catch(err => {
+          console.error('Failed to load chat history:', err);
+        });
         setChatInput('');
 
         const isSynastry = chart.chart_data?.type === 'synastry';
@@ -318,6 +361,7 @@ const Dashboard = () => {
         localStorage.setItem('chartDataForAnalysis', JSON.stringify(chart.chart_data ?? {}));
         localStorage.setItem('savedChartId', String(chart.id));
         setSavedChartId(chart.id);
+        savedChartIdRef.current = chart.id;
 
         if (!isSynastry) {
           const planetAnalyses = await chartsApi.getPlanetAnalyses(Number(chart.id));
@@ -391,22 +435,97 @@ const Dashboard = () => {
     isLoadingRef.current = false;
   }, [chartIdFromUrl]);
 
+  // Сброс состояния прогрессий (при смене карты / выходе)
+  const resetProgressions = useCallback(() => {
+    setShowProgressions(false);
+    setProgressionsData(null);
+    setProgressionsAnalysis(null);
+    setProgressionsError('');
+  }, []);
+
+  // Загрузка прогрессий: расчёт позиций (дёшево, всегда свежий) +
+  // AI-анализ (кэшируется в Supabase по chart_id + режим + период YYYY-MM)
+  const loadProgressions = useCallback(async (mode = analysisMode) => {
+    // Гейтинг — как у чата: только для сохранённых карт с готовым анализом
+    if (!chartDataForAnalysis || !savedChartId) return;
+    if (chartDataForAnalysis.type === 'synastry') return;
+
+    const meta = chartDataForAnalysis.meta;
+    if (!meta?.birth_date) {
+      setProgressionsError(t('dashboard.progressions.noBirthData'));
+      return;
+    }
+
+    setProgressionsLoading(true);
+    setProgressionsError('');
+
+    try {
+      const period = new Date().toISOString().slice(0, 7); // YYYY-MM
+
+      // 1. Расчёт прогрессивных позиций (Swiss Ephemeris, без LLM)
+      const data = await astrologyAPI.calculateProgressions({
+        birth_date: meta.birth_date,
+        birth_place: meta.birth_place,
+        latitude: meta.latitude,
+        longitude: meta.longitude,
+        timezone: meta.timezone,
+        house_system: (chartDataForAnalysis.houses_meta as { house_system?: string } | undefined)?.house_system || 'Placidus'
+      });
+      setProgressionsData(data);
+
+      // 2. AI-анализ: сначала из БД (по периоду и режиму)
+      const cached = await chartsApi.getProgressionsAnalysis(Number(savedChartId), mode, period);
+      if (cached) {
+        setProgressionsAnalysis(cached);
+        return;
+      }
+
+      // 3. Нет в кэше — запрашиваем LLM и сохраняем
+      const result = await astrologyAPI.getProgressionsAnalysis({
+        natal_chart: chartDataForAnalysis,
+        progression_data: data,
+        language: i18n.language || 'ru'
+      }, mode);
+
+      setProgressionsAnalysis(result.analysis);
+      chartsApi.saveProgressionsAnalysis(Number(savedChartId), mode, period, result.analysis).catch(err => {
+        console.error('Failed to save progressions analysis:', err);
+      });
+    } catch (err) {
+      const errorDetail = (err as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
+      setProgressionsError(typeof errorDetail === 'string' ? errorDetail : t('dashboard.progressions.error'));
+    } finally {
+      setProgressionsLoading(false);
+    }
+  }, [chartDataForAnalysis, savedChartId, analysisMode, t]);
+
+  // При смене режима (simple/advanced) — перезагружаем анализ прогрессий для нового режима
+  useEffect(() => {
+    if (!showProgressions) return;
+    setProgressionsAnalysis(null);
+    loadProgressions(analysisMode);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [analysisMode]);
+
   const sendChatMessage = useCallback(async () => {
     if (chatLoading) return;
-    if (!chatInput.trim() || !chartDataForAnalysis || !fullAnalysis || !savedChartId) return;
+    if (!chatInput.trim() || !chartDataForAnalysis || !fullAnalysis || !savedChartId || !user) return;
+
+    // Фиксируем карту и юзера НА МОМЕНТ ОТПРАВКИ — ответ может прийти, когда юзер уже на другой карте
+    const chartIdAtSend = Number(savedChartId);
+    const userId = user.id;
 
     const questionText = chatInput.trim();
     const currentHistory = [...chatHistory];
     const userMessage = { role: 'user' as const, content: questionText };
-
-    setChatHistory(prev => {
-      const updated = [...prev, userMessage];
-      saveChatHistory(savedChartId, updated);
-      return updated;
+    setChatHistory(prev => [...prev, userMessage]);
+    // В БД пишем ТОЛЬКО новое сообщение (не всю историю) — без дублей
+    chartsApi.appendChatMessages(chartIdAtSend, userId, [userMessage]).catch(err => {
+      console.error('Failed to save chat message:', err);
     });
     setChatInput('');
 
-    setChatLoading(true);
+    setPendingChatCharts(prev => new Set(prev).add(chartIdAtSend));
     try {
       const response = await astrologyAPI.chatAnalysis({
         question: questionText,
@@ -421,20 +540,30 @@ const Dashboard = () => {
         content: (response as { data?: { answer?: string; relevant_chunks?: unknown[] } })?.data?.answer || t('dashboard.chat.noAnswer'),
         relevant_chunks: (response as { data?: { relevant_chunks?: unknown[] } })?.data?.relevant_chunks || []
       };
-      setChatHistory(prev => {
-        const updated = [...prev, botMessage];
-        saveChatHistory(savedChartId, updated);
-        return updated;
+      // Ответ ВСЕГДА сохраняем в БД для той карты, где был задан вопрос
+      chartsApi.appendChatMessages(chartIdAtSend, userId, [botMessage]).catch(err => {
+        console.error('Failed to save chat message:', err);
       });
+      // UI обновляем только если юзер сейчас на той же карте; иначе ответ подтянется из БД при возврате
+      if (Number(savedChartIdRef.current) === chartIdAtSend) {
+        setChatHistory(prev => [...prev, botMessage]);
+      }
     } catch (error) {
-      setChatHistory(prev => [...prev, {
-        role: 'assistant' as const,
-        content: t('dashboard.chat.errorWithDetails', { error: (error as Error).message })
-      }]);
+      // Ошибку показываем только на той же карте и в БД не пишем
+      if (Number(savedChartIdRef.current) === chartIdAtSend) {
+        setChatHistory(prev => [...prev, {
+          role: 'assistant' as const,
+          content: t('dashboard.chat.errorWithDetails', { error: (error as Error).message })
+        }]);
+      }
     } finally {
-      setChatLoading(false);
+      setPendingChatCharts(prev => {
+        const next = new Set(prev);
+        next.delete(chartIdAtSend);
+        return next;
+      });
     }
-  }, [chatInput, chatLoading, chartDataForAnalysis, fullAnalysis, savedChartId, chatHistory, t]);
+  }, [chatInput, chatLoading, chartDataForAnalysis, fullAnalysis, savedChartId, chatHistory, user, t]);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -563,7 +692,17 @@ const Dashboard = () => {
         : await chartsApi.saveChartWithInterpretation(user.id, chartDataForAnalysis, fullAnalysis, planetAnalyses, simpleAnalysis ?? undefined, advancedAnalysis ?? undefined);
 
       setSavedChartId(saved.id);
+      savedChartIdRef.current = saved.id;
       localStorage.setItem('savedChartId', String(saved.id));
+
+      // Save chat history to database
+      if (chatHistory.length > 0) {
+        try {
+          await chartsApi.saveChatMessages(Number(saved.id), user.id, chatHistory);
+        } catch (err) {
+          console.error('Failed to save chat history:', err);
+        }
+      }
 
       // Clear pending analysis items since we've saved the chart
       localStorage.removeItem('pendingAnalysisJob');
@@ -617,7 +756,17 @@ const Dashboard = () => {
         : await chartsApi.saveChartWithInterpretation(user.id, chartDataWithNewName, fullAnalysis, planetAnalyses, simpleAnalysis ?? undefined, advancedAnalysis ?? undefined);
 
       setSavedChartId(saved.id);
+      savedChartIdRef.current = saved.id;
       localStorage.setItem('savedChartId', saved.id.toString());
+
+      // Save chat history to database
+      if (chatHistory.length > 0) {
+        try {
+          await chartsApi.saveChatMessages(Number(saved.id), user.id, chatHistory);
+        } catch (err) {
+          console.error('Failed to save chat history:', err);
+        }
+      }
 
       // Clear pending analysis items since we've saved the chart
       localStorage.removeItem('pendingAnalysisJob');
@@ -850,8 +999,15 @@ const Dashboard = () => {
       setPendingNavigation(() => () => {
         setChartDataForAnalysis(chart.chart_data ?? null);
         setChatVisible(false);
-        setChatHistory(loadChatHistory(chart.id));
+        resetProgressions();
+        setSavedChartId(chart.id);
+        savedChartIdRef.current = chart.id;
         setChatInput('');
+        // Чат: очистка + загрузка истории выбранной карты из БД
+        setChatHistory([]);
+        loadChatForChart(chart.id).catch(err => {
+          console.error('Failed to load chat history:', err);
+        });
         setShowPlanetTable(false);
         setSimpleAnalysis(null);
         setAdvancedAnalysis(null);
@@ -876,7 +1032,6 @@ const Dashboard = () => {
 
         localStorage.setItem('chartDataForAnalysis', JSON.stringify(chart.chart_data ?? {}));
         localStorage.setItem('savedChartId', String(chart.id));
-        setSavedChartId(chart.id);
 
         if (!isSynastry) {
           chartsApi.getPlanetAnalyses(Number(chart.id)).then(planetAnalyses => {
@@ -898,7 +1053,15 @@ const Dashboard = () => {
 
     setChartDataForAnalysis(chart.chart_data ?? null);
     setChatVisible(false);
-    setChatHistory(loadChatHistory(chart.id));
+    resetProgressions();
+    setSavedChartId(chart.id);
+    savedChartIdRef.current = chart.id;
+
+    // Load chat history from database (с предварительной очисткой — без утечки между картами)
+    setChatHistory([]);
+    loadChatForChart(chart.id).catch(err => {
+      console.error('Failed to load chat history:', err);
+    });
     setChatInput('');
     setShowPlanetTable(false);
     setSimpleAnalysis(null);
@@ -924,7 +1087,6 @@ const Dashboard = () => {
 
     localStorage.setItem('chartDataForAnalysis', JSON.stringify(chart.chart_data ?? {}));
     localStorage.setItem('savedChartId', String(chart.id));
-    setSavedChartId(chart.id);
 
     if (!isSynastry) {
       chartsApi.getPlanetAnalyses(Number(chart.id)).then(planetAnalyses => {
@@ -952,6 +1114,10 @@ const Dashboard = () => {
     setDeletingChart(true);
     try {
       await chartsApi.deleteChart(Number(chartToDelete.id));
+      // Clear chat if currently viewing the deleted chart
+      if (savedChartId === chartToDelete.id) {
+        setChatHistory([]);
+      }
       setConfirmDeleteModal(false);
       setChartToDelete(null);
       loadHistoryCharts();
@@ -1282,6 +1448,57 @@ const Dashboard = () => {
                       </button>
                     )}
 
+                    {savedChartId && fullAnalysis && chartDataForAnalysis?.type !== 'synastry' && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const next = !showProgressions;
+                          setShowProgressions(next);
+                          if (next) {
+                            setShowPlanetTable(false);
+                            if (!progressionsData) loadProgressions();
+                            setTimeout(() => {
+                              const el = document.getElementById('progressions-section');
+                              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            }, 100);
+                          }
+                        }}
+                        style={{
+                          flex: 1,
+                          minWidth: '200px',
+                          background: showProgressions
+                            ? 'linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%)'
+                            : 'none',
+                          border: showProgressions ? 'none' : '1px solid var(--border)',
+                          borderRadius: '10px',
+                          color: showProgressions ? 'white' : 'var(--text-secondary)',
+                          padding: '10px 16px',
+                          fontSize: '14px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '8px',
+                          transition: 'all 0.15s',
+                        }}
+                        onMouseEnter={e => {
+                          if (!showProgressions) {
+                            e.currentTarget.style.borderColor = 'var(--accent)';
+                            e.currentTarget.style.color = 'var(--text-primary)';
+                          }
+                        }}
+                        onMouseLeave={e => {
+                          if (!showProgressions) {
+                            e.currentTarget.style.borderColor = 'var(--border)';
+                            e.currentTarget.style.color = 'var(--text-secondary)';
+                          }
+                        }}
+                      >
+                        <span>📈</span>
+                        {showProgressions ? t('dashboard.progressions.hide') : t('dashboard.progressions.show')}
+                      </button>
+                    )}
+
                     <button
                       onClick={handleTogglePlanetTable}
                       style={{
@@ -1313,6 +1530,17 @@ const Dashboard = () => {
                       {showPlanetTable ? t('dashboard.actions.fullAnalysis') : (chartDataForAnalysis?.type === 'synastry' ? t('dashboard.actions.aspectAnalysis') : t('dashboard.actions.planetAnalysis'))}
                     </button>
                   </div>
+
+                  {showProgressions && !showPlanetTable && savedChartId && (
+                    <div id="progressions-section">
+                      <ProgressionsPanel
+                        data={progressionsData}
+                        analysis={progressionsAnalysis}
+                        loading={progressionsLoading}
+                        error={progressionsError}
+                      />
+                    </div>
+                  )}
 
                   {!showPlanetTable && (
                     <>
@@ -1502,8 +1730,10 @@ const Dashboard = () => {
           setSimpleAnalysis(null);
           setAdvancedAnalysis(null);
           setChartDataForAnalysis(null);
+          resetProgressions();
           localStorage.removeItem('savedChartId');
           setSavedChartId(null);
+          savedChartIdRef.current = null;
           pendingNavigation?.();
           setPendingNavigation(null);
         }}

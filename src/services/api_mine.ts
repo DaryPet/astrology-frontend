@@ -9,16 +9,6 @@ const api = axios.create({
   }
 });
 
-// Прикрепляем Supabase-токен: защищённые эндпоинты (chat, progressions, analysis)
-// требуют Authorization: Bearer (см. get_current_user на бэкенде)
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('auth_token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
 interface LocationInfo {
   timezone?: string;
   lat?: string | number;
@@ -54,45 +44,6 @@ interface SynastryData {
   name?: string;
   relationship_context?: string;
   [key: string]: unknown;
-}
-
-export interface ProgressedPlanet {
-  planet: string;
-  sign: string;
-  sign_ru?: string;
-  degree: number;
-  full_degree: number;
-  speed?: number;
-  is_retrograde?: boolean;
-  natal_house?: number | null;
-  changed_sign?: boolean;
-  natal_sign?: string;
-}
-
-export interface ProgressionAspect {
-  progressed: string;
-  natal: string;
-  planet1: string;
-  planet2: string;
-  aspect: string;
-  aspect_ru?: string;
-  orb: number;
-  exactness?: number;
-}
-
-export interface ProgressionsData {
-  type: 'progressions';
-  method: string;
-  period: string;
-  age_years: number;
-  target_date?: string;
-  progressed_planets: Record<string, ProgressedPlanet>;
-  progressed_ascendant?: { sign?: string; sign_ru?: string; degree?: number };
-  progressed_mc?: { sign?: string; sign_ru?: string; degree?: number };
-  progressed_houses?: Record<string, unknown>;
-  aspects_to_natal: ProgressionAspect[];
-  natal_summary?: Record<string, string>;
-  meta?: Record<string, unknown>;
 }
 
 // Геокодинг API методы
@@ -269,31 +220,6 @@ export const astrologyAPI = {
     } catch (error) {
       throw error;
     }
-  },
-
-  /**
-   * Расчёт вторичных прогрессий («день за год»). Требует авторизацию —
-   * доступно только для сохранённых карт (как чат).
-   */
-  calculateProgressions: async (data: Record<string, unknown>): Promise<ProgressionsData> => {
-    const response = await api.post('/progressions', data);
-    return response.data;
-  },
-
-  /**
-   * AI-анализ вторичных прогрессий (RAG по книгам + LLM).
-   * @param payload - { natal_chart, progression_data, language }
-   * @param mode - 'simple' | 'advanced'
-   */
-  getProgressionsAnalysis: async (
-    payload: Record<string, unknown>,
-    mode = 'simple'
-  ): Promise<{ analysis: string; summary?: string; progressions_summary?: Record<string, unknown> }> => {
-    const response = await api.post('/analysis/progressions', {
-      ...payload,
-      mode
-    });
-    return response.data;
   },
 
   chatAnalysis: async (chatRequest: unknown): Promise<unknown> => {
