@@ -188,6 +188,8 @@ export const astrologyAPI = {
       return response.data;
     } catch {
       return 'UTC';
+    } catch (error) {
+      throw error;
     }
   },
 
