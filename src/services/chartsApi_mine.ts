@@ -235,31 +235,6 @@ export const chartsApi = {
     return data || [];
   },
 
-  /**
-   * Сохранить AI-анализ прогрессий в chart_interpretations:
-   * type='progressions_simple'/'progressions_advanced', name=период 'YYYY-MM'
-   * (тот же паттерн, что full_simple/full_advanced и планетные анализы)
-   */
-  async saveProgressionsAnalysis(chartId: number, mode: string, period: string, analysis: string) {
-    return this.saveInterpretation(chartId, `progressions_${mode}`, analysis, period);
-  },
-
-  /**
-   * Получить сохранённый анализ прогрессий за период (или null)
-   */
-  async getProgressionsAnalysis(chartId: number, mode: string, period: string): Promise<string | null> {
-    const { data, error } = await supabase
-      .from('chart_interpretations')
-      .select('interpretation')
-      .eq('chart_id', chartId)
-      .eq('type', `progressions_${mode}`)
-      .eq('name', period)
-      .maybeSingle();
-
-    if (error) throw error;
-    return data?.interpretation ?? null;
-  },
-
   async saveRelationshipTypes(chartId: number, data: unknown) {
     return this.saveInterpretation(chartId, 'relationship_types', JSON.stringify(data));
   },
@@ -320,35 +295,24 @@ export const chartsApi = {
     return data;
   },
 
-  // Маппинг сообщения чата в строку таблицы chat_messages
-  _toChatRow(chartId: number, userId: string, msg: { role: string; content: string; relevant_chunks?: unknown[] }) {
-    return {
+  async saveChatMessages(chartId: number, messages: Array<{ role: string; content: string; relevant_chunks?: unknown[] }>) {
+    if (!chartId || !messages?.length) return;
+
+    const chatMessages = messages.map(msg => ({
       chart_id: chartId,
-      user_id: userId,
       role: msg.role,
       content: msg.content,
-      relevant_chunks: msg.relevant_chunks?.length ? JSON.stringify(msg.relevant_chunks) : null,
-    };
-  },
-
-  // Добавляет ТОЛЬКО новые сообщения (по одному за обмен) — без дублирования истории
-  async appendChatMessages(chartId: number, userId: string, newMessages: Array<{ role: string; content: string; relevant_chunks?: unknown[] }>) {
-    if (!chartId || !userId || !newMessages?.length) return;
+      relevant_chunks: msg.relevant_chunks ? JSON.stringify(msg.relevant_chunks) : null,
+    }));
 
     const { error } = await supabase
       .from('chat_messages')
-      .insert(newMessages.map(msg => this._toChatRow(chartId, userId, msg)));
+      .insert(chatMessages);
 
     if (error) throw error;
   },
 
-  // Разовая запись всей накопленной истории (используется при первом сохранении карты)
-  async saveChatMessages(chartId: number, userId: string, messages: Array<{ role: string; content: string; relevant_chunks?: unknown[] }>) {
-    if (!chartId || !userId || !messages?.length) return;
-    await this.appendChatMessages(chartId, userId, messages);
-  },
-
-  async getChatMessages(chartId: number): Promise<Array<{ role: 'user' | 'assistant'; content: string; relevant_chunks?: unknown[] }>> {
+  async getChatMessages(chartId: number): Promise<Array<{ role: string; content: string; relevant_chunks?: unknown[] }>> {
     if (!chartId) return [];
 
     const { data, error } = await supabase
@@ -359,21 +323,11 @@ export const chartsApi = {
 
     if (error) throw error;
 
-    return (data || []).map(msg => {
-      let chunks: unknown[] | undefined;
-      if (msg.relevant_chunks) {
-        try {
-          chunks = typeof msg.relevant_chunks === 'string' ? JSON.parse(msg.relevant_chunks) : msg.relevant_chunks;
-        } catch {
-          chunks = undefined;
-        }
-      }
-      return {
-        role: msg.role as 'user' | 'assistant',
-        content: msg.content,
-        relevant_chunks: chunks,
-      };
-    });
+    return (data || []).map(msg => ({
+      role: msg.role,
+      content: msg.content,
+      relevant_chunks: msg.relevant_chunks,
+    }));
   },
 
   CHARTS_LIMIT,

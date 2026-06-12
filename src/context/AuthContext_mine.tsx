@@ -56,21 +56,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     // Проверяем текущую сессию при загрузке
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
-      if (session?.access_token) {
-        localStorage.setItem('auth_token', session.access_token);
-      }
       setLoading(false);
     });
 
     // Слушаем изменения авторизации (вход/выход)
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
-
-      if (session?.access_token) {
-        localStorage.setItem('auth_token', session.access_token);
-      } else {
-        localStorage.removeItem('auth_token');
-      }
 
       if (session?.user) {
         ensureUserProfile(session.user.id);
