@@ -67,6 +67,12 @@ export interface ProgressedPlanet {
   natal_house?: number | null;
   changed_sign?: boolean;
   natal_sign?: string;
+  // дом натальной планеты и факт перехода прогрессивной планеты в другой дом
+  natal_planet_house?: number | null;
+  changed_house?: boolean;
+  natal_degree?: number;
+  // через сколько лет планета сменит знак (считается для Солнца и Луны)
+  years_to_next_sign?: number;
 }
 
 export interface ProgressionAspect {
@@ -78,6 +84,18 @@ export interface ProgressionAspect {
   aspect_ru?: string;
   orb: number;
   exactness?: number;
+  // сходящийся (true) / расходящийся (false)
+  applying?: boolean;
+  natal_house?: number | null;
+  progressed_house?: number | null;
+  progressed_sign?: string;
+  natal_sign?: string;
+}
+
+export interface LunarPhase {
+  angle: number;
+  phase: string;
+  phase_ru?: string;
 }
 
 export interface ProgressionsData {
@@ -87,6 +105,7 @@ export interface ProgressionsData {
   age_years: number;
   target_date?: string;
   progressed_planets: Record<string, ProgressedPlanet>;
+  lunar_phase?: LunarPhase | null;
   progressed_ascendant?: { sign?: string; sign_ru?: string; degree?: number };
   progressed_mc?: { sign?: string; sign_ru?: string; degree?: number };
   progressed_houses?: Record<string, unknown>;

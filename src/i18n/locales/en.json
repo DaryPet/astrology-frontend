@@ -201,7 +201,17 @@
       "orb": "orb",
       "analysisTitle": "Progressions analysis",
       "error": "Failed to calculate progressions. Please try again.",
-      "noBirthData": "This chart has no birth data required for progressions"
+      "noBirthData": "This chart has no birth data required for progressions",
+      "lunarPhase": "Lunar Phase",
+      "changedHouse": "changed house",
+      "applying": "applying",
+      "separating": "separating",
+      "nextSignIn": "sign change in",
+      "yearsShort": "y"
+    },
+    "tabs": {
+      "natal": "Natal Chart",
+      "progressions": "Progressions"
     }
   },
   "confirm": {

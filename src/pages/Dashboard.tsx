@@ -21,6 +21,7 @@ import AnalysisModeToggle from '../components/AnalysisModeToggle';
 import RelationshipTypesBar from '../components/RelationshipTypesBar';
 import UnsavedAnalysisModal from '../components/UnsavedAnalysisModal';
 import ProgressionsPanel from '../components/ProgressionsPanel';
+import AnalysisTabs, { AnalysisTabId } from '../components/AnalysisTabs';
 import type { ProgressionsData } from '../services/api';
 import { isNearLimit, isAtLimit, MAX_MESSAGES, type ChatMessage } from '../services/chatStorage';
 
@@ -217,6 +218,8 @@ const Dashboard = () => {
   const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null);
   // Прогрессии — доступны ТОЛЬКО для сохранённых карт (как чат)
   const [showProgressions, setShowProgressions] = useState(false);
+  // Активный таб анализа: натальная карта (по умолчанию) | прогрессии
+  const [analysisTab, setAnalysisTab] = useState<AnalysisTabId>('natal');
   const [progressionsData, setProgressionsData] = useState<ProgressionsData | null>(null);
   const [progressionsAnalysis, setProgressionsAnalysis] = useState<string | null>(null);
   const [progressionsLoading, setProgressionsLoading] = useState(false);
@@ -438,6 +441,7 @@ const Dashboard = () => {
   // Сброс состояния прогрессий (при смене карты / выходе)
   const resetProgressions = useCallback(() => {
     setShowProgressions(false);
+    setAnalysisTab('natal');
     setProgressionsData(null);
     setProgressionsAnalysis(null);
     setProgressionsError('');
@@ -1423,6 +1427,8 @@ const Dashboard = () => {
                         type="button"
                         onClick={() => {
                           setShowPlanetTable(false);
+                          setAnalysisTab('natal');
+                          setShowProgressions(false);
                           setTimeout(() => {
                             const el = document.getElementById('chat-section');
                             if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1445,57 +1451,6 @@ const Dashboard = () => {
                         }}
                       >
                         {t('dashboard.chat.open')}
-                      </button>
-                    )}
-
-                    {savedChartId && fullAnalysis && chartDataForAnalysis?.type !== 'synastry' && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const next = !showProgressions;
-                          setShowProgressions(next);
-                          if (next) {
-                            setShowPlanetTable(false);
-                            if (!progressionsData) loadProgressions();
-                            setTimeout(() => {
-                              const el = document.getElementById('progressions-section');
-                              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                            }, 100);
-                          }
-                        }}
-                        style={{
-                          flex: 1,
-                          minWidth: '200px',
-                          background: showProgressions
-                            ? 'linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%)'
-                            : 'none',
-                          border: showProgressions ? 'none' : '1px solid var(--border)',
-                          borderRadius: '10px',
-                          color: showProgressions ? 'white' : 'var(--text-secondary)',
-                          padding: '10px 16px',
-                          fontSize: '14px',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '8px',
-                          transition: 'all 0.15s',
-                        }}
-                        onMouseEnter={e => {
-                          if (!showProgressions) {
-                            e.currentTarget.style.borderColor = 'var(--accent)';
-                            e.currentTarget.style.color = 'var(--text-primary)';
-                          }
-                        }}
-                        onMouseLeave={e => {
-                          if (!showProgressions) {
-                            e.currentTarget.style.borderColor = 'var(--border)';
-                            e.currentTarget.style.color = 'var(--text-secondary)';
-                          }
-                        }}
-                      >
-                        <span>📈</span>
-                        {showProgressions ? t('dashboard.progressions.hide') : t('dashboard.progressions.show')}
                       </button>
                     )}
 
@@ -1531,7 +1486,25 @@ const Dashboard = () => {
                     </button>
                   </div>
 
-                  {showProgressions && !showPlanetTable && savedChartId && (
+                  {/* Табы видов анализа: Натальная карта | Прогрессии (outlet-паттерн внутри страницы) */}
+                  {!showPlanetTable && (
+                    <AnalysisTabs
+                      active={analysisTab}
+                      showProgressions={!!(savedChartId && fullAnalysis && chartDataForAnalysis?.type !== 'synastry')}
+                      onChange={(tab) => {
+                        setAnalysisTab(tab);
+                        if (tab === 'progressions') {
+                          setShowProgressions(true);
+                          if (!progressionsData) loadProgressions();
+                        } else {
+                          setShowProgressions(false);
+                        }
+                      }}
+                    />
+                  )}
+
+                  {/* Outlet «Прогрессии»: натальный анализ при этом скрыт (см. условие ниже) */}
+                  {analysisTab === 'progressions' && !showPlanetTable && savedChartId && (
                     <div id="progressions-section">
                       <ProgressionsPanel
                         data={progressionsData}
@@ -1542,7 +1515,8 @@ const Dashboard = () => {
                     </div>
                   )}
 
-                  {!showPlanetTable && (
+                  {/* Outlet «Натальная карта» — таб по умолчанию */}
+                  {!showPlanetTable && analysisTab === 'natal' && (
                     <>
                       {analysisLoading && (
                         <div style={{ marginTop: '40px' }}>

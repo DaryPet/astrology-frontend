@@ -74,8 +74,24 @@ const ProgressionsPanel: React.FC<ProgressionsPanelProps> = ({ data, analysis, l
 
       {data && (
         <>
-          {/* Ключевые точки: прогрессивные Луна и Солнце */}
+          {/* Ключевые точки: лунная фаза + прогрессивные Луна и Солнце */}
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '16px' }}>
+            {data.lunar_phase && (
+              <div style={{
+                flex: '1 1 220px',
+                border: '1px solid var(--accent, #8b5cf6)',
+                borderRadius: '10px',
+                padding: '14px',
+                background: 'var(--bg-secondary)'
+              }}>
+                <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                  🌗 {t('dashboard.progressions.lunarPhase')}
+                </div>
+                <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginTop: '4px' }}>
+                  {isRu ? (data.lunar_phase.phase_ru || data.lunar_phase.phase) : data.lunar_phase.phase}
+                </div>
+              </div>
+            )}
             {progMoon && (
               <div style={{
                 flex: '1 1 220px',
@@ -91,6 +107,11 @@ const ProgressionsPanel: React.FC<ProgressionsPanelProps> = ({ data, analysis, l
                   {signName(progMoon)}
                   {progMoon.natal_house ? ` · ${t('dashboard.progressions.natalHouse')} ${progMoon.natal_house}` : ''}
                 </div>
+                {typeof progMoon.years_to_next_sign === 'number' && (
+                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                    {t('dashboard.progressions.nextSignIn')} ~{progMoon.years_to_next_sign} {t('dashboard.progressions.yearsShort')}
+                  </div>
+                )}
               </div>
             )}
             {progSun && (
@@ -143,12 +164,19 @@ const ProgressionsPanel: React.FC<ProgressionsPanelProps> = ({ data, analysis, l
                           ↗
                         </span>
                       )}
+                      {planet.changed_house && (
+                        <span title={t('dashboard.progressions.changedHouse')} style={{ marginLeft: '4px', fontSize: '12px', color: 'var(--accent, #8b5cf6)' }}>
+                          ⌂
+                        </span>
+                      )}
                     </td>
                     <td style={{ padding: '8px', borderBottom: '1px solid var(--border)' }}>
                       {planet.degree?.toFixed(1)}°
                     </td>
                     <td style={{ padding: '8px', borderBottom: '1px solid var(--border)' }}>
-                      {planet.natal_house ?? '—'}
+                      {planet.changed_house && planet.natal_planet_house
+                        ? `${planet.natal_planet_house} → ${planet.natal_house}`
+                        : (planet.natal_house ?? '—')}
                     </td>
                   </tr>
                 ))}
@@ -169,7 +197,10 @@ const ProgressionsPanel: React.FC<ProgressionsPanelProps> = ({ data, analysis, l
                     {' '}{aspectName(asp)}{' '}
                     <strong>{planetName(asp.natal)}</strong>
                     <span style={{ color: 'var(--text-secondary)', fontSize: '12px', marginLeft: '6px' }}>
-                      ({t('dashboard.progressions.orb')}: {asp.orb}°)
+                      ({t('dashboard.progressions.orb')}: {asp.orb}°
+                      {typeof asp.applying === 'boolean'
+                        ? `, ${asp.applying ? t('dashboard.progressions.applying') : t('dashboard.progressions.separating')}`
+                        : ''})
                     </span>
                   </li>
                 ))}
