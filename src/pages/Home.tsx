@@ -386,6 +386,7 @@ function Home() {
 
     try {
       const response = await astrologyAPI.calculateChart(apiData);
+      console.log('🔮 Natal chart data from backend:', JSON.stringify(response, null, 2));
 
       const enhancedPlanets: Record<string, any> = {
         ...(response.planets || {}),

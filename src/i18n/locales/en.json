@@ -211,7 +211,24 @@
     },
     "tabs": {
       "natal": "Natal Chart",
-      "progressions": "Progressions"
+      "progressions": "Progressions",
+      "transits": "Transits"
+    },
+    "transits": {
+      "title": "Transits of the Day",
+      "pickDate": "Pick a date",
+      "today": "Today",
+      "subtitle": "Real planetary positions for the chosen day, overlaid on your natal chart. Defaults to today; any past or future day can be selected.",
+      "moonOfDay": "Moon of the Day",
+      "planetsTitle": "Transiting planets",
+      "movingThroughHouse": "Moving through natal house",
+      "slowAspectsTitle": "Themes of the period (slow planets)",
+      "fastAspectsTitle": "Energy of the day (fast planets)",
+      "noSlowAspects": "No exact aspects from slow planets — a calm background",
+      "noFastAspects": "No exact aspects from fast planets — a smooth day",
+      "return": "planetary return",
+      "analysisTitle": "Transit analysis",
+      "error": "Failed to calculate transits. Please try again."
     }
   },
   "confirm": {

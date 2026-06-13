@@ -247,6 +247,30 @@ export const chartsApi = {
   /**
    * Получить сохранённый анализ прогрессий за период (или null)
    */
+  /**
+   * Анализ транзитов: chart_interpretations,
+   * type='transits_simple'/'transits_advanced', name=день 'YYYY-MM-DD'
+   */
+  async saveTransitsAnalysis(chartId: number, mode: string, day: string, analysis: string) {
+    return this.saveInterpretation(chartId, `transits_${mode}`, analysis, day);
+  },
+
+  async getTransitsAnalysis(chartId: number, mode: string, day: string): Promise<string | null> {
+    if (!chartId) return null;
+    const { data, error } = await supabase
+      .from('chart_interpretations')
+      .select('interpretation')
+      .eq('chart_id', chartId)
+      .eq('type', `transits_${mode}`)
+      .eq('name', day)
+      .maybeSingle();
+    if (error) {
+      console.error('Failed to load transits analysis:', error);
+      return null;
+    }
+    return data?.interpretation ?? null;
+  },
+
   async getProgressionsAnalysis(chartId: number, mode: string, period: string): Promise<string | null> {
     const { data, error } = await supabase
       .from('chart_interpretations')

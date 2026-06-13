@@ -4,15 +4,16 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-export type AnalysisTabId = 'natal' | 'progressions';
+export type AnalysisTabId = 'natal' | 'progressions' | 'transits';
 
 interface AnalysisTabsProps {
   active: AnalysisTabId;
   onChange: (tab: AnalysisTabId) => void;
   showProgressions: boolean; // гейтинг: сохранённая карта + анализ + не синастрия
+  showTransits?: boolean;    // тот же гейтинг
 }
 
-const AnalysisTabs: React.FC<AnalysisTabsProps> = ({ active, onChange, showProgressions }) => {
+const AnalysisTabs: React.FC<AnalysisTabsProps> = ({ active, onChange, showProgressions, showTransits }) => {
   const { t } = useTranslation();
 
   const tabs: Array<{ id: AnalysisTabId; icon: string; label: string }> = [
@@ -20,6 +21,9 @@ const AnalysisTabs: React.FC<AnalysisTabsProps> = ({ active, onChange, showProgr
   ];
   if (showProgressions) {
     tabs.push({ id: 'progressions', icon: '📈', label: t('dashboard.tabs.progressions') });
+  }
+  if (showTransits) {
+    tabs.push({ id: 'transits', icon: '🌌', label: t('dashboard.tabs.transits') });
   }
 
   if (tabs.length < 2) return null;
