@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { geocodeAPI } from '../services/api';
 import { useTranslation } from 'react-i18next';
 
-interface Location {
+export interface Location {
   lat: number;
   lon: number;
   display_name: string;
@@ -232,3 +232,4 @@ const LocationInput = ({
 };
 
 export default LocationInput;
+export { Location };
