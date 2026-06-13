@@ -254,8 +254,8 @@ export const astrologyAPI = {
         birth_place: chartData.meta?.birth_place || null
       }, { signal: options?.signal });
       return response.data;
-    } catch {
-      return 'UTC';
+    } catch (error) {
+      throw error;
     }
   },
 
