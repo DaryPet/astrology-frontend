@@ -24,6 +24,7 @@ import ProgressionsPanel from '../components/ProgressionsPanel';
 import AnalysisTabs, { AnalysisTabId } from '../components/AnalysisTabs';
 import TransitsPanel from '../components/TransitsPanel';
 import type { ProgressionsData, TransitsData } from '../services/api';
+import type { Location } from '../components/LocationInput';
 import { isNearLimit, isAtLimit, MAX_MESSAGES, type ChatMessage } from '../services/chatStorage';
 
 interface ChartPlanet {
@@ -225,8 +226,9 @@ const Dashboard = () => {
   const [progressionsAnalysis, setProgressionsAnalysis] = useState<string | null>(null);
   const [progressionsLoading, setProgressionsLoading] = useState(false);
   const [progressionsError, setProgressionsError] = useState<string>('');
-  // Транзиты: выбранный день (по умолчанию сегодня), данные, анализ
+  // Транзиты: выбранный день (по умолчанию сегодня), выбранное место, данные, анализ
   const [transitsDate, setTransitsDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  const [transitsLocation, setTransitsLocation] = useState<Location | null>(null);
   const [transitsData, setTransitsData] = useState<TransitsData | null>(null);
   const [transitsAnalysis, setTransitsAnalysis] = useState<string | null>(null);
   const [transitsLoading, setTransitsLoading] = useState(false);
@@ -454,6 +456,7 @@ const Dashboard = () => {
     setProgressionsError('');
     // Транзиты сбрасываем вместе с прогрессиями (тот же жизненный цикл карты)
     setTransitsDate(new Date().toISOString().slice(0, 10));
+    setTransitsLocation(null);
     setTransitsData(null);
     setTransitsAnalysis(null);
     setTransitsError('');
@@ -475,7 +478,7 @@ const Dashboard = () => {
     setProgressionsLoading(true);
     setProgressionsError('');
 
-try {
+    try {
       const period = new Date().toISOString().slice(0, 7); // YYYY-MM
 
       // 1. Расчёт прогрессивных позиций (Swiss Ephemeris, без LLM)
@@ -519,6 +522,7 @@ try {
 
   // Загрузка транзитов на выбранный день: расчёт позиций (всегда свежий) +
   // AI-анализ (кэшируется в Supabase по chart_id + режим + день YYYY-MM-DD)
+  // При наличии transitsLocation используются координаты выбранного места для расчёта домов
   const loadTransits = useCallback(async (date?: string, mode = analysisMode) => {
     if (!chartDataForAnalysis || !savedChartId) return;
     if (chartDataForAnalysis.type === 'synastry') return;
@@ -536,6 +540,7 @@ try {
 
     try {
       // 1. Расчёт транзитных позиций на день (Swiss Ephemeris, без LLM)
+      // При выбранном месте транзита используем его координаты для расчёта домов
       const data = await astrologyAPI.calculateTransits({
         birth_date: meta.birth_date,
         birth_place: meta.birth_place,
@@ -544,7 +549,11 @@ try {
         timezone: meta.timezone,
         target_date: `${day}T12:00:00Z`,
         house_system: (chartDataForAnalysis.houses_meta as { house_system?: string } | undefined)?.house_system || 'Placidus',
-        natal_chart: chartDataForAnalysis
+        natal_chart: chartDataForAnalysis,
+        // Новые параметры для места транзита
+        transit_latitude: transitsLocation?.lat,
+        transit_longitude: transitsLocation?.lon,
+        transit_place: transitsLocation?.display_name
       });
       console.log('🔮 Transits data from backend (before analysis):', JSON.stringify(data, null, 2));
       console.log('🔮 Natal chart data for transits:', JSON.stringify(chartDataForAnalysis?.planets, null, 2));
@@ -1599,7 +1608,7 @@ try {
                     </div>
                   )}
 
-                  {/* Outlet «Транзиты»: выбор дня, по умолчанию сегодня */}
+                  {/* Outlet «Транзиты»: выбор дня, выбор места */}
                   {analysisTab === 'transits' && !showPlanetTable && savedChartId && (
                     <div id="transits-section">
                       <TransitsPanel
@@ -1609,6 +1618,14 @@ try {
                         error={transitsError}
                         selectedDate={transitsDate}
                         onDateChange={handleTransitsDateChange}
+                        transitsLocation={transitsLocation}
+                        onLocationChange={setTransitsLocation}
+                        defaultLocation={chartDataForAnalysis?.meta ? {
+                          lat: chartDataForAnalysis.meta.latitude || 0,
+                          lon: chartDataForAnalysis.meta.longitude || 0,
+                          display_name: chartDataForAnalysis.meta.birth_place || '',
+                          timezone: chartDataForAnalysis.meta.timezone
+                        } : undefined}
                       />
                     </div>
                   )}

@@ -1,12 +1,14 @@
 // src/components/TransitsPanel.tsx
 // Транзиты на конкретный день: выбор даты (по умолчанию сегодня, можно любой
-// день прошлого/будущего), лунная фаза, транзитные планеты по натальным домам,
-// аспекты к наталу (медленные = темы периода, быстрые = окраска дня), AI-анализ.
+// день прошлого/будущего), выбор места (по умолчанию место рождения), лунная фаза,
+// транзитные планеты по натальным домам, аспекты к наталу, AI-анализ.
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import MarkdownContent from './MarkdownContent';
 import ProcessingMessage from './ProcessingMessage';
+import LocationInput from './LocationInput';
 import type { TransitsData, TransitPlanet, TransitAspect } from '../services/api';
+import type { Location } from './LocationInput';
 
 interface TransitsPanelProps {
   data: TransitsData | null;
@@ -15,6 +17,9 @@ interface TransitsPanelProps {
   error: string;
   selectedDate: string; // YYYY-MM-DD
   onDateChange: (date: string) => void;
+  transitsLocation?: Location | null;
+  onLocationChange?: (location: Location | null) => void;
+  defaultLocation?: Location | null;
 }
 
 // Порядок вывода: Луна и быстрые первыми (день), потом медленные (фон)
@@ -25,10 +30,29 @@ const PLANET_ORDER = [
 ];
 
 const TransitsPanel: React.FC<TransitsPanelProps> = ({
-  data, analysis, loading, error, selectedDate, onDateChange
+  data, analysis, loading, error, selectedDate, onDateChange,
+  transitsLocation: externalLocation, onLocationChange, defaultLocation
 }) => {
   const { t, i18n } = useTranslation();
   const isRu = (i18n.language || 'ru').startsWith('ru');
+
+  const [internalLocation, setInternalLocation] = React.useState<Location | null>(
+    externalLocation ?? defaultLocation ?? null
+  );
+
+  React.useEffect(() => {
+    setInternalLocation(externalLocation ?? null);
+  }, [externalLocation]);
+
+  const handleLocationSelect = (location: Location) => {
+    setInternalLocation(location);
+    onLocationChange?.(location);
+  };
+
+  const handleLocationClear = () => {
+    setInternalLocation(null);
+    onLocationChange?.(null);
+  };
 
   const planetName = (key: string) => t(`planets.names.${key}`, { defaultValue: key });
   const signName = (planet?: TransitPlanet | { sign?: string; sign_ru?: string }) => {
@@ -74,9 +98,9 @@ const TransitsPanel: React.FC<TransitsPanelProps> = ({
       padding: '20px',
       background: 'var(--bg-primary)'
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginBottom: '12px' }}>
         <h3 style={{ color: 'var(--text-primary)', margin: 0 }}>
-          🌌 {t('dashboard.transits.title')}
+            🌌 {t('dashboard.transits.title')}
         </h3>
         {/* Выбор дня: по умолчанию сегодня, любой день прошлого/будущего */}
         <input
@@ -110,9 +134,43 @@ const TransitsPanel: React.FC<TransitsPanelProps> = ({
           {t('dashboard.transits.today')}
         </button>
       </div>
-      <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '6px' }}>
-        {t('dashboard.transits.subtitle')}
-      </p>
+
+      {/* Выбор места для транзитов */}
+      <div style={{ marginBottom: '12px' }}>
+        <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '6px' }}>
+          {t('dashboard.transits.locationTitle')}
+        </label>
+        <LocationInput
+          value={internalLocation?.display_name || ''}
+          onChange={() => {}}
+          onLocationSelect={handleLocationSelect}
+          placeholder={t('dashboard.transits.locationPlaceholder')}
+          style={{ width: '300px', maxWidth: '100%' }}
+        />
+        {internalLocation && (
+          <div style={{ color: 'var(--text-secondary)', fontSize: '12px', marginTop: '4px' }}>
+            {internalLocation.display_name}
+            <button
+              type="button"
+              onClick={handleLocationClear}
+              style={{
+                marginLeft: '8px',
+                background: 'none',
+                border: 'none',
+                color: 'var(--accent)',
+                cursor: 'pointer',
+                fontSize: '12px',
+                textDecoration: 'underline'
+              }}
+            >
+              {t('dashboard.transits.useBirthLocation')}
+            </button>
+          </div>
+        )}
+        <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '6px' }}>
+          {t('dashboard.transits.subtitle')}
+        </p>
+      </div>
 
       {loading && (
         <div style={{ marginTop: '20px' }}>
