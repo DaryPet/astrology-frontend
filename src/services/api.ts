@@ -114,6 +114,50 @@ export interface ProgressionsData {
   meta?: Record<string, unknown>;
 }
 
+export interface TransitPlanet {
+  planet: string;
+  sign: string;
+  sign_ru?: string;
+  degree: number;
+  full_degree: number;
+  speed?: number;
+  is_retrograde?: boolean;
+  // натальный дом, по которому идёт транзитная планета — ключ интерпретации
+  natal_house?: number | null;
+  is_slow?: boolean;
+  natal_sign?: string;
+  natal_planet_house?: number | null;
+}
+
+export interface TransitAspect {
+  transit: string;
+  natal: string;
+  planet1: string;
+  planet2: string;
+  aspect: string;
+  aspect_ru?: string;
+  orb: number;
+  exactness?: number;
+  applying?: boolean;
+  is_slow?: boolean;
+  is_return?: boolean;
+  transit_sign?: string;
+  natal_sign?: string;
+  natal_house?: number | null;
+  transit_house?: number | null;
+}
+
+export interface TransitsData {
+  type: 'transits';
+  period: string; // YYYY-MM-DD
+  target_date?: string;
+  transit_planets: Record<string, TransitPlanet>;
+  lunar_phase?: LunarPhase | null;
+  aspects_to_natal: TransitAspect[];
+  natal_summary?: Record<string, string>;
+  meta?: Record<string, unknown>;
+}
+
 // Геокодинг API методы
 export const geocodeAPI = {
   /**
@@ -185,20 +229,6 @@ export const astrologyAPI = {
   calculateChart: async (data: ChartData): Promise<ChartData> => {
     try {
       const response = await api.post('/chart/calculate', data);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
-  },
-
-  /**
-   * Расчет транзитов
-   * @param {Object} data - Данные для расчета транзитов
-   * @returns {Promise<Object>} Результаты транзитов
-   */
-  calculateTransits: async (data: Record<string, unknown>): Promise<Record<string, unknown>> => {
-    try {
-      const response = await api.post('/transits', data);
       return response.data;
     } catch (error) {
       throw error;
@@ -309,6 +339,31 @@ export const astrologyAPI = {
     mode = 'simple'
   ): Promise<{ analysis: string; summary?: string; progressions_summary?: Record<string, unknown> }> => {
     const response = await api.post('/analysis/progressions', {
+      ...payload,
+      mode
+    });
+    return response.data;
+  },
+
+  /**
+   * Транзиты на конкретный день (по умолчанию — сегодня; можно любой день).
+   * @param data - { birth_date, birth_time, birth_place, latitude, longitude, timezone, target_date? }
+   */
+  calculateTransits: async (data: Record<string, unknown>): Promise<TransitsData> => {
+    const response = await api.post('/transits', data);
+    return response.data;
+  },
+
+  /**
+   * AI-анализ транзитов дня (RAG по книгам + LLM).
+   * @param payload - { natal_chart, transit_data, language }
+   * @param mode - 'simple' | 'advanced'
+   */
+  getTransitsAnalysis: async (
+    payload: Record<string, unknown>,
+    mode = 'advanced'
+  ): Promise<{ analysis: string; summary?: string; transits_summary?: Record<string, unknown> }> => {
+    const response = await api.post('/analysis/transits', {
       ...payload,
       mode
     });

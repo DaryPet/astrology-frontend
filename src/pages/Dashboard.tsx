@@ -22,7 +22,8 @@ import RelationshipTypesBar from '../components/RelationshipTypesBar';
 import UnsavedAnalysisModal from '../components/UnsavedAnalysisModal';
 import ProgressionsPanel from '../components/ProgressionsPanel';
 import AnalysisTabs, { AnalysisTabId } from '../components/AnalysisTabs';
-import type { ProgressionsData } from '../services/api';
+import TransitsPanel from '../components/TransitsPanel';
+import type { ProgressionsData, TransitsData } from '../services/api';
 import { isNearLimit, isAtLimit, MAX_MESSAGES, type ChatMessage } from '../services/chatStorage';
 
 interface ChartPlanet {
@@ -224,6 +225,12 @@ const Dashboard = () => {
   const [progressionsAnalysis, setProgressionsAnalysis] = useState<string | null>(null);
   const [progressionsLoading, setProgressionsLoading] = useState(false);
   const [progressionsError, setProgressionsError] = useState<string>('');
+  // Транзиты: выбранный день (по умолчанию сегодня), данные, анализ
+  const [transitsDate, setTransitsDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  const [transitsData, setTransitsData] = useState<TransitsData | null>(null);
+  const [transitsAnalysis, setTransitsAnalysis] = useState<string | null>(null);
+  const [transitsLoading, setTransitsLoading] = useState(false);
+  const [transitsError, setTransitsError] = useState<string>('');
 
   // Держим ref в актуальном состоянии для фоновых ответов чата
   useEffect(() => {
@@ -445,6 +452,11 @@ const Dashboard = () => {
     setProgressionsData(null);
     setProgressionsAnalysis(null);
     setProgressionsError('');
+    // Транзиты сбрасываем вместе с прогрессиями (тот же жизненный цикл карты)
+    setTransitsDate(new Date().toISOString().slice(0, 10));
+    setTransitsData(null);
+    setTransitsAnalysis(null);
+    setTransitsError('');
   }, []);
 
   // Загрузка прогрессий: расчёт позиций (дёшево, всегда свежий) +
@@ -463,7 +475,7 @@ const Dashboard = () => {
     setProgressionsLoading(true);
     setProgressionsError('');
 
-    try {
+try {
       const period = new Date().toISOString().slice(0, 7); // YYYY-MM
 
       // 1. Расчёт прогрессивных позиций (Swiss Ephemeris, без LLM)
@@ -475,6 +487,8 @@ const Dashboard = () => {
         timezone: meta.timezone,
         house_system: (chartDataForAnalysis.houses_meta as { house_system?: string } | undefined)?.house_system || 'Placidus'
       });
+      console.log('🔮 Progressions data from backend (before analysis):', JSON.stringify(data, null, 2));
+      console.log('🔮 Natal chart data for progressions:', JSON.stringify(chartDataForAnalysis?.planets, null, 2));
       setProgressionsData(data);
 
       // 2. AI-анализ: сначала из БД (по периоду и режиму)
@@ -503,11 +517,87 @@ const Dashboard = () => {
     }
   }, [chartDataForAnalysis, savedChartId, analysisMode, t]);
 
+  // Загрузка транзитов на выбранный день: расчёт позиций (всегда свежий) +
+  // AI-анализ (кэшируется в Supabase по chart_id + режим + день YYYY-MM-DD)
+  const loadTransits = useCallback(async (date?: string, mode = analysisMode) => {
+    if (!chartDataForAnalysis || !savedChartId) return;
+    if (chartDataForAnalysis.type === 'synastry') return;
+
+    const meta = chartDataForAnalysis.meta;
+    if (!meta?.birth_date) {
+      setTransitsError(t('dashboard.progressions.noBirthData'));
+      return;
+    }
+
+    const day = date || transitsDate || new Date().toISOString().slice(0, 10);
+
+    setTransitsLoading(true);
+    setTransitsError('');
+
+    try {
+      // 1. Расчёт транзитных позиций на день (Swiss Ephemeris, без LLM)
+      const data = await astrologyAPI.calculateTransits({
+        birth_date: meta.birth_date,
+        birth_place: meta.birth_place,
+        latitude: meta.latitude,
+        longitude: meta.longitude,
+        timezone: meta.timezone,
+        target_date: `${day}T12:00:00Z`,
+        house_system: (chartDataForAnalysis.houses_meta as { house_system?: string } | undefined)?.house_system || 'Placidus',
+        natal_chart: chartDataForAnalysis
+      });
+      console.log('🔮 Transits data from backend (before analysis):', JSON.stringify(data, null, 2));
+      console.log('🔮 Natal chart data for transits:', JSON.stringify(chartDataForAnalysis?.planets, null, 2));
+      setTransitsData(data);
+
+      // 2. AI-анализ: сначала из БД (по дню и режиму)
+      const cached = await chartsApi.getTransitsAnalysis(Number(savedChartId), mode, day);
+      if (cached) {
+        setTransitsAnalysis(cached);
+        return;
+      }
+
+      // 3. Нет в кэше — запрашиваем LLM и сохраняем
+      console.log('📊 Requesting transits AI analysis for date:', day, 'mode:', mode);
+      const result = await astrologyAPI.getTransitsAnalysis({
+        natal_chart: chartDataForAnalysis,
+        transit_data: data,
+        language: i18n.language || 'ru'
+      }, mode);
+      console.log('🤖 Transits AI analysis result:', result?.analysis?.substring(0, 200));
+
+      setTransitsAnalysis(result.analysis);
+      chartsApi.saveTransitsAnalysis(Number(savedChartId), mode, day, result.analysis).catch(err => {
+        console.error('Failed to save transits analysis:', err);
+      });
+    } catch (err) {
+      const errorDetail = (err as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
+      setTransitsError(typeof errorDetail === 'string' ? errorDetail : t('dashboard.transits.error'));
+    } finally {
+      setTransitsLoading(false);
+    }
+  }, [chartDataForAnalysis, savedChartId, analysisMode, transitsDate, t]);
+
+  // Смена дня в пикере: пересчёт позиций + анализ для нового дня
+  const handleTransitsDateChange = useCallback((date: string) => {
+    setTransitsDate(date);
+    setTransitsAnalysis(null);
+    loadTransits(date);
+  }, [loadTransits]);
+
   // При смене режима (simple/advanced) — перезагружаем анализ прогрессий для нового режима
   useEffect(() => {
     if (!showProgressions) return;
     setProgressionsAnalysis(null);
     loadProgressions(analysisMode);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [analysisMode]);
+
+  // При смене режима (simple/advanced) — перезагружаем анализ транзитов
+  useEffect(() => {
+    if (analysisTab !== 'transits') return;
+    setTransitsAnalysis(null);
+    loadTransits(transitsDate, analysisMode);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [analysisMode]);
 
@@ -585,14 +675,6 @@ const Dashboard = () => {
       loadFullAnalysis(modeToLoad);
     }
   }, [showFullAnalysis, chartDataForAnalysis, fullAnalysis, analysisLoading, loadFullAnalysis, analysisMode, simpleAnalysis, advancedAnalysis]);
-
-  // useEffect(() => {
-  //   return () => {
-  //     if (chartDataForAnalysis && analysisMode) {
-  //       cancelAnalysis(chartDataForAnalysis, analysisMode as 'simple' | 'advanced');
-  //     }
-  //   };
-  // }, [chartDataForAnalysis, analysisMode]);
 
   // Save pending analysis result for navigation persistence (only when no saved chart yet)
   useEffect(() => {
@@ -1491,13 +1573,15 @@ const Dashboard = () => {
                     <AnalysisTabs
                       active={analysisTab}
                       showProgressions={!!(savedChartId && fullAnalysis && chartDataForAnalysis?.type !== 'synastry')}
+                      showTransits={!!(savedChartId && fullAnalysis && chartDataForAnalysis?.type !== 'synastry')}
                       onChange={(tab) => {
                         setAnalysisTab(tab);
-                        if (tab === 'progressions') {
-                          setShowProgressions(true);
-                          if (!progressionsData) loadProgressions();
-                        } else {
-                          setShowProgressions(false);
+                        setShowProgressions(tab === 'progressions');
+                        if (tab === 'progressions' && !progressionsData) {
+                          loadProgressions();
+                        }
+                        if (tab === 'transits' && !transitsData) {
+                          loadTransits(transitsDate);
                         }
                       }}
                     />
@@ -1511,6 +1595,20 @@ const Dashboard = () => {
                         analysis={progressionsAnalysis}
                         loading={progressionsLoading}
                         error={progressionsError}
+                      />
+                    </div>
+                  )}
+
+                  {/* Outlet «Транзиты»: выбор дня, по умолчанию сегодня */}
+                  {analysisTab === 'transits' && !showPlanetTable && savedChartId && (
+                    <div id="transits-section">
+                      <TransitsPanel
+                        data={transitsData}
+                        analysis={transitsAnalysis}
+                        loading={transitsLoading}
+                        error={transitsError}
+                        selectedDate={transitsDate}
+                        onDateChange={handleTransitsDateChange}
                       />
                     </div>
                   )}
