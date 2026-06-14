@@ -17,9 +17,10 @@ interface TransitsPanelProps {
   error: string;
   selectedDate: string; // YYYY-MM-DD
   onDateChange: (date: string) => void;
-  transitsLocation?: Location | null;
   onLocationChange?: (location: Location | null) => void;
-  defaultLocation?: Location | null;
+  transitsLocation?: Location | null;
+  analysisLocation?: string | null; // место для которого реально посчитан анализ
+  birthPlace?: string;
 }
 
 // Порядок вывода: Луна и быстрые первыми (день), потом медленные (фон)
@@ -30,28 +31,13 @@ const PLANET_ORDER = [
 ];
 
 const TransitsPanel: React.FC<TransitsPanelProps> = ({
-  data, analysis, loading, error, selectedDate, onDateChange,
-  transitsLocation: externalLocation, onLocationChange, defaultLocation
+  data, analysis, loading, error, selectedDate, onDateChange, onLocationChange, transitsLocation, birthPlace, analysisLocation
 }) => {
   const { t, i18n } = useTranslation();
   const isRu = (i18n.language || 'ru').startsWith('ru');
 
-  const [internalLocation, setInternalLocation] = React.useState<Location | null>(
-    externalLocation ?? defaultLocation ?? null
-  );
-
-  React.useEffect(() => {
-    setInternalLocation(externalLocation ?? null);
-  }, [externalLocation]);
-
   const handleLocationSelect = (location: Location) => {
-    setInternalLocation(location);
     onLocationChange?.(location);
-  };
-
-  const handleLocationClear = () => {
-    setInternalLocation(null);
-    onLocationChange?.(null);
   };
 
   const planetName = (key: string) => t(`planets.names.${key}`, { defaultValue: key });
@@ -141,18 +127,18 @@ const TransitsPanel: React.FC<TransitsPanelProps> = ({
           {t('dashboard.transits.locationTitle')}
         </label>
         <LocationInput
-          value={internalLocation?.display_name || ''}
+          value={transitsLocation?.display_name || ''}
           onChange={() => {}}
           onLocationSelect={handleLocationSelect}
           placeholder={t('dashboard.transits.locationPlaceholder')}
           style={{ width: '300px', maxWidth: '100%' }}
         />
-        {internalLocation && (
+        {transitsLocation && (
           <div style={{ color: 'var(--text-secondary)', fontSize: '12px', marginTop: '4px' }}>
-            {internalLocation.display_name}
+            {transitsLocation.display_name}
             <button
               type="button"
-              onClick={handleLocationClear}
+              onClick={() => onLocationChange?.(null)}
               style={{
                 marginLeft: '8px',
                 background: 'none',
@@ -172,6 +158,18 @@ const TransitsPanel: React.FC<TransitsPanelProps> = ({
         </p>
       </div>
 
+      {/* Локация транзитов: если есть готовый анализ — показываем место расчёта, иначе текущий выбор */}
+      <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '12px' }}>
+        📍 {t('dashboard.transits.locationLabel')}:{' '}
+        {analysis && analysisLocation
+          ? analysisLocation
+          : transitsLocation
+            ? transitsLocation.display_name
+            : birthPlace
+              ? birthPlace
+              : t('dashboard.transits.birthLocation')}
+      </div>
+
       {loading && (
         <div style={{ marginTop: '20px' }}>
           <ProcessingMessage size="sm" />
@@ -183,6 +181,7 @@ const TransitsPanel: React.FC<TransitsPanelProps> = ({
           {error}
         </div>
       )}
+
 
       {data && (
         <>

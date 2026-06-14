@@ -221,6 +221,8 @@
       "locationTitle": "Transit Location",
       "locationPlaceholder": "Select transit location...",
       "useBirthLocation": "Use birth location",
+      "locationLabel": "Location",
+      "birthLocation": "Birth place (natal chart)",
       "subtitle": "Real planetary positions for the chosen day, overlaid on your natal chart. Defaults to today; any past or future day can be selected.",
       "moonOfDay": "Moon of the Day",
       "planetsTitle": "Transiting planets",
@@ -231,7 +233,8 @@
       "noFastAspects": "No exact aspects from fast planets — a smooth day",
       "return": "planetary return",
       "analysisTitle": "Transit analysis",
-      "error": "Failed to calculate transits. Please try again."
+      "error": "Failed to calculate transits. Please try again.",
+      "limitReached": "Daily limit of AI transit analyses reached ({{limit}}). Try again tomorrow."
     }
   },
   "confirm": {
