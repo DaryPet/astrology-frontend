@@ -15,7 +15,18 @@ const api = axios.create({
 // Берём токен из живой сессии Supabase (он сам себя рефрешит), а не из ручной
 // копии в localStorage — чтобы нельзя было отправить протухший/рассинхронизированный токен.
 api.interceptors.request.use(async (config) => {
-  const { data } = await supabase.auth.getSession();
+api.interceptors.request.use(async (config) => {
+  try {
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  } catch {
+    // Fall through without token — let the backend reject if auth is required
+  }
+  return config;
+});
   const token = data.session?.access_token;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
