@@ -28,7 +28,7 @@ import type { Location } from '../components/LocationInput';
 import { isNearLimit, isAtLimit, MAX_MESSAGES, type ChatMessage } from '../services/chatStorage';
 
 // Максимальное число AI-анализов транзитов в день (на фронте, в localStorage)
-const MAX_TRANSITS_ANALYSIS_PER_DAY = 5;
+const MAX_TRANSITS_ANALYSIS_PER_DAY = 20;
 
 interface ChartPlanet {
   full_degree?: number;
@@ -238,8 +238,10 @@ const Dashboard = () => {
   const [transitsAnalysis, setTransitsAnalysis] = useState<string | null>(null);
   const [transitsLoading, setTransitsLoading] = useState(false);
   const [transitsError, setTransitsError] = useState<string>('');
-  // transitsReady: пользователь явно нажал «Рассчитать» для текущей карты
-  // const [transitsReady, setTransitsReady] = useState(false);
+  // transitsReady: AI-анализ транзитов получен (либо из кэша, либо явным запросом) и должен отображаться
+  const [transitsReady, setTransitsReady] = useState(false);
+  // Остаток дневного лимита AI-анализов транзитов (для проактивного отображения в панели)
+  const [transitsRemaining, setTransitsRemaining] = useState<number>(MAX_TRANSITS_ANALYSIS_PER_DAY);
 
   // Держим ref в актуальном состоянии для фоновых ответов чата
   useEffect(() => {
@@ -469,11 +471,25 @@ const Dashboard = () => {
     setTransitsData(null);
     setTransitsAnalysis(null);
     setTransitsError('');
-    // setTransitsReady(false);
+    setTransitsReady(false);
   }, []);
 
+  // Остаток дневного лимита AI-анализов транзитов из localStorage (кэш-хиты его не тратят)
+  const refreshTransitsRemaining = useCallback(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    const usedToday = parseInt(localStorage.getItem(`transits_limit|${today}`) || '0', 10);
+    setTransitsRemaining(Math.max(0, MAX_TRANSITS_ANALYSIS_PER_DAY - usedToday));
+  }, []);
+
+  useEffect(() => {
+    refreshTransitsRemaining();
+  }, [refreshTransitsRemaining]);
+
   // Восстанавливаем транзиты из localStorage-кэша при возврате на карту.
-  // Ищем кэш для текущего дня и режима (локация = natal, как по умолчанию).
+  // ВАЖНО: вызывается внутри loadChartFromUrl, когда chartDataForAnalysis/savedChartId
+  // ещё не зафлашены React'ом — поэтому здесь НЕ считаем позиции (loadTransitsData),
+  // только восстанавливаем уже готовый текст анализа. Позиции досчитаются отложенно,
+  // когда пользователь откроет вкладку «Транзиты» (см. AnalysisTabs.onChange).
   const restoreTransitsFromCache = (chartId: string | number) => {
     const lastKey = localStorage.getItem(`transits_last_key|${chartId}`);
     if (!lastKey) return;
@@ -482,7 +498,7 @@ const Dashboard = () => {
       setTransitsAnalysis(cached);
       const locationName = localStorage.getItem(`transits_location_name|${chartId}`);
       setTransitsDisplayLocation(locationName);
-      // setTransitsReady(true);
+      setTransitsReady(true);
     }
   };
 
@@ -544,13 +560,63 @@ const Dashboard = () => {
     }
   }, [chartDataForAnalysis, savedChartId, analysisMode, t]);
 
-  // Загрузка транзитов на выбранный день: расчёт позиций (всегда свежий) +
-  // AI-анализ (кэшируется в Supabase по chart_id + режим + день YYYY-MM-DD)
-  // Транзиты: расчёт позиций (Swiss Ephemeris, без LLM) +
-  // AI-анализ (localStorage-кэш в пределах сессии + лимит MAX_TRANSITS_ANALYSIS_PER_DAY/день).
+  // Транзиты: расчёт позиций (Swiss Ephemeris, без LLM, всегда свежий) —
+  // считается автоматически (вкладка/дата/локация). AI-анализ — отдельно,
+  // дорогой, лимит MAX_TRANSITS_ANALYSIS_PER_DAY/день, запускается ТОЛЬКО
+  // по явному действию пользователя (кнопка «Дать анализ», см. runTransitsAnalysis).
   // БД не используется — транзиты слишком динамичны (меняются от дня и локации).
-  // isTransitsLoadingRef блокирует двойные запросы.
-  const loadTransits = useCallback(async (date?: string, mode = analysisMode) => {
+  // isTransitsLoadingRef блокирует двойные запросы (общий для обеих функций).
+  const loadTransitsData = useCallback(async (date?: string, opts?: { keepAnalysis?: boolean }) => {
+    if (!chartDataForAnalysis || !savedChartId) return;
+    if (chartDataForAnalysis.type === 'synastry') return;
+    if (isTransitsLoadingRef.current) return; // блокируем двойной вызов
+
+    const meta = chartDataForAnalysis.meta;
+    if (!meta?.birth_date) {
+      setTransitsError(t('dashboard.progressions.noBirthData'));
+      return;
+    }
+
+    const day = date || transitsDate || new Date().toISOString().slice(0, 10);
+
+    setTransitsLoading(true);
+    setTransitsError('');
+    isTransitsLoadingRef.current = true;
+
+    try {
+      const data = await astrologyAPI.calculateTransits({
+        birth_date: meta.birth_date,
+        birth_place: meta.birth_place,
+        latitude: meta.latitude,
+        longitude: meta.longitude,
+        timezone: meta.timezone,
+        target_date: `${day}T12:00:00Z`,
+        house_system: (chartDataForAnalysis.houses_meta as { house_system?: string } | undefined)?.house_system || 'Placidus',
+        natal_chart: chartDataForAnalysis,
+        transit_latitude: transitsLocation?.lat,
+        transit_longitude: transitsLocation?.lon,
+        transit_place: transitsLocation?.display_name,
+      });
+      setTransitsData(data);
+
+      // Новые позиции делают старый AI-анализ неактуальным — сбрасываем,
+      // кроме случая восстановления уже готового анализа (возврат на карту/вкладку).
+      if (!opts?.keepAnalysis) {
+        setTransitsAnalysis(null);
+        setTransitsReady(false);
+      }
+    } catch (err) {
+      const errorDetail = (err as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
+      setTransitsError(typeof errorDetail === 'string' ? errorDetail : t('dashboard.transits.error'));
+    } finally {
+      setTransitsLoading(false);
+      isTransitsLoadingRef.current = false;
+    }
+  }, [chartDataForAnalysis, savedChartId, transitsDate, transitsLocation, t]);
+
+  // AI-анализ транзитов: запускается только по кнопке «Дать анализ».
+  // Если позиции для текущего дня/локации ещё не посчитаны — считает их первым шагом.
+  const runTransitsAnalysis = useCallback(async (date?: string, mode = analysisMode) => {
     if (!chartDataForAnalysis || !savedChartId) return;
     if (chartDataForAnalysis.type === 'synastry') return;
     if (isTransitsLoadingRef.current) return; // блокируем двойной вызов
@@ -570,27 +636,30 @@ const Dashboard = () => {
     isTransitsLoadingRef.current = true;
 
     try {
-      // 1. Расчёт транзитных позиций (всегда свежий — дёшево, без LLM)
-      const data = await astrologyAPI.calculateTransits({
-        birth_date: meta.birth_date,
-        birth_place: meta.birth_place,
-        latitude: meta.latitude,
-        longitude: meta.longitude,
-        timezone: meta.timezone,
-        target_date: `${day}T12:00:00Z`,
-        house_system: (chartDataForAnalysis.houses_meta as { house_system?: string } | undefined)?.house_system || 'Placidus',
-        natal_chart: chartDataForAnalysis,
-        transit_latitude: transitsLocation?.lat,
-        transit_longitude: transitsLocation?.lon,
-        transit_place: transitsLocation?.display_name,
-      });
-      setTransitsData(data);
+      // 1. Позиции нужны для запроса к LLM — считаем, если ещё не посчитаны
+      let data = transitsData;
+      if (!data) {
+        data = await astrologyAPI.calculateTransits({
+          birth_date: meta.birth_date,
+          birth_place: meta.birth_place,
+          latitude: meta.latitude,
+          longitude: meta.longitude,
+          timezone: meta.timezone,
+          target_date: `${day}T12:00:00Z`,
+          house_system: (chartDataForAnalysis.houses_meta as { house_system?: string } | undefined)?.house_system || 'Placidus',
+          natal_chart: chartDataForAnalysis,
+          transit_latitude: transitsLocation?.lat,
+          transit_longitude: transitsLocation?.lon,
+          transit_place: transitsLocation?.display_name,
+        });
+        setTransitsData(data);
+      }
 
-      // 2. localStorage-кэш (в пределах сессии браузера)
+      // 2. localStorage-кэш (в пределах сессии браузера) — не тратит дневной лимит
       const cached = localStorage.getItem(cacheKey);
       if (cached) {
-        // setTransitsReady(true);
         setTransitsAnalysis(cached);
+        setTransitsReady(true);
         return;
       }
 
@@ -615,8 +684,8 @@ const Dashboard = () => {
         }),
       }, mode);
 
-      // setTransitsReady(true);
       setTransitsAnalysis(result.analysis);
+      setTransitsReady(true);
 
       // 5. Сохраняем в localStorage + обновляем счётчик
       localStorage.setItem(cacheKey, result.analysis);
@@ -625,6 +694,7 @@ const Dashboard = () => {
       if (locationName) localStorage.setItem(`transits_location_name|${savedChartId}`, locationName);
       setTransitsDisplayLocation(locationName);
       localStorage.setItem(limitKey, String(usedToday + 1));
+      refreshTransitsRemaining();
 
     } catch (err) {
       const errorDetail = (err as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
@@ -633,14 +703,14 @@ const Dashboard = () => {
       setTransitsLoading(false);
       isTransitsLoadingRef.current = false;
     }
-  }, [chartDataForAnalysis, savedChartId, analysisMode, transitsDate, transitsLocation, t]);
+  }, [chartDataForAnalysis, savedChartId, analysisMode, transitsDate, transitsLocation, transitsData, t, refreshTransitsRemaining]);
 
-  // Смена дня в пикере: пересчёт позиций + анализ для нового дня
+  // Смена дня в пикере: пересчёт позиций для нового дня. AI НЕ запускаем —
+  // старый анализ был для другого дня и сбрасывается внутри loadTransitsData.
   const handleTransitsDateChange = useCallback((date: string) => {
     setTransitsDate(date);
-    setTransitsAnalysis(null);
-    loadTransits(date);
-  }, [loadTransits]);
+    loadTransitsData(date);
+  }, [loadTransitsData]);
 
   // При смене режима (simple/advanced) — перезагружаем анализ прогрессий для нового режима
   useEffect(() => {
@@ -650,20 +720,20 @@ const Dashboard = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [analysisMode]);
 
-  // При смене режима (simple/advanced) — перезагружаем анализ транзитов
+  // При смене режима (simple/advanced) — старый анализ транзитов был для другого режима.
+  // Позиции от режима не зависят, поэтому НЕ пересчитываем; AI НЕ запускаем — ждём кнопку.
   useEffect(() => {
     if (analysisTab !== 'transits') return;
     setTransitsAnalysis(null);
-    loadTransits(transitsDate, analysisMode);
+    setTransitsReady(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [analysisMode]);
 
-  // При смене места транзита — перезагружаем транзиты
+  // При смене места транзита — пересчитываем позиции (AI НЕ запускаем)
   useEffect(() => {
     if (analysisTab !== 'transits') return;
     if (!transitsLocation) return; // Только при выбранном альтернативном месте
-    setTransitsAnalysis(null);
-    loadTransits(transitsDate, analysisMode);
+    loadTransitsData(transitsDate);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [transitsLocation]);
 
@@ -1648,8 +1718,12 @@ const Dashboard = () => {
                         if (tab === 'progressions' && !progressionsData) {
                           loadProgressions();
                         }
-                        // Транзиты НЕ запускаем автоматически — пользователь сначала
-                        // выбирает дату/локацию, потом нажимает кнопку «Рассчитать»
+                        // Транзиты: позиции считаем автоматически при открытии вкладки
+                        // (дёшево, без LLM); AI-анализ — только по кнопке «Дать анализ».
+                        // keepAnalysis сохраняет уже восстановленный из кэша анализ карты.
+                        if (tab === 'transits' && !transitsData) {
+                          loadTransitsData(transitsDate, { keepAnalysis: transitsReady });
+                        }
                       }}
                     />
                   )}
@@ -1672,6 +1746,7 @@ const Dashboard = () => {
                       <TransitsPanel
                         data={transitsData}
                         analysis={transitsAnalysis}
+                        transitsReady={transitsReady}
                         loading={transitsLoading}
                         error={transitsError}
                         selectedDate={transitsDate}
@@ -1680,6 +1755,9 @@ const Dashboard = () => {
                         transitsLocation={transitsLocation}
                         birthPlace={chartDataForAnalysis?.meta?.birth_place}
                         analysisLocation={transitsDisplayLocation}
+                        onRunAnalysis={() => runTransitsAnalysis()}
+                        transitsRemaining={transitsRemaining}
+                        transitsLimit={MAX_TRANSITS_ANALYSIS_PER_DAY}
                       />
                     </div>
                   )}

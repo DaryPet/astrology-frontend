@@ -1,5 +1,6 @@
 import axios from 'axios';
 import i18n from '../i18n';
+import { supabase } from '../lib/supabase';
 
 const api = axios.create({
   baseURL: '/api',
@@ -10,9 +11,23 @@ const api = axios.create({
 });
 
 // Прикрепляем Supabase-токен: защищённые эндпоинты (chat, progressions, analysis)
-// требуют Authorization: Bearer (см. get_current_user на бэкенде)
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('auth_token');
+// требуют Authorization: Bearer (см. get_current_user на бэкенде).
+// Берём токен из живой сессии Supabase (он сам себя рефрешит), а не из ручной
+// копии в localStorage — чтобы нельзя было отправить протухший/рассинхронизированный токен.
+api.interceptors.request.use(async (config) => {
+api.interceptors.request.use(async (config) => {
+  try {
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  } catch {
+    // Fall through without token — let the backend reject if auth is required
+  }
+  return config;
+});
+  const token = data.session?.access_token;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
