@@ -13,6 +13,7 @@ import type { Location } from './LocationInput';
 interface TransitsPanelProps {
   data: TransitsData | null;
   analysis: string | null;
+  transitsReady?: boolean; // AI-анализ получен и должен отображаться
   loading: boolean;
   error: string;
   selectedDate: string; // YYYY-MM-DD
@@ -21,6 +22,9 @@ interface TransitsPanelProps {
   transitsLocation?: Location | null;
   analysisLocation?: string | null; // место для которого реально посчитан анализ
   birthPlace?: string;
+  onRunAnalysis?: () => void; // явный запуск AI-анализа по кнопке
+  transitsRemaining?: number; // остаток дневного лимита AI-анализов
+  transitsLimit?: number; // дневной лимит AI-анализов
 }
 
 // Порядок вывода: Луна и быстрые первыми (день), потом медленные (фон)
@@ -31,7 +35,8 @@ const PLANET_ORDER = [
 ];
 
 const TransitsPanel: React.FC<TransitsPanelProps> = ({
-  data, analysis, loading, error, selectedDate, onDateChange, onLocationChange, transitsLocation, birthPlace, analysisLocation
+  data, analysis, transitsReady, loading, error, selectedDate, onDateChange, onLocationChange, transitsLocation, birthPlace, analysisLocation,
+  onRunAnalysis, transitsRemaining, transitsLimit
 }) => {
   const { t, i18n } = useTranslation();
   const isRu = (i18n.language || 'ru').startsWith('ru');
@@ -156,6 +161,38 @@ const TransitsPanel: React.FC<TransitsPanelProps> = ({
         <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '6px' }}>
           {t('dashboard.transits.subtitle')}
         </p>
+      </div>
+
+      {/* Запуск AI-анализа: явная кнопка + остаток дневного лимита — сразу после выбора даты/места, до расчётов */}
+      <div style={{
+        marginBottom: '16px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px',
+        flexWrap: 'wrap'
+      }}>
+        <button
+          type="button"
+          onClick={() => onRunAnalysis?.()}
+          disabled={loading || transitsRemaining === 0}
+          style={{
+            padding: '10px 18px',
+            border: 'none',
+            borderRadius: '8px',
+            background: (loading || transitsRemaining === 0) ? 'var(--bg-secondary)' : 'var(--accent, #8b5cf6)',
+            color: (loading || transitsRemaining === 0) ? 'var(--text-secondary)' : '#fff',
+            fontSize: '14px',
+            fontWeight: 600,
+            cursor: (loading || transitsRemaining === 0) ? 'not-allowed' : 'pointer',
+          }}
+        >
+          {t('dashboard.transits.giveAnalysis')}
+        </button>
+        {typeof transitsRemaining === 'number' && typeof transitsLimit === 'number' && (
+          <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
+            {t('dashboard.transits.remaining', { count: transitsRemaining, limit: transitsLimit })}
+          </span>
+        )}
       </div>
 
       {/* Локация транзитов: если есть готовый анализ — показываем место расчёта, иначе текущий выбор */}
@@ -287,8 +324,8 @@ const TransitsPanel: React.FC<TransitsPanelProps> = ({
         </>
       )}
 
-      {/* AI-анализ дня */}
-      {analysis && (
+      {/* AI-анализ дня: показываем только после явного запуска (transitsReady) */}
+      {transitsReady && analysis && (
         <div style={{ marginTop: '24px', lineHeight: '2', fontSize: '16px' }}>
           <h4 style={{ color: 'var(--text-primary)' }}>
             {t('dashboard.transits.analysisTitle')}

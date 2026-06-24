@@ -233,6 +233,8 @@
       "noFastAspects": "No exact aspects from fast planets — a smooth day",
       "return": "planetary return",
       "analysisTitle": "Transit analysis",
+      "giveAnalysis": "Get analysis",
+      "remaining": "{{count}} of {{limit}} analyses left today",
       "error": "Failed to calculate transits. Please try again.",
       "limitReached": "Daily limit of AI transit analyses reached ({{limit}}). Try again tomorrow."
     }
