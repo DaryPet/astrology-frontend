@@ -23,6 +23,7 @@ import UnsavedAnalysisModal from '../components/UnsavedAnalysisModal';
 import ProgressionsPanel from '../components/ProgressionsPanel';
 import AnalysisTabs, { AnalysisTabId } from '../components/AnalysisTabs';
 import TransitsPanel from '../components/TransitsPanel';
+import DailyForecastPanel from '../components/DailyForecastPanel';
 import type { ProgressionsData, TransitsData } from '../services/api';
 import type { Location } from '../components/LocationInput';
 import { isNearLimit, isAtLimit, MAX_MESSAGES, type ChatMessage } from '../services/chatStorage';
@@ -1712,6 +1713,7 @@ const Dashboard = () => {
                       active={analysisTab}
                       showProgressions={!!(savedChartId && fullAnalysis && chartDataForAnalysis?.type !== 'synastry')}
                       showTransits={!!(savedChartId && fullAnalysis && chartDataForAnalysis?.type !== 'synastry')}
+                      showDailyForecast={!!(savedChartId && fullAnalysis && chartDataForAnalysis?.type !== 'synastry')}
                       onChange={(tab) => {
                         setAnalysisTab(tab);
                         setShowProgressions(tab === 'progressions');
@@ -1759,6 +1761,13 @@ const Dashboard = () => {
                         transitsRemaining={transitsRemaining}
                         transitsLimit={MAX_TRANSITS_ANALYSIS_PER_DAY}
                       />
+                    </div>
+                  )}
+
+                  {/* Outlet «Прогноз дня»: оценка 1-10, категория, summary */}
+                  {analysisTab === 'dailyForecast' && !showPlanetTable && savedChartId && (
+                    <div id="daily-forecast-section">
+                      <DailyForecastPanel natalChart={chartDataForAnalysis} />
                     </div>
                   )}
 
