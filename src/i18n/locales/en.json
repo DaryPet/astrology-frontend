@@ -212,7 +212,8 @@
     "tabs": {
       "natal": "Natal Chart",
       "progressions": "Progressions",
-      "transits": "Transits"
+      "transits": "Transits",
+      "dailyForecast": "Daily Forecast"
     },
     "transits": {
       "title": "Transits of the Day",
@@ -432,6 +433,41 @@
     "processingHint": "This may take 2-5 minutes. Please wait...",
     "error": "Error loading analysis",
     "noData": "No data available for this planet"
+  },
+  "dailyForecast": {
+    "dateLabel": "Date",
+    "timeLabel": "Time",
+    "locationLabel": "Location (defaults to birth place)",
+    "locationPlaceholder": "City",
+    "modelLabel": "Analysis model",
+    "run": "Calculate",
+    "running": "Calculating…",
+    "activatedHouses": "Activated houses",
+    "fortune": "Part of Fortune",
+    "dayChart": "day chart",
+    "nightChart": "night chart",
+    "llmFallback": "LLM unavailable — showing calculated score without text analysis.",
+    "aspectsShow": "▸ Key aspects",
+    "aspectsHide": "▾ Hide aspects",
+    "colTransit": "Transit",
+    "colAspect": "Aspect",
+    "colNatal": "Natal",
+    "colOrb": "Orb",
+    "colWeight": "Weight",
+    "categories": {
+      "critical": "Critical",
+      "challenging": "Challenging",
+      "neutral": "Neutral",
+      "favorable": "Favorable",
+      "excellent": "Excellent"
+    },
+    "aspects": {
+      "conjunction": "conjunction",
+      "sextile": "sextile",
+      "square": "square",
+      "trine": "trine",
+      "opposition": "opposition"
+    }
   },
   "analysisMode": {
     "simple": "Basic",

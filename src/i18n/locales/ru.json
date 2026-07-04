@@ -212,7 +212,8 @@
     "tabs": {
       "natal": "Натальная карта",
       "progressions": "Прогрессии",
-      "transits": "Транзиты"
+      "transits": "Транзиты",
+      "dailyForecast": "Прогноз дня"
     },
     "transits": {
       "title": "Транзиты дня",
@@ -432,6 +433,41 @@
     "processingHint": "Это может занять от 2 до 5 минут. Пожалуйста, подождите...",
     "error": "Ошибка загрузки анализа",
     "noData": "Данные для этой планеты недоступны"
+  },
+  "dailyForecast": {
+    "dateLabel": "Дата",
+    "timeLabel": "Время",
+    "locationLabel": "Место (по умолчанию — место рождения)",
+    "locationPlaceholder": "Город",
+    "modelLabel": "Модель анализа",
+    "run": "Рассчитать",
+    "running": "Считаю…",
+    "activatedHouses": "Активированные дома",
+    "fortune": "Колесо Фортуны",
+    "dayChart": "дневная карта",
+    "nightChart": "ночная карта",
+    "llmFallback": "LLM недоступна — показана расчётная оценка без текстового анализа.",
+    "aspectsShow": "▸ Ключевые аспекты",
+    "aspectsHide": "▾ Скрыть аспекты",
+    "colTransit": "Транзит",
+    "colAspect": "Аспект",
+    "colNatal": "Натал",
+    "colOrb": "Орб",
+    "colWeight": "Вес",
+    "categories": {
+      "critical": "Критический",
+      "challenging": "Напряжённый",
+      "neutral": "Нейтральный",
+      "favorable": "Благоприятный",
+      "excellent": "Отличный"
+    },
+    "aspects": {
+      "conjunction": "соединение",
+      "sextile": "секстиль",
+      "square": "квадрат",
+      "trine": "трин",
+      "opposition": "оппозиция"
+    }
   },
   "analysisMode": {
     "simple": "Базовый",

@@ -385,6 +385,17 @@ export const astrologyAPI = {
     return response.data;
   },
 
+  /**
+   * Прогноз дня: score 1-10, категория, summary; аспекты к планетам, углам, Фортуне.
+   * @param payload - { birth_*, natal_chart, target_date, transit_*, language, llm_provider, llm_model }
+   */
+  getDailyForecast: async (
+    payload: Record<string, unknown>
+  ): Promise<Record<string, any>> => {
+    const response = await api.post('/daily-forecast', payload);
+    return response.data;
+  },
+
   chatAnalysis: async (chatRequest: unknown): Promise<unknown> => {
     try {
       const response = await api.post('/analysis/chat', chatRequest);
