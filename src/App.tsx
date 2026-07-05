@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import Home from './pages/Home';
 import Synastry from './pages/Synastry';
 import Dashboard from './pages/Dashboard';
+import DailyForecast from './pages/DailyForecast';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Logout from './pages/Logout';
@@ -60,6 +61,7 @@ function AppRoutes() {
       <Route path="/:lang/" element={<Home />} />
       <Route path="/:lang/chart/:id" element={<ChartRedirect />} />
       <Route path="/:lang/synastry" element={<Synastry />} />
+      <Route path="/:lang/daily-forecast" element={<DailyForecast />} />
       <Route path="/:lang/dashboard" element={<Dashboard key={location.key} />} />
       <Route path="/:lang/login" element={<Login />} />
       <Route path="/:lang/register" element={<Register />} />

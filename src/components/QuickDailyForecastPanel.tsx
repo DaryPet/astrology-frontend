@@ -1,7 +1,5 @@
-// src/components/DailyForecastPanel.tsx
-// Прогноз дня: дата+время+место транзита, выбор LLM, оценка 1-10 с категорией,
-// summary 3-5 предложений, таблица ключевых аспектов (включая углы и Фортуну).
-// Самодостаточная панель: своё состояние и запрос, Dashboard передаёт только natalChart.
+// src/components/QuickDailyForecastPanel.tsx
+// Быстрый прогноз дня: работает сразу после ввода данных, без сохранения карты
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import LocationInput from './LocationInput';
@@ -31,8 +29,18 @@ interface ForecastResult {
   llm_error?: string | null;
 }
 
-interface DailyForecastPanelProps {
-  natalChart: Record<string, any> | null; // chartDataForAnalysis: { planets, houses, meta, ... }
+interface QuickDailyForecastPanelProps {
+  birthData: {
+    name?: string;
+    birth_date?: string;
+    birth_time?: string;
+    birth_place?: string;
+    latitude?: number | null;
+    longitude?: number | null;
+    timezone?: string;
+    house_system?: string;
+  } | null;
+  natalChart?: Record<string, any> | null;
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -40,18 +48,18 @@ const CATEGORY_COLORS: Record<string, string> = {
   challenging: '#fb8c00',
   neutral: '#9e9e9e',
   favorable: '#43a047',
-  excellent: '#d4af37',
+  excellent: '#d4af36',
 };
 
 const today = () => new Date().toISOString().slice(0, 10);
 
-const DailyForecastPanel: React.FC<DailyForecastPanelProps> = ({ natalChart }) => {
+const QuickDailyForecastPanel: React.FC<QuickDailyForecastPanelProps> = ({ birthData, natalChart }) => {
   const { t, i18n } = useTranslation();
   const language = (i18n.language || 'ru').startsWith('ru') ? 'ru' : 'en';
 
   const [date, setDate] = useState<string>(today());
-  const [time, setTime] = useState<string>('12:00');
-  const [location, setLocation] = useState<Location | null>(null); // null = место рождения
+  const [time, setTime] = useState<string>(birthData?.birth_time || '12:00');
+  const [location, setLocation] = useState<Location | null>(null);
   const [llm, setLlm] = useState<LLMModelOption>(DEFAULT_LLM);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -59,7 +67,6 @@ const DailyForecastPanel: React.FC<DailyForecastPanelProps> = ({ natalChart }) =
   const [showAspects, setShowAspects] = useState(false);
 
   const meta = natalChart?.meta || {};
-
   const cacheKey = () =>
     `daily_forecast|${meta.birth_date}|${meta.birth_place}|${date}|${time}|` +
     `${location ? `${location.lat},${location.lon}` : 'natal'}|${llm.provider}|${llm.model || ''}|${language}`;
@@ -80,17 +87,13 @@ const DailyForecastPanel: React.FC<DailyForecastPanelProps> = ({ natalChart }) =
     setLoading(true);
     setResult(null);
     try {
-      // payload по образцу loadTransitsData: birth_date уже содержит время (ISO),
-      // birth_time в meta нет; house_system — из houses_meta.
-      // target_date в UTC (конвенция приложения — см. `${day}T12:00:00Z` в транзитах).
       const data = await astrologyAPI.getDailyForecast({
         birth_date: meta.birth_date,
         birth_place: meta.birth_place,
         latitude: meta.latitude,
         longitude: meta.longitude,
         timezone: meta.timezone,
-        house_system:
-          (natalChart?.houses_meta as { house_system?: string } | undefined)?.house_system || 'Placidus',
+        house_system: natalChart?.houses_meta?.house_system || 'Placidus',
         natal_chart: natalChart,
         target_date: `${date}T${time}:00`,
         transit_timezone: location?.timezone || meta.timezone,
@@ -104,7 +107,12 @@ const DailyForecastPanel: React.FC<DailyForecastPanelProps> = ({ natalChart }) =
       setResult(data as unknown as ForecastResult);
       localStorage.setItem(key, JSON.stringify(data));
     } catch (e: any) {
-      setError(e?.response?.data?.detail || e?.message || t('common.error'));
+      const detail = e?.response?.data?.detail;
+      if (Array.isArray(detail)) {
+        setError(detail.map((err: { msg?: string }) => err.msg || JSON.stringify(err)).join(', '));
+      } else {
+        setError(e?.response?.data?.detail || e?.message || t('common.error'));
+      }
     } finally {
       setLoading(false);
     }
@@ -122,9 +130,22 @@ const DailyForecastPanel: React.FC<DailyForecastPanelProps> = ({ natalChart }) =
     fontSize: '14px',
   };
 
+  if (!birthData) {
+    return (
+      <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
+        {t('dailyForecast.enterBirthData')}
+      </div>
+    );
+  }
+
   return (
-    <div style={{ marginTop: '24px' }}>
-      {/* Форма */}
+    <div className="daily-forecast-panel">
+      {birthData.name && (
+        <div style={{ marginBottom: '16px', padding: '12px 16px', background: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border)' }}>
+          <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>{t('dailyForecast.forPerson')}</span>
+          <span style={{ fontSize: '18px', fontWeight: '600', color: 'var(--text-primary)', marginLeft: '8px' }}>{birthData.name}</span>
+        </div>
+      )}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'flex-end' }}>
         <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '13px', color: 'var(--text-secondary)' }}>
           {t('dailyForecast.dateLabel')}
@@ -140,7 +161,7 @@ const DailyForecastPanel: React.FC<DailyForecastPanelProps> = ({ natalChart }) =
             value={location?.display_name || ''}
             onChange={() => {}}
             onLocationSelect={setLocation}
-            placeholder={meta.birth_place || t('dailyForecast.locationPlaceholder')}
+            placeholder={birthData.birth_place || t('dailyForecast.locationPlaceholder')}
             style={{ width: '260px', maxWidth: '100%' }}
           />
         </div>
@@ -161,7 +182,7 @@ const DailyForecastPanel: React.FC<DailyForecastPanelProps> = ({ natalChart }) =
             ))}
           </select>
         </label>
-        <button className="btn btn-primary" onClick={run} disabled={loading || !natalChart}>
+        <button className="btn btn-primary" onClick={run} disabled={loading}>
           {loading ? t('dailyForecast.running') : t('dailyForecast.run')}
         </button>
       </div>
@@ -176,7 +197,6 @@ const DailyForecastPanel: React.FC<DailyForecastPanelProps> = ({ natalChart }) =
         <div className="error-message" style={{ marginTop: '16px' }}>{error}</div>
       )}
 
-      {/* Результат */}
       {result && !loading && (
         <div
           style={{
@@ -276,4 +296,4 @@ const DailyForecastPanel: React.FC<DailyForecastPanelProps> = ({ natalChart }) =
   );
 };
 
-export default DailyForecastPanel;
+export default QuickDailyForecastPanel;

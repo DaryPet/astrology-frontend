@@ -2,6 +2,7 @@
   "nav": {
     "home": "Home",
     "synastry": "Synastry",
+    "dailyForecast": "Day Forecast",
     "dashboard": "Dashboard",
     "login": "Login",
     "register": "Register",
@@ -49,6 +50,7 @@
       "calcError": "Error calculating chart"
     },
     "getFullAnalysis": "Get Full Chart Analysis",
+    "dailyForecast": "Day Forecast",
     "newCalculation": "New Calculation"
   },
   "login": {
@@ -435,6 +437,8 @@
     "noData": "No data available for this planet"
   },
   "dailyForecast": {
+    "enterBirthData": "Enter birth data to get day forecast",
+    "forPerson": "Forecast for",
     "dateLabel": "Date",
     "timeLabel": "Time",
     "locationLabel": "Location (defaults to birth place)",
@@ -467,6 +471,23 @@
       "square": "square",
       "trine": "trine",
       "opposition": "opposition"
+    }
+  },
+  "dailyForecastPage": {
+    "title": "Day Forecast",
+    "subtitle": "Quick day forecast for any person without saving chart",
+    "form": {
+      "name": "Name",
+      "namePlaceholder": "Enter name",
+      "birthDate": "Birth Date *",
+      "birthTime": "Birth Time *",
+      "birthPlace": "Birth Place *",
+      "cityPlaceholder": "Start typing a city name...",
+      "submit": "Get Forecast",
+      "submitting": "Calculating..."
+    },
+    "errors": {
+      "calcError": "Error calculating forecast"
     }
   },
   "analysisMode": {

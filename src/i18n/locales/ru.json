@@ -2,6 +2,7 @@
   "nav": {
     "home": "Главная",
     "synastry": "Синастрия",
+    "dailyForecast": "Прогноз дня",
     "dashboard": "Мой кабинет",
     "login": "Войти",
     "register": "Регистрация",
@@ -49,6 +50,7 @@
       "calcError": "Ошибка при расчете карты"
     },
     "getFullAnalysis": "Получить полный разбор карты",
+    "dailyForecast": "Прогноз дня",
     "newCalculation": "Новый расчет"
   },
   "login": {
@@ -435,6 +437,8 @@
     "noData": "Данные для этой планеты недоступны"
   },
   "dailyForecast": {
+    "enterBirthData": "Введите данные рождения, чтобы получить прогноз дня",
+    "forPerson": "Прогноз для",
     "dateLabel": "Дата",
     "timeLabel": "Время",
     "locationLabel": "Место (по умолчанию — место рождения)",
@@ -467,6 +471,23 @@
       "square": "квадрат",
       "trine": "трин",
       "opposition": "оппозиция"
+    }
+  },
+  "dailyForecastPage": {
+    "title": "Прогноз дня",
+    "subtitle": "Быстрый прогноз дня для любого человека без сохранения карты",
+    "form": {
+      "name": "Имя",
+      "namePlaceholder": "Введите имя",
+      "birthDate": "Дата рождения *",
+      "birthTime": "Время рождения *",
+      "birthPlace": "Место рождения *",
+      "cityPlaceholder": "Начните вводить название города...",
+      "submit": "Рассчитать прогноз",
+      "submitting": "Расчет..."
+    },
+    "errors": {
+      "calcError": "Ошибка при расчете прогноза"
     }
   },
   "analysisMode": {

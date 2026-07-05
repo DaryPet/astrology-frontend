@@ -12,6 +12,7 @@ import PlanetAnalysisModal from '../components/PlanetAnalysisModal';
 import AstroChartComponent from '../components/AstroChartComponent';
 import ProcessingMessage from '../components/ProcessingMessage';
 import AnalysisModeToggle from '../components/AnalysisModeToggle';
+import DailyForecastPanel from '../components/DailyForecastPanel';
 
 interface FormData {
   name: string;
@@ -125,6 +126,7 @@ function Home() {
     return localStorage.getItem('analysisMode') || 'simple';
   });
   const [isNavigating, setIsNavigating] = useState(false);
+  const [showDailyForecast, setShowDailyForecast] = useState(false);
 
   useEffect(() => {
     const savedChartData = localStorage.getItem('savedChartData');
@@ -156,8 +158,8 @@ function Home() {
         if (detectedTimezone && detectedTimezone !== 'UTC') {
           timezone = detectedTimezone;
         }
-      } catch (err) {
-        console.warn('Timezone detection warning:', err);
+      } catch {
+        // Fallback на UTC
       }
     }
 
@@ -225,7 +227,6 @@ function Home() {
     if (!cd) return null;
     const zodiacSigns = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
     const zodiacSignsRu = ['Овен', 'Телец', 'Близнецы', 'Рак', 'Лев', 'Дева', 'Весы', 'Скорпион', 'Стрелец', 'Козерог', 'Водолей', 'Рыбы'];
-    // Use Record<string, string> to allow index access with string
     const planetNamesEn: Record<string, string> = {
       Sun: 'Sun', Moon: 'Moon', Mercury: 'Mercury', Venus: 'Venus', Mars: 'Mars',
       Jupiter: 'Jupiter', Saturn: 'Saturn', Uranus: 'Uranus', Neptune: 'Neptune',
@@ -318,7 +319,6 @@ function Home() {
     localStorage.removeItem('chartDataForAnalysis');
     localStorage.setItem('chartDataForAnalysis', JSON.stringify(chartDataForAnalysis));
 
-    // Persist analysis job to survive navigation during processing
     localStorage.setItem('pendingAnalysisJob', JSON.stringify({
       chartDataForAnalysis,
       analysisMode,
@@ -340,6 +340,10 @@ function Home() {
     }, 0);
   };
 
+  const handleDailyForecastClick = () => {
+    setShowDailyForecast(true);
+  };
+
   const handleNewCalculation = () => {
     localStorage.removeItem('savedChartData');
     localStorage.removeItem('chartDataForAnalysis');
@@ -353,6 +357,7 @@ function Home() {
       }
     });
     setChartData(null);
+    setShowDailyForecast(false);
     setFormData({
       name: '',
       birth_date: '',
@@ -376,7 +381,7 @@ function Home() {
     }
 
     const apiData = {
-      birth_date: `${formData.birth_date}T${formData.birth_time}:00`,
+      birth_date: `${formData.birth_date}T${formData.birth_time}:00+03:00`,
       birth_place: formData.city,
       latitude: formData.latitude,
       longitude: formData.longitude,
@@ -571,33 +576,50 @@ function Home() {
               <AnalysisModeToggle value={analysisMode} onChange={setAnalysisMode} />
             </div>
 
-            <button
-              type="button"
-              className="btn-full-analysis"
-              onClick={handleFullAnalysisClick}
-              disabled={isNavigating}
-              style={{
-                marginTop: '24px',
-                marginLeft: 'auto',
-                marginRight: 'auto',
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                color: 'white',
-                padding: isNavigating ? '30px 28px' : '14px 28px',
-                border: 'none',
-                borderRadius: '8px',
-                fontSize: '16px',
-                fontWeight: '600',
-                cursor: isNavigating ? 'default' : 'pointer',
-                transition: 'transform 0.2s, box-shadow 0.2s',
-                opacity: isNavigating ? 0.8 : 1,
-                minWidth: '280px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-            >
-              {isNavigating ? <ProcessingMessage /> : t('home.getFullAnalysis')}
-            </button>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap', marginTop: '24px' }}>
+              <button
+                type="button"
+                className="btn-full-analysis"
+                onClick={handleFullAnalysisClick}
+                disabled={isNavigating}
+                style={{
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  color: 'white',
+                  padding: isNavigating ? '30px 28px' : '14px 28px',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '16px',
+                  fontWeight: '600',
+                  cursor: isNavigating ? 'default' : 'pointer',
+                  transition: 'transform 0.2s, box-shadow 0.2s',
+                  opacity: isNavigating ? 0.8 : 1,
+                  minWidth: '280px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                {isNavigating ? <ProcessingMessage /> : t('home.getFullAnalysis')}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleDailyForecastClick}
+                style={{
+                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  color: 'white',
+                  padding: '14px 28px',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '16px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'transform 0.2s, box-shadow 0.2s',
+                }}
+              >
+                {t('home.dailyForecast')}
+              </button>
+            </div>
 
             <button
               type="button"
@@ -649,6 +671,15 @@ function Home() {
               error={analysisError}
             />
           </div>
+
+          {showDailyForecast && (
+            <div style={{ marginTop: '30px' }}>
+              <h3 style={{ marginBottom: '20px', color: 'var(--text-primary)' }}>
+                {t('dailyForecast.forPerson')}: {chartData.name}
+              </h3>
+              <DailyForecastPanel natalChart={chartData} />
+            </div>
+          )}
         </div>
       )}
     </div>
