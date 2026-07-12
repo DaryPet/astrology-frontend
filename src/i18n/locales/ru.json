@@ -2,7 +2,7 @@
   "nav": {
     "home": "Главная",
     "synastry": "Синастрия",
-    "dailyForecast": "Прогноз дня",
+    "eventAnalysis": "Анализ события",
     "dashboard": "Мой кабинет",
     "login": "Войти",
     "register": "Регистрация",
@@ -473,21 +473,41 @@
       "opposition": "оппозиция"
     }
   },
-  "dailyForecastPage": {
-    "title": "Прогноз дня",
-    "subtitle": "Быстрый прогноз дня для любого человека без сохранения карты",
-    "form": {
-      "name": "Имя",
-      "namePlaceholder": "Введите имя",
-      "birthDate": "Дата рождения *",
-      "birthTime": "Время рождения *",
-      "birthPlace": "Место рождения *",
-      "cityPlaceholder": "Начните вводить название города...",
-      "submit": "Рассчитать прогноз",
-      "submitting": "Расчет..."
+  "eventAnalysisPage": {
+    "title": "Анализ события",
+    "subtitle": "Прогноз исхода события по дате, времени и месту"
+  },
+  "eventAnalysis": {
+    "dateLabel": "Дата события",
+    "timeLabel": "Время (местное)",
+    "locationLabel": "Место события",
+    "locationPlaceholder": "Город",
+    "modelLabel": "Модель анализа",
+    "extraTimeLabel": "Возможно дополнительное время",
+    "timezoneNote": "Таймзона места",
+    "run": "Рассчитать",
+    "running": "Считаю…",
+    "validation": {
+      "missingFields": "Укажите дату, время и место события"
     },
-    "errors": {
-      "calcError": "Ошибка при расчете прогноза"
+    "favoriteLabel": "Фаворит",
+    "opponentLabel": "Соперник",
+    "verdictLabel": "Вердикт",
+    "llmFallback": "LLM недоступна — показана расчётная оценка без текстового анализа.",
+    "fromCache": "Результат из кэша",
+    "categories": {
+      "critical": "Критический",
+      "challenging": "Напряжённый",
+      "neutral": "Нейтральный",
+      "favorable": "Благоприятный",
+      "excellent": "Отличный"
+    },
+    "matchType": {
+      "favourite_win_likely": "Вероятна победа фаворита",
+      "favourite_edge": "Небольшой перевес фаворита",
+      "draw_likely": "Вероятна ничья",
+      "underdog_edge": "Небольшой перевес аутсайдера",
+      "underdog_win_likely": "Вероятна победа аутсайдера"
     }
   },
   "analysisMode": {

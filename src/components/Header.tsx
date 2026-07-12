@@ -58,7 +58,7 @@ const Header: React.FC<HeaderProps> = ({ hasUnsavedAnalysis = false, onProtected
         <nav className="nav">
           <Link to={`/${currentLangCode}/`} className="nav-link" onClick={handleNavClick(`/${currentLangCode}/`)}>{t('nav.home')}</Link>
           <Link to={`/${currentLangCode}/synastry`} className="nav-link" onClick={handleNavClick(`/${currentLangCode}/synastry`)}>{t('nav.synastry')}</Link>
-          <Link to={`/${currentLangCode}/daily-forecast`} className="nav-link" onClick={handleNavClick(`/${currentLangCode}/daily-forecast`)}>{t('nav.dailyForecast')}</Link>
+          <Link to={`/${currentLangCode}/event-analysis`} className="nav-link" onClick={handleNavClick(`/${currentLangCode}/event-analysis`)}>{t('nav.eventAnalysis')}</Link>
           {isAuthenticated ? (
             <>
               <Link to={`/${currentLangCode}/dashboard`} className="nav-link">{t('nav.dashboard')}</Link>
