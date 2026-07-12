@@ -57,7 +57,7 @@ const EventAnalysisPanel: React.FC = () => {
   const handleLocationSelect = async (loc: Location) => {
     // Таймзона всегда должна быть таймзоной места события; фоллбэк 'UTC'
     // из LocationInput недопустим — уточняем по координатам.
-    if ((!loc.timezone || loc.timezone === 'UTC') && loc.lat && loc.lon) {
+    if ((!loc.timezone || loc.timezone === 'UTC') && Number.isFinite(loc.lat) && Number.isFinite(loc.lon)) {
       try {
         const detected = await geocodeAPI.detectTimezone(loc.lat, loc.lon);
         if (detected && detected !== 'UTC') {
@@ -78,7 +78,7 @@ const EventAnalysisPanel: React.FC = () => {
   const run = async () => {
     setError('');
 
-    if (!date || !time || !location || !location.timezone) {
+    if (!date || !time || !location || !location.timezone || location.timezone === 'UTC') {
       setError(t('eventAnalysis.validation.missingFields'));
       return;
     }
