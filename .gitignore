@@ -48,3 +48,4 @@ openspec/changes/
 # Vite cache
 .vite/
 .agents
+.claude/

@@ -2,6 +2,7 @@
   "nav": {
     "home": "Home",
     "synastry": "Synastry",
+    "eventAnalysis": "Event Analysis",
     "dashboard": "Dashboard",
     "login": "Login",
     "register": "Register",
@@ -49,6 +50,7 @@
       "calcError": "Error calculating chart"
     },
     "getFullAnalysis": "Get Full Chart Analysis",
+    "dailyForecast": "Day Forecast",
     "newCalculation": "New Calculation"
   },
   "login": {
@@ -435,6 +437,8 @@
     "noData": "No data available for this planet"
   },
   "dailyForecast": {
+    "enterBirthData": "Enter birth data to get day forecast",
+    "forPerson": "Forecast for",
     "dateLabel": "Date",
     "timeLabel": "Time",
     "locationLabel": "Location (defaults to birth place)",
@@ -467,6 +471,43 @@
       "square": "square",
       "trine": "trine",
       "opposition": "opposition"
+    }
+  },
+  "eventAnalysisPage": {
+    "title": "Event Analysis",
+    "subtitle": "Outcome forecast for an event by its date, time and place"
+  },
+  "eventAnalysis": {
+    "dateLabel": "Event date",
+    "timeLabel": "Time (local)",
+    "locationLabel": "Event place",
+    "locationPlaceholder": "City",
+    "modelLabel": "Analysis model",
+    "extraTimeLabel": "Extra time possible",
+    "timezoneNote": "Place timezone",
+    "run": "Calculate",
+    "running": "Calculating…",
+    "validation": {
+      "missingFields": "Enter the event date, time and place"
+    },
+    "favoriteLabel": "Favorite",
+    "opponentLabel": "Opponent",
+    "verdictLabel": "Verdict",
+    "llmFallback": "LLM unavailable — showing calculated score without text analysis.",
+    "fromCache": "Cached result",
+    "categories": {
+      "critical": "Critical",
+      "challenging": "Challenging",
+      "neutral": "Neutral",
+      "favorable": "Favorable",
+      "excellent": "Excellent"
+    },
+    "matchType": {
+      "favourite_win_likely": "Favourite win likely",
+      "favourite_edge": "Favourite edge",
+      "draw_likely": "Draw likely",
+      "underdog_edge": "Underdog edge",
+      "underdog_win_likely": "Underdog win likely"
     }
   },
   "analysisMode": {

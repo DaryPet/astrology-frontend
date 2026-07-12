@@ -101,7 +101,7 @@ const DailyForecastPanel: React.FC<DailyForecastPanelProps> = ({ natalChart }) =
         llm_provider: llm.provider,
         llm_model: llm.model,
       });
-      setResult(data);
+      setResult(data as unknown as ForecastResult);
       localStorage.setItem(key, JSON.stringify(data));
     } catch (e: any) {
       setError(e?.response?.data?.detail || e?.message || t('common.error'));

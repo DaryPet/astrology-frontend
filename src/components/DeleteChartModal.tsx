@@ -39,20 +39,22 @@ function DeleteChartModal({ isOpen, onClose, onDeleted }: DeleteChartModalProps)
   const [charts, setCharts] = useState<ChartItem[]>([]);
   const [selectedId, setSelectedId] = useState<string | number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [confirmDeleteInModal, setConfirmDeleteInModal] = useState(false);
 
   const loadCharts = useCallback(async () => {
     setLoading(true);
+    setLoadError('');
     try {
       const data = await chartsApi.getCharts(user!.id);
       setCharts(data);
-    } catch (err) {
-      throw err;
+    } catch {
+      setLoadError(t('common.error'));
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, t]);
 
   useEffect(() => {
     if (isOpen && user) {
@@ -136,6 +138,8 @@ function DeleteChartModal({ isOpen, onClose, onDeleted }: DeleteChartModalProps)
 
         {loading ? (
           <div className="loading">{t('common.loading')}</div>
+        ) : loadError ? (
+          <div className="error" style={{ marginBottom: '20px' }}>{loadError}</div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
             {charts.map((chart) => (

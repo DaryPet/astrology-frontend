@@ -135,9 +135,11 @@ export function getFullAnalysis(
         );
       }
       return { analysis: result.analysis };
-    } finally {
-      // Чистим в любом случае — успех или ошибка
-      // analysisCache.delete(key);
+    } catch (err) {
+      // Успешный результат оставляем в кэше (не дублируем LLM-ответ),
+      // но упавший запрос нужно удалить — иначе повтор невозможен без reload
+      analysisCache.delete(key);
+      throw err;
     }
   })();
 
