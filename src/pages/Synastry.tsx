@@ -215,14 +215,16 @@ function Synastry() {
         sun_sign: synastryData.chart1?.sun_sign,
         moon_sign: synastryData.chart1?.moon_sign,
         ascendant: synastryData.chart1?.ascendant,
-        planets: synastryData.chart1?.planets
+        planets: synastryData.chart1?.planets,
+        houses: synastryData.chart1?.houses
       },
       chart2: {
         ...(synastryData.chart2_input || {}),
         sun_sign: synastryData.chart2?.sun_sign,
         moon_sign: synastryData.chart2?.moon_sign,
         ascendant: synastryData.chart2?.ascendant,
-        planets: synastryData.chart2?.planets
+        planets: synastryData.chart2?.planets,
+        houses: synastryData.chart2?.houses
       },
       overlays: synastryData.overlays || [],
       aspects: synastryData.aspects || [],

@@ -16,9 +16,14 @@ import Sidebar from '../components/Sidebar';
 import PlanetTable from '../components/PlanetTable';
 import PlanetAnalysisModal from '../components/PlanetAnalysisModal';
 import AspectGrid, { Aspect } from '../components/AspectGrid';
+import SynastryChartComponent from '../components/SynastryChartComponentV2';
+import AstroChartComponent from '../components/AstroChartComponent';
 import AspectAnalysisModal from '../components/AspectAnalysisModal';
 import AnalysisModeToggle from '../components/AnalysisModeToggle';
-import RelationshipTypesBar from '../components/RelationshipTypesBar';
+// ВРЕМЕННО ОТКЛЮЧЕНО: типы отношений. Код готов и рабочий, просто пока не показываем.
+// Чтобы вернуть — раскомментировать этот импорт и все блоки с пометкой
+// "ВРЕМЕННО ОТКЛЮЧЕНО: типы отношений" в этом файле.
+// import RelationshipTypesBar from '../components/RelationshipTypesBar';
 import UnsavedAnalysisModal from '../components/UnsavedAnalysisModal';
 import ProgressionsPanel from '../components/ProgressionsPanel';
 import AnalysisTabs, { AnalysisTabId } from '../components/AnalysisTabs';
@@ -71,11 +76,15 @@ interface ChartData {
   chart1?: {
     birth_date?: string;
     birth_place?: string;
+    planets?: Record<string, ChartPlanet>;
+    houses?: Record<string, ChartHouse>;
     [key: string]: unknown;
   };
   chart2?: {
     birth_date?: string;
     birth_place?: string;
+    planets?: Record<string, ChartPlanet>;
+    houses?: Record<string, ChartHouse>;
     [key: string]: unknown;
   };
   person1_name?: string;
@@ -127,13 +136,14 @@ interface PlanetData {
   [key: string]: unknown;
 }
 
-interface RelationshipTypesData {
-  dominant_type?: string;
-  relationship_types?: {
-    [key: string]: { percentage?: number; label?: string; description?: string };
-  };
-  [key: string]: unknown;
-}
+// ВРЕМЕННО ОТКЛЮЧЕНО: типы отношений. Код готов, пока закомментирован.
+// interface RelationshipTypesData {
+//   dominant_type?: string;
+//   relationship_types?: {
+//     [key: string]: { percentage?: number; label?: string; description?: string };
+//   };
+//   [key: string]: unknown;
+// }
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -219,8 +229,9 @@ const Dashboard = () => {
   const [aspectLoading, setAspectLoading] = useState(false);
   const [aspectError, setAspectError] = useState<string>('');
   const [showScrollTop, setShowScrollTop] = useState(false);
-  const [relationshipTypes, setRelationshipTypes] = useState<RelationshipTypesData | null>(null);
-  const [relationshipTypesLoading, setRelationshipTypesLoading] = useState(false);
+  // ВРЕМЕННО ОТКЛЮЧЕНО: типы отношений. Код готов, пока закомментирован.
+  // const [relationshipTypes, setRelationshipTypes] = useState<RelationshipTypesData | null>(null);
+  // const [relationshipTypesLoading, setRelationshipTypesLoading] = useState(false);
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null);
   // Прогрессии — доступны ТОЛЬКО для сохранённых карт (как чат)
@@ -820,37 +831,38 @@ const Dashboard = () => {
     }
   }, [fullAnalysis, savedChartId]);
 
-  useEffect(() => {
-    setRelationshipTypes(null);
-  }, [savedChartId]);
+  // ВРЕМЕННО ОТКЛЮЧЕНО: типы отношений. Код готов и рабочий, пока не запрашиваем с бэкенда.
+  // useEffect(() => {
+  //   setRelationshipTypes(null);
+  // }, [savedChartId]);
 
-  useEffect(() => {
-    if (chartDataForAnalysis?.type === 'synastry' && fullAnalysis && savedChartId && !relationshipTypes) {
-      const storageKey = `relationshipTypes_${savedChartId}`;
-      const cached = localStorage.getItem(storageKey);
-      if (cached) {
-        try {
-          setRelationshipTypes(JSON.parse(cached));
-          return;
-        } catch { }
-      }
-      const loadRelationshipTypes = async () => {
-        setRelationshipTypesLoading(true);
-        try {
-          const result = await astrologyAPI.getRelationshipTypes(fullAnalysis, i18n.language);
-          console.log('Relationship Types Response:', result);
-          setRelationshipTypes(result);
-          localStorage.setItem(storageKey, JSON.stringify(result));
-        } catch (err) {
-          console.error('Failed to load relationship types:', err);
-        } finally {
-          setRelationshipTypesLoading(false);
-        }
-      };
-      loadRelationshipTypes();
-    }
-
-  }, [chartDataForAnalysis, fullAnalysis, relationshipTypes, savedChartId]);
+  // useEffect(() => {
+  //   if (chartDataForAnalysis?.type === 'synastry' && fullAnalysis && savedChartId && !relationshipTypes) {
+  //     const storageKey = `relationshipTypes_${savedChartId}`;
+  //     const cached = localStorage.getItem(storageKey);
+  //     if (cached) {
+  //       try {
+  //         setRelationshipTypes(JSON.parse(cached));
+  //         return;
+  //       } catch { }
+  //     }
+  //     const loadRelationshipTypes = async () => {
+  //       setRelationshipTypesLoading(true);
+  //       try {
+  //         const result = await astrologyAPI.getRelationshipTypes(fullAnalysis, i18n.language);
+  //         console.log('Relationship Types Response:', result);
+  //         setRelationshipTypes(result);
+  //         localStorage.setItem(storageKey, JSON.stringify(result));
+  //       } catch (err) {
+  //         console.error('Failed to load relationship types:', err);
+  //       } finally {
+  //         setRelationshipTypesLoading(false);
+  //       }
+  //     };
+  //     loadRelationshipTypes();
+  //   }
+  //
+  // }, [chartDataForAnalysis, fullAnalysis, relationshipTypes, savedChartId]);
 
   const loadHistoryCharts = useCallback(async () => {
     if (!user) return;
@@ -931,13 +943,14 @@ const Dashboard = () => {
       localStorage.removeItem('pendingAnalysisJob');
       localStorage.removeItem('pendingAnalysisResult');
 
-      if (isSynastry && relationshipTypes) {
-        try {
-          await chartsApi.saveRelationshipTypes(saved.id, relationshipTypes);
-        } catch (err) {
-          console.error('Failed to save relationship types to DB:', err);
-        }
-      }
+      // ВРЕМЕННО ОТКЛЮЧЕНО: типы отношений. Код готов, пока не сохраняем в БД.
+      // if (isSynastry && relationshipTypes) {
+      //   try {
+      //     await chartsApi.saveRelationshipTypes(saved.id, relationshipTypes);
+      //   } catch (err) {
+      //     console.error('Failed to save relationship types to DB:', err);
+      //   }
+      // }
 
       await loadHistoryCharts();
     } catch {
@@ -1633,14 +1646,72 @@ const Dashboard = () => {
                     />
                   </div>
 
-                  {chartDataForAnalysis?.type === 'synastry' && fullAnalysis && relationshipTypes && !relationshipTypesLoading && (
+                  {/* Колесо синастрии. Рисуется только при наличии домов: у карт,
+                      сохранённых до появления houses в chart_data, куспидов нет —
+                      без них зодиак не повернуть по ASC и домовую сетку не построить. */}
+                  {chartDataForAnalysis?.type === 'synastry'
+                    && chartDataForAnalysis.chart1?.planets
+                    && chartDataForAnalysis.chart2?.planets
+                    && chartDataForAnalysis.chart1?.houses && (
+                    <div style={{ marginBottom: '30px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'center', gap: '30px', marginBottom: '16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#3b82f6' }}></div>
+                          <span style={{ color: 'var(--text-primary)', fontSize: '14px' }}>
+                            {chartDataForAnalysis.person1_name || t('synastry.person1')}
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#ef4444' }}></div>
+                          <span style={{ color: 'var(--text-primary)', fontSize: '14px' }}>
+                            {chartDataForAnalysis.person2_name || t('synastry.person2')}
+                          </span>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'center' }}>
+                        <SynastryChartComponent
+                          chart1={chartDataForAnalysis.chart1}
+                          chart2={chartDataForAnalysis.chart2}
+                          aspects={chartDataForAnalysis.aspects as unknown as Aspect[] | undefined}
+                          size={560}
+                          name1={chartDataForAnalysis.person1_name}
+                          name2={chartDataForAnalysis.person2_name}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Колесо натальной карты. Данные (planets/houses/houses_meta) уже лежат
+                      в chart_data, ничего досохранять не потребовалось. */}
+                  {chartDataForAnalysis
+                    && chartDataForAnalysis.type !== 'synastry'
+                    && chartDataForAnalysis.planets
+                    && chartDataForAnalysis.houses && (
+                    <div style={{ marginBottom: '30px', display: 'flex', justifyContent: 'center' }}>
+                      <AstroChartComponent
+                        chartData={{
+                          planets: chartDataForAnalysis.planets,
+                          houses: chartDataForAnalysis.houses,
+                          // На главной в компонент уходит сырой ответ API, где vertex лежит
+                          // в корне. В сохранённых данных он внутри houses_meta — пробрасываем,
+                          // иначе точка Vx не отрисуется.
+                          vertex: (chartDataForAnalysis.houses_meta as { vertex?: { longitude: number } } | undefined)?.vertex,
+                          houses_meta: chartDataForAnalysis.houses_meta as { pars_fortuna?: { longitude: number } } | undefined,
+                        }}
+                        size={560}
+                      />
+                    </div>
+                  )}
+
+                  {/* ВРЕМЕННО ОТКЛЮЧЕНО: типы отношений. Код готов и рабочий, пока не показываем. */}
+                  {/* {chartDataForAnalysis?.type === 'synastry' && fullAnalysis && relationshipTypes && !relationshipTypesLoading && (
                     <div style={{ marginTop: '30px', marginBottom: '20px' }}>
                       <RelationshipTypesBar
                         data={relationshipTypes?.relationship_types || {}}
                         dominantType={relationshipTypes?.dominant_type}
                       />
                     </div>
-                  )}
+                  )} */}
 
                   <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '16px', flexWrap: 'wrap' }}>
                     {savedChartId && fullAnalysis && (
