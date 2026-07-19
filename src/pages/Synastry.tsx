@@ -6,7 +6,9 @@ import api from '../services/api';
 import { geocodeAPI, astrologyAPI } from '../services/api';
 import Header from '../components/Header';
 import LocationInput from '../components/LocationInput';
-import SynastryChartComponent from '../components/SynastryChartComponent-draft';
+// СТАРЫЙ рендер синастрии (D3, чёрный центр). Не удалять — вернуть при необходимости:
+// import SynastryChartComponent from '../components/SynastryChartComponent-draft';
+import SynastryChartComponent from '../components/SynastryChartComponentV2';
 import AspectGrid from '../components/AspectGrid';
 import AspectAnalysisModal from '../components/AspectAnalysisModal';
 import AnalysisModeToggle from '../components/AnalysisModeToggle';
