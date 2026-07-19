@@ -6,7 +6,9 @@ import api from '../services/api';
 import { geocodeAPI, astrologyAPI } from '../services/api';
 import Header from '../components/Header';
 import LocationInput from '../components/LocationInput';
-import SynastryChartComponent from '../components/SynastryChartComponent-draft';
+// СТАРЫЙ рендер синастрии (D3, чёрный центр). Не удалять — вернуть при необходимости:
+// import SynastryChartComponent from '../components/SynastryChartComponent-draft';
+import SynastryChartComponent from '../components/SynastryChartComponentV2';
 import AspectGrid from '../components/AspectGrid';
 import AspectAnalysisModal from '../components/AspectAnalysisModal';
 import AnalysisModeToggle from '../components/AnalysisModeToggle';
@@ -213,14 +215,16 @@ function Synastry() {
         sun_sign: synastryData.chart1?.sun_sign,
         moon_sign: synastryData.chart1?.moon_sign,
         ascendant: synastryData.chart1?.ascendant,
-        planets: synastryData.chart1?.planets
+        planets: synastryData.chart1?.planets,
+        houses: synastryData.chart1?.houses
       },
       chart2: {
         ...(synastryData.chart2_input || {}),
         sun_sign: synastryData.chart2?.sun_sign,
         moon_sign: synastryData.chart2?.moon_sign,
         ascendant: synastryData.chart2?.ascendant,
-        planets: synastryData.chart2?.planets
+        planets: synastryData.chart2?.planets,
+        houses: synastryData.chart2?.houses
       },
       overlays: synastryData.overlays || [],
       aspects: synastryData.aspects || [],

@@ -9,6 +9,8 @@ import type { Location } from './LocationInput';
 import ProcessingMessage from './ProcessingMessage';
 import { astrologyAPI, geocodeAPI } from '../services/api';
 import { LLM_MODELS, DEFAULT_LLM, LLMModelOption } from '../config/llmModels';
+import EventChartCard from './EventChartCard';
+import type { SignificatorCard } from './EventChartCard';
 
 type MatchType =
   | 'favourite_win_likely'
@@ -26,6 +28,8 @@ interface EventAnalysisResult {
   opponent?: string;
   verdict?: string;
   summary?: string;
+  card_text?: string;
+  significator_card?: SignificatorCard;
   match_type?: MatchType;
   llm_error?: string | null;
   from_cache?: boolean;
@@ -43,7 +47,8 @@ const CATEGORY_COLORS: Record<string, string> = {
 const today = () => new Date().toISOString().slice(0, 10);
 
 const EventAnalysisPanel: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const language = (i18n.language || 'ru').startsWith('ru') ? 'ru' : 'en';
 
   const [date, setDate] = useState<string>(today());
   const [time, setTime] = useState<string>('12:00');
@@ -73,7 +78,7 @@ const EventAnalysisPanel: React.FC = () => {
   const cacheKey = () =>
     `event_analysis|${date}|${time}|` +
     `${location ? `${location.lat},${location.lon}` : ''}|${extraTime ? 'et' : ''}|` +
-    `${llm.provider}|${llm.model || ''}`;
+    `${llm.provider}|${llm.model || ''}|${language}`;
 
   const run = async () => {
     setError('');
@@ -103,6 +108,7 @@ const EventAnalysisPanel: React.FC = () => {
         transit_place: location.display_name,
         transit_latitude: location.lat,
         transit_longitude: location.lon,
+        language,
         llm_provider: llm.provider,
         llm_model: llm.model,
         ...(extraTime && { extra_time_possible: true }),
@@ -126,6 +132,8 @@ const EventAnalysisPanel: React.FC = () => {
     : CATEGORY_COLORS.neutral;
   const catLabel = result?.category ? t(`eventAnalysis.categories.${result.category}`) : '';
 
+  // Полная карточка приоритетнее короткой прозы favorite/opponent/verdict
+  const hasCard = Boolean(result?.significator_card);
   const hasTexts = Boolean(result?.favorite || result?.opponent || result?.verdict);
 
   // maxWidth: 'none' перебивает глобальный .hero p { max-width: 600px },
@@ -262,7 +270,7 @@ const EventAnalysisPanel: React.FC = () => {
                 {catLabel}
               </span>
             )}
-            {result.match_type && (
+            {result.match_type && !hasCard && (
               <span style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>
                 {t(`eventAnalysis.matchType.${result.match_type}`, { defaultValue: result.match_type })}
               </span>
@@ -275,7 +283,21 @@ const EventAnalysisPanel: React.FC = () => {
             )}
           </div>
 
-          {hasTexts ? (
+          {hasCard ? (
+            <EventChartCard
+              card={result.significator_card!}
+              verdict={result.verdict}
+              matchTypeLabel={
+                result.match_type
+                  ? t(`eventAnalysis.matchType.${result.match_type}`, { defaultValue: result.match_type })
+                  : undefined
+              }
+              place={location?.display_name}
+              date={date.split('-').reverse().join('.')}
+              time={time}
+              timezone={location?.timezone}
+            />
+          ) : hasTexts ? (
             <>
               {result.favorite && (
                 <div>
@@ -297,8 +319,10 @@ const EventAnalysisPanel: React.FC = () => {
               )}
             </>
           ) : (
-            result.summary && (
-              <p style={{ ...paragraphStyle, margin: 0, whiteSpace: 'pre-line' }}>{result.summary}</p>
+            (result.card_text || result.summary) && (
+              <p style={{ ...paragraphStyle, margin: 0, whiteSpace: 'pre-line' }}>
+                {result.card_text || result.summary}
+              </p>
             )
           )}
 
