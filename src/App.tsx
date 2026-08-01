@@ -17,7 +17,7 @@ function LanguageSync() {
   const location = useLocation();
 
   useEffect(() => {
-    const match = location.pathname.match(/^\/(ru|en)\//);
+    const match = location.pathname.match(/^\/(ru|en|uk)\//);
     if (match) {
       const urlLang = match[1];
       if (urlLang !== i18n.language) {
@@ -41,7 +41,7 @@ function AppRoutes() {
   const location = useLocation();
 
   // Extract lang from URL
-  const langMatch = location.pathname.match(/^\/(ru|en)\//);
+  const langMatch = location.pathname.match(/^\/(ru|en|uk)\//);
   const currentLang = langMatch ? langMatch[1] : i18n.language || 'ru';
 
   const specialRoutes = ['/confirm', '/reset-password'];

@@ -17,6 +17,7 @@ interface HeaderProps {
 const languages: Language[] = [
   { code: 'ru', name: 'Русский' },
   { code: 'en', name: 'English' },
+  { code: 'uk', name: 'Українська' },
 ];
 
 const Header: React.FC<HeaderProps> = ({ hasUnsavedAnalysis = false, onProtectedNavigate }) => {
@@ -37,7 +38,7 @@ const Header: React.FC<HeaderProps> = ({ hasUnsavedAnalysis = false, onProtected
 
   const changeLanguage = (langCode: string) => {
     i18n.changeLanguage(langCode);
-    const currentPath = window.location.pathname.replace(/^\/(ru|en|es|de|fr)/, '');
+    const currentPath = window.location.pathname.replace(/^\/(ru|en|uk|es|de|fr)/, '');
     window.location.href = `/${langCode}${currentPath || '/'}`;
     setLangOpen(false);
   };

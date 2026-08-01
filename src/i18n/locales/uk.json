@@ -1,0 +1,546 @@
+{
+  "nav": {
+    "home": "Головна",
+    "synastry": "Синастрія",
+    "eventAnalysis": "Аналіз події",
+    "dashboard": "Мій кабінет",
+    "login": "Увійти",
+    "register": "Реєстрація",
+    "logout": "Вийти"
+  },
+  "header": {
+    "greeting": "Привіт, {{name}}"
+  },
+  "home": {
+    "title": "Розрахунок Натальної Карти",
+    "subtitle": "Професійний розрахунок астрологічної карти народження з використанням Swiss Ephemeris",
+    "form": {
+      "name": "Ім'я *",
+      "namePlaceholder": "Введіть ваше ім'я",
+      "birthDate": "Дата народження *",
+      "birthTime": "Час народження *",
+      "birthPlace": "Місце народження *",
+      "cityPlaceholder": "Почніть вводити назву міста...",
+      "submit": "Розрахувати карту",
+      "submitting": "Розрахунок...",
+      "locationPlaceholder": "Почніть вводити назву міста...",
+      "locationErrorNotFound": "Місто не знайдено. Спробуйте ввести назву англійською або оберіть найближче велике місто.",
+      "locationErrorService": "Сервіс пошуку міст тимчасово недоступний. Будь ласка, спробуйте пізніше.",
+      "locationHint": "💡 Введіть щонайменше 2 літери для пошуку міста",
+      "locationNoResults": "Місто не знайдено. Спробуйте:",
+      "locationNoResultsTip1": "Ввести назву англійською",
+      "locationNoResultsTip2": "Обрати найближче велике місто",
+      "locationNoResultsTip3": "Уточнити назву (наприклад, 'Київ, Україна')"
+    },
+    "planets": {
+      "title": "Аналіз планет"
+    },
+    "chart": {
+      "title": "Натальна Карта (Swiss Ephemeris)",
+      "sun": "Сонце",
+      "moon": "Місяць",
+      "ascendant": "Асцендент",
+      "mc": "MC",
+      "planetsInHouses": "Планети в Будинках",
+      "house": "Будинок",
+      "sign": "Знак",
+      "degree": "Градус"
+    },
+    "errors": {
+      "calcError": "Помилка при розрахунку карти"
+    },
+    "getFullAnalysis": "Отримати повний розбір карти",
+    "dailyForecast": "Прогноз дня",
+    "newCalculation": "Новий розрахунок"
+  },
+  "login": {
+    "title": "Вхід до системи",
+    "subtitle": "Введіть ваші облікові дані для входу",
+    "email": "Email",
+    "emailPlaceholder": "Введіть email",
+    "password": "Пароль",
+    "passwordPlaceholder": "Введіть пароль",
+    "submit": "Увійти",
+    "submitting": "Вхід...",
+    "noAccount": "Немає акаунта?",
+    "registerLink": "Зареєструватися",
+    "backHome": "Повернутися на головну",
+    "forgotPassword": "Забули пароль?",
+    "errors": {
+      "loginError": "Помилка при вході. Перевірте email і пароль."
+    },
+    "validation": {
+      "emailInvalid": "Некоректна email адреса",
+      "emailRequired": "Email обов'язковий для заповнення",
+      "passwordMin": "Пароль має містити мінімум 8 символів",
+      "passwordRequired": "Пароль обов'язковий для заповнення"
+    }
+  },
+  "register": {
+    "title": "Реєстрація",
+    "subtitle": "Створіть новий акаунт",
+    "name": "Ім'я (опціонально)",
+    "namePlaceholder": "Введіть ваше ім'я",
+    "email": "Email *",
+    "emailPlaceholder": "Введіть email",
+    "password": "Пароль *",
+    "passwordPlaceholder": "Мінімум 8 символів, літери та цифри",
+    "confirmPassword": "Підтвердіть пароль *",
+    "confirmPasswordPlaceholder": "Повторіть пароль",
+    "submit": "Зареєструватися",
+    "submitting": "Реєстрація...",
+    "hasAccount": "Вже є акаунт?",
+    "loginLink": "Увійти",
+    "backHome": "Повернутися на головну",
+    "confirmEmail": {
+      "title": "Підтвердіть email",
+      "text1": "Ми надіслали лист із посиланням підтвердження на вашу пошту.",
+      "text2": "Перейдіть за посиланням у листі, щоб завершити реєстрацію.",
+      "loginAfter": "Увійти після підтвердження"
+    },
+    "errors": {
+      "registerError": "Помилка при реєстрації. Спробуйте інший email."
+    },
+    "validation": {
+      "nameTooLong": "Ім'я не повинно перевищувати 50 символів",
+      "emailInvalid": "Некоректна email адреса",
+      "emailRequired": "Email обов'язковий для заповнення",
+      "passwordMin": "Пароль має містити мінімум 8 символів",
+      "passwordLetters": "Пароль має містити літери",
+      "passwordDigits": "Пароль має містити цифри",
+      "passwordRequired": "Пароль обов'язковий для заповнення",
+      "confirmRequired": "Підтвердження пароля обов'язкове",
+      "passwordsMismatch": "Паролі повинні збігатися"
+    }
+  },
+  "dashboard": {
+    "rename": {
+      "maxLength": "Назва не може бути довшою за 15 символів",
+      "exists": "Карта з такою назвою вже існує",
+      "saving": "Збереження..."
+    },
+    "chart": {
+      "defaultName": "Карта"
+    },
+    "title": "Моя карта",
+    "subtitle": "Ласкаво просимо до вашого особистого кабінету",
+    "userInfo": {
+      "title": "Інформація про користувача",
+      "email": "Email",
+      "name": "Ім'я",
+      "createdAt": "Дата реєстрації",
+      "notSpecified": "Не вказано",
+      "unknown": "Невідомо"
+    },
+    "features": {
+      "title": "",
+      "history": {
+        "title": "Історія розрахунків",
+        "desc": "Перегляд усіх ваших попередніх астрологічних розрахунків"
+      },
+      "favorites": {
+        "title": "Обране",
+        "desc": "Збереження улюблених карт та інтерпретацій"
+      },
+      "notifications": {
+        "title": "Сповіщення",
+        "desc": "Оповіщення про важливі транзити та астрологічні події"
+      },
+      "compare": {
+        "title": "Порівняння карт",
+        "desc": "Порівняння вашої карти з картами інших користувачів"
+      }
+    },
+    "actions": {
+      "newChart": "Розрахувати нову карту",
+      "synastry": "Розрахувати синастрію",
+      "logout": "Вийти з системи",
+      "save": "Зберегти",
+      "planetAnalysis": "Аналіз планет",
+      "aspectAnalysis": "Аналіз аспектів",
+      "fullAnalysis": "Повний аналіз"
+    },
+    "emptyState": {
+      "selectChart": "Оберіть карту з історії, щоб отримати аналіз"
+    },
+    "errors": {
+      "loadError": "Помилка при завантаженні даних dashboard",
+      "analysisError": "Помилка при завантаженні аналізу"
+    },
+    "fullAnalysis": {
+      "title": "Повний астрологічний аналіз"
+    },
+    "chat": {
+      "title": "Чат по карті",
+      "start": "Почати чат",
+      "open": "Відкрити чат",
+      "send": "Надіслати",
+      "placeholder": "Задайте питання щодо вашої карти вище",
+      "user": "Ви",
+      "assistant": "Астролог",
+      "noAnswer": "Відповідь не отримано",
+      "error": "Помилка надсилання повідомлення",
+      "errorWithDetails": "Помилка надсилання повідомлення: {{error}}",
+      "limitReached": "🔒 Ліміт {{limit}} повідомлень досягнуто. Перейдіть на PRO →",
+      "messagesLeft": "⚠️ Залишилось {{count}} повідомлення в цьому чаті",
+      "sending": "Відповідь у дорозі..."
+    },
+    "progressions": {
+      "title": "Прогресії",
+      "show": "Прогресії",
+      "hide": "Сховати прогресії",
+      "subtitle": "Вторинні прогресії («день за рік»): внутрішній етап життя на поточний період",
+      "period": "Період",
+      "age": "Вік",
+      "years": "років",
+      "progressedMoon": "Прогресивний Місяць",
+      "progressedSun": "Прогресивне Сонце",
+      "changedSign": "змінило знак",
+      "planetsTitle": "Прогресивні позиції планет",
+      "natalHouse": "Натальний будинок",
+      "aspectsTitle": "Аспекти прогресій до натальної карти",
+      "noAspects": "Точних аспектів до натальної карти зараз немає — період більш рівний",
+      "orb": "орб",
+      "analysisTitle": "Аналіз прогресій",
+      "error": "Не вдалося розрахувати прогресії. Спробуйте ще раз.",
+      "noBirthData": "Для розрахунку прогресій у карті немає даних народження",
+      "lunarPhase": "Місячна фаза",
+      "changedHouse": "змінила будинок",
+      "applying": "сходжений",
+      "separating": "розходжений",
+      "nextSignIn": "зміна знаку через",
+      "yearsShort": "р."
+    },
+    "tabs": {
+      "natal": "Натальна карта",
+      "progressions": "Прогресії",
+      "transits": "Транзити",
+      "dailyForecast": "Прогноз дня"
+    },
+    "transits": {
+      "title": "Транзити дня",
+      "pickDate": "Обрати день",
+      "today": "Сьогодні",
+      "locationTitle": "Місце транзиту",
+      "locationPlaceholder": "Оберіть місце для транзитів...",
+      "useBirthLocation": "Викор. місце народження",
+      "locationLabel": "Локація",
+      "birthLocation": "Місце народження (натальна карта)",
+      "subtitle": "Реальні позиції планет на обраний день, накладені на вашу натальну карту. За замовчуванням — сьогодні; можна обрати будь-який день минулого чи майбутнього.",
+      "moonOfDay": "Місяць дня",
+      "planetsTitle": "Транзитні планети",
+      "movingThroughHouse": "Йде натальним будинком",
+      "slowAspectsTitle": "Теми періоду (повільні планети)",
+      "fastAspectsTitle": "Енергія дня (швидкі планети)",
+      "noSlowAspects": "Точних аспектів від повільних планет немає — фон спокійний",
+      "noFastAspects": "Точних аспектів від швидких планет немає — день рівний",
+      "return": "повернення планети",
+      "analysisTitle": "Аналіз транзитів",
+      "giveAnalysis": "Дати аналіз",
+      "remaining": "Залишилось {{count}} з {{limit}} аналізів сьогодні",
+      "error": "Не вдалося розрахувати транзити. Спробуйте ще раз.",
+      "limitReached": "Досягнуто денний ліміт AI-аналізів транзитів ({{limit}}). Спробуйте завтра."
+    }
+  },
+  "confirm": {
+    "pending": "Підтвердження email...",
+    "success": "Email успішно підтверджено! Перенаправлення...",
+    "error": "Помилка підтвердження. Посилання недійсне або застаріле.",
+    "tryAgain": "Спробуйте зареєструватися знову або увійти до системи.",
+    "registerLink": "Реєстрація",
+    "loginLink": "Увійти"
+  },
+  "logout": {
+    "title": "Вихід із системи",
+    "text": "Виконується вихід із системи..."
+  },
+  "common": {
+    "loading": "Завантаження...",
+    "backHome": "На головну",
+    "email": "Email",
+    "googleSignIn": "Увійти через Google",
+    "or": "або"
+  },
+  "forgotPassword": {
+    "title": "Забули пароль?",
+    "subtitle": "Введіть email, вказаний під час реєстрації",
+    "email": "Email *",
+    "emailPlaceholder": "Введіть email",
+    "submit": "Надіслати інструкції",
+    "submitting": "Надсилання...",
+    "successTitle": "Перевірте пошту",
+    "successText1": "Ми надіслали інструкції зі скидання пароля на вашу email.",
+    "successText2": "Перейдіть за посиланням у листі, щоб створити новий пароль.",
+    "backToLogin": "Повернутися до входу",
+    "rememberPassword": "Згадали пароль?",
+    "loginLink": "Увійти",
+    "backHome": "Повернутися на головну",
+    "errors": {
+      "sendError": "Помилка при надсиланні. Перевірте email."
+    },
+    "validation": {
+      "emailInvalid": "Некоректна email адреса",
+      "emailRequired": "Email обов'язковий для заповнення"
+    }
+  },
+  "resetPassword": {
+    "invalidLink": {
+      "title": "Недійсне посилання",
+      "text": "Посилання для скидання пароля застаріло або недійсне.",
+      "requestNew": "Запросити нове посилання",
+      "login": "Увійти"
+    },
+    "success": {
+      "title": "Пароль оновлено",
+      "text": "Ваш пароль успішно змінено.",
+      "login": "Увійти з новим паролем"
+    },
+    "form": {
+      "title": "Новий пароль",
+      "subtitle": "Введіть новий пароль",
+      "password": "Новий пароль *",
+      "passwordPlaceholder": "Мінімум 8 символів, літери та цифри",
+      "confirmPassword": "Підтвердіть пароль *",
+      "confirmPasswordPlaceholder": "Повторіть пароль",
+      "submit": "Зберегти пароль",
+      "submitting": "Збереження...",
+      "backToLogin": "Повернутися до входу"
+    },
+    "errors": {
+      "updateError": "Помилка при оновленні пароля."
+    },
+    "validation": {
+      "passwordMin": "Пароль має містити мінімум 8 символів",
+      "passwordLetters": "Пароль має містити літери",
+      "passwordDigits": "Пароль має містити цифри",
+      "passwordRequired": "Пароль обов'язковий для заповнення",
+      "confirmRequired": "Підтвердження пароля обов'язкове",
+      "passwordsMismatch": "Паролі повинні збігатися"
+    }
+  },
+  "chart": {
+    "title": "Ваша натальна карта",
+    "sun": "Сонце",
+    "moon": "Місяць",
+    "ascendant": "Асцендент",
+    "midheaven": "Середина неба",
+    "getInterpretation": "Отримати AI інтерпретацію",
+    "interpretation": "Інтерпретація",
+    "error": "Помилка завантаження карти",
+    "nav": {
+      "home": "Головна",
+      "synastry": "Синастрія"
+    },
+    "logo": "Астрологія",
+    "notDetermined": "Не визначено"
+  },
+  "synastry": {
+    "title": "Синастрія",
+    "subtitle": "Сумісність відносин",
+    "person1": "Людина 1",
+    "person2": "Людина 2",
+    "form": {
+      "name": "Ім'я",
+      "birthDate": "Дата народження",
+      "birthTime": "Час народження",
+      "birthPlace": "Місце народження",
+      "birthPlacePlaceholder": "Введіть місто",
+      "timezone": "Часовий пояс"
+    },
+    "calculate": "Розрахувати сумісність",
+    "calculating": "Розрахунок...",
+    "calculateAgain": "Розрахувати знову",
+    "aspects": "Аспекти",
+    "getFullAnalysis": "Отримати повний аналіз сумісності",
+    "fullAnalysis": {
+      "title": "Повний аналіз синастрії"
+    },
+    "relationshipContext": {
+      "label": "Тип відносин для аналізу",
+      "default": "Стандартний аналіз",
+      "relatives": "Родичі",
+      "partner": "Партнери/пара",
+      "colleagues": "Колеги/бізнес-партнери",
+      "friends": "Друзі"
+    }
+  },
+  "planets": {
+    "title": "Планети в знаках",
+    "legend": "Легенда стихій",
+    "house": "Будинок",
+    "degree": "Градус",
+    "sign": "Знак",
+    "names": {
+      "Sun": "Сонце",
+      "Moon": "Місяць",
+      "Mercury": "Меркурій",
+      "Venus": "Венера",
+      "Mars": "Марс",
+      "Jupiter": "Юпітер",
+      "Saturn": "Сатурн",
+      "Uranus": "Уран",
+      "Neptune": "Нептун",
+      "Pluto": "Плутон",
+      "Chiron": "Хірон",
+      "NorthNode": "Північний вузол",
+      "SouthNode": "Південний вузол",
+      "Vertex": "Вертекс",
+      "Ft": "Парт Фортуни",
+      "PartOfFortune": "Колесо Фортуни",
+      "Lilith": "Ліліт"
+    },
+    "signs": {
+      "Aries": "Овен",
+      "Taurus": "Телець",
+      "Gemini": "Близнюки",
+      "Cancer": "Рак",
+      "Leo": "Лев",
+      "Virgo": "Діва",
+      "Libra": "Терези",
+      "Scorpio": "Скорпіон",
+      "Sagittarius": "Стрілець",
+      "Capricorn": "Козеріг",
+      "Aquarius": "Водолій",
+      "Pisces": "Риби"
+    },
+    "elements": {
+      "fire": "Вогонь",
+      "earth": "Земля",
+      "air": "Повітря",
+      "water": "Вода"
+    },
+    "aspect": "Аспект",
+    "orb": "Орбіс",
+    "planets": "планет",
+    "aspects": {
+      "title": "Аспекти планет",
+      "notFound": "Аспекти не знайдено",
+      "notFoundDesc": "У цій карті немає значущих аспектів між планетами",
+      "type": "Тип аспекту"
+    },
+    "aspectNames": {
+      "Conjunction": "Сполучення",
+      "Opposition": "Опозиція",
+      "Trine": "Тригон",
+      "Square": "Квадрат",
+      "Sextile": "Секстиль",
+      "Quincunx": "Квінконс"
+    }
+  },
+  "analysis": {
+    "planetAnalysis": "Аналіз планети",
+    "aspectAnalysis": "Аналіз аспекту",
+    "loading": "Завантаження аналізу...",
+    "processing": "Ваш аналіз обробляється",
+    "processingHint": "Це може зайняти від 2 до 5 хвилин. Будь ласка, зачекайте...",
+    "error": "Помилка завантаження аналізу",
+    "noData": "Дані для цієї планети недоступні"
+  },
+  "dailyForecast": {
+    "enterBirthData": "Введіть дані народження, щоб отримати прогноз дня",
+    "forPerson": "Прогноз для",
+    "dateLabel": "Дата",
+    "timeLabel": "Час",
+    "locationLabel": "Місце (за замовчуванням — місце народження)",
+    "locationPlaceholder": "Місто",
+    "modelLabel": "Модель аналізу",
+    "run": "Розрахувати",
+    "running": "Рахую…",
+    "activatedHouses": "Активовані будинки",
+    "fortune": "Колесо Фортуни",
+    "dayChart": "денна карта",
+    "nightChart": "нічна карта",
+    "llmFallback": "LLM недоступна — показано розрахункову оцінку без текстового аналізу.",
+    "aspectsShow": "▸ Ключові аспекти",
+    "aspectsHide": "▾ Сховати аспекти",
+    "colTransit": "Транзит",
+    "colAspect": "Аспект",
+    "colNatal": "Натал",
+    "colOrb": "Орб",
+    "colWeight": "Вага",
+    "categories": {
+      "critical": "Критичний",
+      "challenging": "Напружений",
+      "neutral": "Нейтральний",
+      "favorable": "Сприятливий",
+      "excellent": "Відмінний"
+    },
+    "aspects": {
+      "conjunction": "сполучення",
+      "sextile": "секстиль",
+      "square": "квадрат",
+      "trine": "тригон",
+      "opposition": "опозиція"
+    }
+  },
+  "eventAnalysisPage": {
+    "title": "Аналіз події",
+    "subtitle": "Прогноз результату події за датою, часом і місцем"
+  },
+  "eventAnalysis": {
+    "dateLabel": "Дата події",
+    "timeLabel": "Час (місцевий)",
+    "locationLabel": "Місце події",
+    "locationPlaceholder": "Місто",
+    "modelLabel": "Модель аналізу",
+    "extraTimeLabel": "Можливий додатковий час",
+    "timezoneNote": "Часовий пояс місця",
+    "run": "Розрахувати",
+    "running": "Рахую…",
+    "validation": {
+      "missingFields": "Вкажіть дату, час і місце події"
+    },
+    "favoriteLabel": "Фаворит",
+    "opponentLabel": "Суперник",
+    "verdictLabel": "Вердикт",
+    "llmFallback": "LLM недоступна — показано розрахункову оцінку без текстового аналізу.",
+    "fromCache": "Результат із кешу",
+    "categories": {
+      "critical": "Критичний",
+      "challenging": "Напружений",
+      "neutral": "Нейтральний",
+      "favorable": "Сприятливий",
+      "excellent": "Відмінний"
+    },
+    "matchType": {
+      "favourite_win_likely": "Ймовірна перемога фаворита",
+      "favourite_edge": "Невелика перевага фаворита",
+      "draw_likely": "Ймовірна нічия",
+      "underdog_edge": "Невелика перевага аутсайдера",
+      "underdog_win_likely": "Ймовірна перемога аутсайдера"
+    }
+  },
+  "analysisMode": {
+    "simple": "Базовий",
+    "advanced": "Просунутий"
+  },
+  "history": {
+    "saved": "Збережено",
+    "empty": "Історія порожня",
+    "confirmDelete": "Видалити цю карту?",
+    "confirmDeleteTitle": "Видалити карту?",
+    "confirmDeleteMessage": "Ви впевнені, що хочете видалити карту \"{{name}}\"?",
+    "limitReached": "Досягнуто ліміт карт",
+    "selectToDelete": "Оберіть карту для видалення",
+    "cancel": "Скасувати",
+    "delete": "Видалити",
+    "duplicateTitle": "Карта з такою назвою вже існує",
+    "duplicateMessage": "У вас вже є карта з назвою '{{name}}'. Зберегти ще раз?",
+    "saveAnyway": "Так, зберегти"
+  },
+  "unsavedModal": {
+    "title": "Незбережений аналіз",
+    "message": "У вас є незбережений аналіз. Якщо ви підете зараз, він буде втрачений. Зберегти його перед переходом?",
+    "save": "Зберегти аналіз",
+    "cancel": "Скасувати",
+    "leave": "Піти без збереження"
+  },
+  "relationshipTypes": {
+    "title": "Типи відносин",
+    "romantic_partners": "Другі половинки",
+    "friends": "Друзі",
+    "business_partners": "Напарники по бізнесу",
+    "spiritual_comrades": "Духовні соратники",
+    "dominant": "Домінуючий тип"
+  }
+}
