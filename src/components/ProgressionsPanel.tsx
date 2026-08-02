@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import MarkdownContent from './MarkdownContent';
 import ProcessingMessage from './ProcessingMessage';
+import ProgressedPlanetsTable from './ProgressedPlanetsTable';
 import type { ProgressionsData, ProgressedPlanet, ProgressionAspect } from '../services/api';
 
 interface ProgressionsPanelProps {
@@ -10,13 +11,6 @@ interface ProgressionsPanelProps {
   loading: boolean;
   error: string;
 }
-
-// Порядок вывода: личные планеты первыми (в прогрессиях они интерпретационно значимы)
-const PLANET_ORDER = [
-  'Sun', 'Moon', 'Mercury', 'Venus', 'Mars',
-  'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto',
-  'NorthNode', 'SouthNode', 'Lilith', 'Chiron'
-];
 
 const ProgressionsPanel: React.FC<ProgressionsPanelProps> = ({ data, analysis, loading, error }) => {
   const { t, i18n } = useTranslation();
@@ -28,12 +22,6 @@ const ProgressionsPanel: React.FC<ProgressionsPanelProps> = ({ data, analysis, l
     return isRu ? (planet.sign_ru || planet.sign || '—') : (planet.sign || '—');
   };
   const aspectName = (asp: ProgressionAspect) => (isRu ? (asp.aspect_ru || asp.aspect) : asp.aspect);
-
-  const sortedPlanets: ProgressedPlanet[] = data
-    ? PLANET_ORDER
-      .map(key => data.progressed_planets?.[key])
-      .filter((p): p is ProgressedPlanet => !!p)
-    : [];
 
   const progMoon = data?.progressed_planets?.Moon;
   const progSun = data?.progressed_planets?.Sun;
@@ -138,50 +126,11 @@ const ProgressionsPanel: React.FC<ProgressionsPanelProps> = ({ data, analysis, l
           </div>
 
           {/* Таблица прогрессивных планет */}
-          <div style={{ marginTop: '20px', overflowX: 'auto' }}>
+          <div style={{ marginTop: '20px' }}>
             <h4 style={{ color: 'var(--text-primary)', marginBottom: '10px' }}>
               {t('dashboard.progressions.planetsTitle')}
             </h4>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
-              <thead>
-                <tr style={{ color: 'var(--text-secondary)', textAlign: 'left' }}>
-                  <th style={{ padding: '8px', borderBottom: '1px solid var(--border)' }}>{t('planets.sign')}</th>
-                  <th style={{ padding: '8px', borderBottom: '1px solid var(--border)' }}>{t('planets.degree')}</th>
-                  <th style={{ padding: '8px', borderBottom: '1px solid var(--border)' }}>{t('dashboard.progressions.natalHouse')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortedPlanets.map((planet) => (
-                  <tr key={planet.planet} style={{ color: 'var(--text-primary)' }}>
-                    <td style={{ padding: '8px', borderBottom: '1px solid var(--border)' }}>
-                      <strong>{planetName(planet.planet)}</strong>
-                      {planet.is_retrograde && (
-                        <span style={{ color: 'var(--text-secondary)', marginLeft: '4px' }}>℞</span>
-                      )}
-                      {' — '}{signName(planet)}
-                      {planet.changed_sign && (
-                        <span title={t('dashboard.progressions.changedSign')} style={{ marginLeft: '6px', fontSize: '12px', color: 'var(--accent, #8b5cf6)' }}>
-                          ↗
-                        </span>
-                      )}
-                      {planet.changed_house && (
-                        <span title={t('dashboard.progressions.changedHouse')} style={{ marginLeft: '4px', fontSize: '12px', color: 'var(--accent, #8b5cf6)' }}>
-                          ⌂
-                        </span>
-                      )}
-                    </td>
-                    <td style={{ padding: '8px', borderBottom: '1px solid var(--border)' }}>
-                      {planet.degree?.toFixed(1)}°
-                    </td>
-                    <td style={{ padding: '8px', borderBottom: '1px solid var(--border)' }}>
-                      {planet.changed_house && planet.natal_planet_house
-                        ? `${planet.natal_planet_house} → ${planet.natal_house}`
-                        : (planet.natal_house ?? '—')}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <ProgressedPlanetsTable planets={data.progressed_planets} />
           </div>
 
           {/* Аспекты прогрессий к наталу */}

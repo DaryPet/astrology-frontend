@@ -26,10 +26,11 @@ import AnalysisModeToggle from '../components/AnalysisModeToggle';
 // import RelationshipTypesBar from '../components/RelationshipTypesBar';
 import UnsavedAnalysisModal from '../components/UnsavedAnalysisModal';
 import ProgressionsPanel from '../components/ProgressionsPanel';
+import ProgressedSynastryPanel from '../components/ProgressedSynastryPanel';
 import AnalysisTabs, { AnalysisTabId } from '../components/AnalysisTabs';
 import TransitsPanel from '../components/TransitsPanel';
 import DailyForecastPanel from '../components/DailyForecastPanel';
-import type { ProgressionsData, TransitsData } from '../services/api';
+import type { ProgressionsData, TransitsData, ProgressedSynastryData } from '../services/api';
 import type { Location } from '../components/LocationInput';
 import { isNearLimit, isAtLimit, MAX_MESSAGES, type ChatMessage } from '../services/chatStorage';
 
@@ -75,14 +76,24 @@ interface ChartData {
   overlays?: unknown[];
   chart1?: {
     birth_date?: string;
+    birth_time?: string;
     birth_place?: string;
+    latitude?: number;
+    longitude?: number;
+    timezone?: string;
+    house_system?: string;
     planets?: Record<string, ChartPlanet>;
     houses?: Record<string, ChartHouse>;
     [key: string]: unknown;
   };
   chart2?: {
     birth_date?: string;
+    birth_time?: string;
     birth_place?: string;
+    latitude?: number;
+    longitude?: number;
+    timezone?: string;
+    house_system?: string;
     planets?: Record<string, ChartPlanet>;
     houses?: Record<string, ChartHouse>;
     [key: string]: unknown;
@@ -242,6 +253,10 @@ const Dashboard = () => {
   const [progressionsAnalysis, setProgressionsAnalysis] = useState<string | null>(null);
   const [progressionsLoading, setProgressionsLoading] = useState(false);
   const [progressionsError, setProgressionsError] = useState<string>('');
+  // Прогрессивная синастрия (только для карт type === 'synastry') — отдельные стейты,
+  // т.к. форма данных другая (person1/person2/cross_overlay/dynamics, не одиночный ProgressionsData)
+  const [progressedSynastryData, setProgressedSynastryData] = useState<ProgressedSynastryData | null>(null);
+  const [progressedSynastryAnalysis, setProgressedSynastryAnalysis] = useState<string | null>(null);
   // Транзиты: выбранный день (по умолчанию сегодня), выбранное место, данные, анализ
   const [transitsDate, setTransitsDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
   const [transitsLocation, setTransitsLocation] = useState<Location | null>(null);
@@ -477,6 +492,8 @@ const Dashboard = () => {
     setProgressionsData(null);
     setProgressionsAnalysis(null);
     setProgressionsError('');
+    setProgressedSynastryData(null);
+    setProgressedSynastryAnalysis(null);
     // Транзиты сбрасываем вместе с прогрессиями (тот же жизненный цикл карты)
     setTransitsDate(new Date().toISOString().slice(0, 10));
     setTransitsLocation(null);
@@ -519,18 +536,64 @@ const Dashboard = () => {
   const loadProgressions = useCallback(async (mode = analysisMode) => {
     // Гейтинг — как у чата: только для сохранённых карт с готовым анализом
     if (!chartDataForAnalysis || !savedChartId) return;
-    if (chartDataForAnalysis.type === 'synastry') return;
 
-    const meta = chartDataForAnalysis.meta;
-    if (!meta?.birth_date) {
-      setProgressionsError(t('dashboard.progressions.noBirthData'));
-      return;
-    }
+    const isSynastry = chartDataForAnalysis.type === 'synastry';
 
     setProgressionsLoading(true);
     setProgressionsError('');
 
     try {
+      if (isSynastry) {
+        const { chart1, chart2 } = chartDataForAnalysis;
+        if (!chart1?.birth_date || !chart2?.birth_date) {
+          setProgressionsError(t('dashboard.progressions.noBirthData'));
+          return;
+        }
+
+        const buildPersonInput = (c: NonNullable<typeof chart1>) => ({
+          birth_date: c.birth_date,
+          birth_time: c.birth_time,
+          birth_place: c.birth_place,
+          latitude: c.latitude,
+          longitude: c.longitude,
+          timezone: c.timezone,
+          house_system: c.house_system || 'Placidus'
+        });
+
+        // 1. Расчёт прогрессивной синастрии (Swiss Ephemeris, без LLM)
+        const data = await astrologyAPI.calculateProgressedSynastry({
+          chart1: buildPersonInput(chart1),
+          chart2: buildPersonInput(chart2),
+          house_system: chart1.house_system || 'Placidus'
+        });
+        setProgressedSynastryData(data);
+
+        // 2. AI-анализ: сначала из БД (по периоду из ответа расчёта и режиму)
+        const cached = await chartsApi.getProgressedSynastryAnalysis(Number(savedChartId), mode, data.period);
+        if (cached) {
+          setProgressedSynastryAnalysis(cached);
+          return;
+        }
+
+        // 3. Нет в кэше — запрашиваем LLM и сохраняем (передаём весь расчёт обратно, как рекомендовано бэкендом)
+        const result = await astrologyAPI.getProgressedSynastryAnalysis({
+          progressed_synastry_data: data,
+          language: i18n.language || 'ru'
+        }, mode);
+
+        setProgressedSynastryAnalysis(result.analysis);
+        chartsApi.saveProgressedSynastryAnalysis(Number(savedChartId), mode, data.period, result.analysis).catch(err => {
+          console.error('Failed to save progressed synastry analysis:', err);
+        });
+        return;
+      }
+
+      const meta = chartDataForAnalysis.meta;
+      if (!meta?.birth_date) {
+        setProgressionsError(t('dashboard.progressions.noBirthData'));
+        return;
+      }
+
       const period = new Date().toISOString().slice(0, 7); // YYYY-MM
 
       // 1. Расчёт прогрессивных позиций (Swiss Ephemeris, без LLM)
@@ -542,8 +605,6 @@ const Dashboard = () => {
         timezone: meta.timezone,
         house_system: (chartDataForAnalysis.houses_meta as { house_system?: string } | undefined)?.house_system || 'Placidus'
       });
-      console.log('🔮 Progressions data from backend (before analysis):', JSON.stringify(data, null, 2));
-      console.log('🔮 Natal chart data for progressions:', JSON.stringify(chartDataForAnalysis?.planets, null, 2));
       setProgressionsData(data);
 
       // 2. AI-анализ: сначала из БД (по периоду и режиму)
@@ -728,6 +789,7 @@ const Dashboard = () => {
   useEffect(() => {
     if (!showProgressions) return;
     setProgressionsAnalysis(null);
+    setProgressedSynastryAnalysis(null);
     loadProgressions(analysisMode);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [analysisMode]);
@@ -1782,13 +1844,16 @@ const Dashboard = () => {
                   {!showPlanetTable && (
                     <AnalysisTabs
                       active={analysisTab}
-                      showProgressions={!!(savedChartId && fullAnalysis && chartDataForAnalysis?.type !== 'synastry')}
+                      showProgressions={!!(savedChartId && fullAnalysis)}
                       showTransits={!!(savedChartId && fullAnalysis && chartDataForAnalysis?.type !== 'synastry')}
                       showDailyForecast={!!(savedChartId && fullAnalysis && chartDataForAnalysis?.type !== 'synastry')}
                       onChange={(tab) => {
                         setAnalysisTab(tab);
                         setShowProgressions(tab === 'progressions');
-                        if (tab === 'progressions' && !progressionsData) {
+                        const hasProgressionsData = chartDataForAnalysis?.type === 'synastry'
+                          ? !!progressedSynastryData
+                          : !!progressionsData;
+                        if (tab === 'progressions' && !hasProgressionsData) {
                           loadProgressions();
                         }
                         // Транзиты: позиции считаем автоматически при открытии вкладки
@@ -1804,12 +1869,23 @@ const Dashboard = () => {
                   {/* Outlet «Прогрессии»: натальный анализ при этом скрыт (см. условие ниже) */}
                   {analysisTab === 'progressions' && !showPlanetTable && savedChartId && (
                     <div id="progressions-section">
-                      <ProgressionsPanel
-                        data={progressionsData}
-                        analysis={progressionsAnalysis}
-                        loading={progressionsLoading}
-                        error={progressionsError}
-                      />
+                      {chartDataForAnalysis?.type === 'synastry' ? (
+                        <ProgressedSynastryPanel
+                          data={progressedSynastryData}
+                          analysis={progressedSynastryAnalysis}
+                          loading={progressionsLoading}
+                          error={progressionsError}
+                          name1={chartDataForAnalysis.person1_name}
+                          name2={chartDataForAnalysis.person2_name}
+                        />
+                      ) : (
+                        <ProgressionsPanel
+                          data={progressionsData}
+                          analysis={progressionsAnalysis}
+                          loading={progressionsLoading}
+                          error={progressionsError}
+                        />
+                      )}
                     </div>
                   )}
 

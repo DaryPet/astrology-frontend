@@ -13,6 +13,9 @@ interface AspectGridProps {
   aspects: Aspect[] | undefined;
   _planets?: Record<string, any>;
   onAspectClick?: (aspect: Aspect) => void;
+  title?: string;
+  emptyTitle?: string;
+  emptyDescription?: string;
 }
 
 const ASPECT_COLORS: Record<string, string> = {
@@ -20,7 +23,7 @@ const ASPECT_COLORS: Record<string, string> = {
   'Square': '#FF6347', 'Sextile': '#1E90FF', 'Quincunx': '#9370DB'
 };
 
-const AspectGrid = ({ aspects, _planets, onAspectClick }: AspectGridProps) => {
+const AspectGrid = ({ aspects, _planets, onAspectClick, title, emptyTitle, emptyDescription }: AspectGridProps) => {
   const { t } = useTranslation();
   const [selectedAspect, setSelectedAspect] = useState<number | null>(null);
 
@@ -37,10 +40,10 @@ const AspectGrid = ({ aspects, _planets, onAspectClick }: AspectGridProps) => {
           ☊
         </div>
         <h3 style={{ marginTop: 0, marginBottom: '8px', color: 'var(--text-primary)' }}>
-          {t('planets.aspects.notFound')}
+          {emptyTitle || t('planets.aspects.notFound')}
         </h3>
         <p style={{ color: 'var(--text-secondary)', fontSize: '14px', margin: 0 }}>
-          {t('planets.aspects.notFoundDesc')}
+          {emptyDescription || t('planets.aspects.notFoundDesc')}
         </p>
       </div>
     );
@@ -89,7 +92,7 @@ const AspectGrid = ({ aspects, _planets, onAspectClick }: AspectGridProps) => {
         }}>
           △
         </span>
-        {t('planets.aspects.title')} ({aspects.length})
+        {title || t('planets.aspects.title')} ({aspects.length})
       </h3>
 
       <div style={{
