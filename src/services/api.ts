@@ -122,6 +122,46 @@ export interface ProgressionsData {
   meta?: Record<string, unknown>;
 }
 
+// Форма аспекта, единая по всему фронту (см. AspectGrid.Aspect, AspectAnalysisModal.AspectData)
+export interface SynastryAspectItem {
+  planet1: string;
+  planet2: string;
+  aspect: string;
+  aspect_ru?: string;
+  orb?: number;
+  [key: string]: unknown;
+}
+
+export interface ProgressedSynastryPerson {
+  name?: string;
+  age_years: number;
+  progressed_planets: Record<string, ProgressedPlanet>;
+  progressed_houses?: Record<string, unknown>;
+  progressed_ascendant?: { sign?: string; sign_ru?: string; degree?: number };
+  lunar_phase?: LunarPhase | null;
+  natal_summary?: Record<string, string>;
+}
+
+export interface ProgressedSynastryData {
+  type: 'progressed_synastry';
+  target_date: string;
+  period: string;
+  person1: ProgressedSynastryPerson;
+  person2: ProgressedSynastryPerson;
+  progressed_synastry_aspects: SynastryAspectItem[];
+  cross_overlay: {
+    prog1_to_natal2: SynastryAspectItem[];
+    prog2_to_natal1: SynastryAspectItem[];
+  };
+  dynamics: {
+    natal_synastry_aspects: SynastryAspectItem[];
+    new_aspects: SynastryAspectItem[];
+    faded_aspects: SynastryAspectItem[];
+    natal_total: number;
+    progressed_total: number;
+  };
+}
+
 export interface TransitPlanet {
   planet: string;
   sign: string;
@@ -347,6 +387,31 @@ export const astrologyAPI = {
     mode = 'simple'
   ): Promise<{ analysis: string; summary?: string; progressions_summary?: Record<string, unknown> }> => {
     const response = await api.post('/analysis/progressions', {
+      ...payload,
+      mode
+    });
+    return response.data;
+  },
+
+  /**
+   * Расчёт прогрессивной синастрии: прогрессии обоих партнёров + кросс-наложения
+   * (прогрессия одного на натал другого) + динамика (новые/угасшие аспекты периода).
+   */
+  calculateProgressedSynastry: async (data: Record<string, unknown>): Promise<ProgressedSynastryData> => {
+    const response = await api.post('/progressed-synastry', data);
+    return response.data;
+  },
+
+  /**
+   * AI-анализ прогрессивной синастрии (RAG по книгам + LLM).
+   * @param payload - предпочтительно { progressed_synastry_data: <результат calculateProgressedSynastry>, language }
+   * @param mode - 'simple' | 'advanced'
+   */
+  getProgressedSynastryAnalysis: async (
+    payload: Record<string, unknown>,
+    mode = 'simple'
+  ): Promise<{ analysis: string; summary?: string; progressed_synastry_summary?: Record<string, unknown> }> => {
+    const response = await api.post('/analysis/progressed-synastry', {
       ...payload,
       mode
     });

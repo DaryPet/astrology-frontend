@@ -284,6 +284,28 @@ export const chartsApi = {
     return data?.interpretation ?? null;
   },
 
+  /**
+   * Сохранить/получить AI-анализ прогрессивной синастрии:
+   * type='progressed_synastry_simple'/'progressed_synastry_advanced', name=период 'YYYY-MM'
+   * (отдельный namespace от натальных progressions_* — не пересекается)
+   */
+  async saveProgressedSynastryAnalysis(chartId: number, mode: string, period: string, analysis: string) {
+    return this.saveInterpretation(chartId, `progressed_synastry_${mode}`, analysis, period);
+  },
+
+  async getProgressedSynastryAnalysis(chartId: number, mode: string, period: string): Promise<string | null> {
+    const { data, error } = await supabase
+      .from('chart_interpretations')
+      .select('interpretation')
+      .eq('chart_id', chartId)
+      .eq('type', `progressed_synastry_${mode}`)
+      .eq('name', period)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data?.interpretation ?? null;
+  },
+
   async saveRelationshipTypes(chartId: number, data: unknown) {
     return this.saveInterpretation(chartId, 'relationship_types', JSON.stringify(data));
   },

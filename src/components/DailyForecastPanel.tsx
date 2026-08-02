@@ -1,7 +1,4 @@
 // src/components/DailyForecastPanel.tsx
-// Прогноз дня: дата+время+место транзита, выбор LLM, оценка 1-10 с категорией,
-// summary 3-5 предложений, таблица ключевых аспектов (включая углы и Фортуну).
-// Самодостаточная панель: своё состояние и запрос, Dashboard передаёт только natalChart.
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import LocationInput from './LocationInput';
@@ -32,7 +29,7 @@ interface ForecastResult {
 }
 
 interface DailyForecastPanelProps {
-  natalChart: Record<string, any> | null; // chartDataForAnalysis: { planets, houses, meta, ... }
+  natalChart: Record<string, any> | null;
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -51,7 +48,7 @@ const DailyForecastPanel: React.FC<DailyForecastPanelProps> = ({ natalChart }) =
 
   const [date, setDate] = useState<string>(today());
   const [time, setTime] = useState<string>('12:00');
-  const [location, setLocation] = useState<Location | null>(null); // null = место рождения
+  const [location, setLocation] = useState<Location | null>(null);
   const [llm, setLlm] = useState<LLMModelOption>(DEFAULT_LLM);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -80,9 +77,6 @@ const DailyForecastPanel: React.FC<DailyForecastPanelProps> = ({ natalChart }) =
     setLoading(true);
     setResult(null);
     try {
-      // payload по образцу loadTransitsData: birth_date уже содержит время (ISO),
-      // birth_time в meta нет; house_system — из houses_meta.
-      // target_date в UTC (конвенция приложения — см. `${day}T12:00:00Z` в транзитах).
       const data = await astrologyAPI.getDailyForecast({
         birth_date: meta.birth_date,
         birth_place: meta.birth_place,
@@ -176,7 +170,6 @@ const DailyForecastPanel: React.FC<DailyForecastPanelProps> = ({ natalChart }) =
         <div className="error-message" style={{ marginTop: '16px' }}>{error}</div>
       )}
 
-      {/* Результат */}
       {result && !loading && (
         <div
           style={{
