@@ -1844,6 +1844,7 @@ const Dashboard = () => {
                   {!showPlanetTable && (
                     <AnalysisTabs
                       active={analysisTab}
+                      firstTabLabel={chartDataForAnalysis?.type === 'synastry' ? t('dashboard.tabs.synastryMain') : undefined}
                       showProgressions={!!(savedChartId && fullAnalysis)}
                       showTransits={!!(savedChartId && fullAnalysis && chartDataForAnalysis?.type !== 'synastry')}
                       showDailyForecast={!!(savedChartId && fullAnalysis && chartDataForAnalysis?.type !== 'synastry')}

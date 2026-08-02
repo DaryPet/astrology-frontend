@@ -1,6 +1,3 @@
-// src/components/AnalysisTabs.tsx
-// Таб-бар переключения видов анализа на Dashboard: Натальная карта | Прогрессии.
-// Натальная — всегда первая и активна по умолчанию; контент рендерит родитель.
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -9,16 +6,17 @@ export type AnalysisTabId = 'natal' | 'progressions' | 'transits' | 'dailyForeca
 interface AnalysisTabsProps {
   active: AnalysisTabId;
   onChange: (tab: AnalysisTabId) => void;
-  showProgressions: boolean; // гейтинг: сохранённая карта + анализ + не синастрия
-  showTransits?: boolean;       // тот же гейтинг
-  showDailyForecast?: boolean;  // тот же гейтинг
+  showProgressions: boolean;
+  showTransits?: boolean;
+  showDailyForecast?: boolean;
+  firstTabLabel?: string;
 }
 
-const AnalysisTabs: React.FC<AnalysisTabsProps> = ({ active, onChange, showProgressions, showTransits, showDailyForecast }) => {
+const AnalysisTabs: React.FC<AnalysisTabsProps> = ({ active, onChange, showProgressions, showTransits, showDailyForecast, firstTabLabel }) => {
   const { t } = useTranslation();
 
   const tabs: Array<{ id: AnalysisTabId; icon: string; label: string }> = [
-    { id: 'natal', icon: '☉', label: t('dashboard.tabs.natal') },
+    { id: 'natal', icon: '☉', label: firstTabLabel || t('dashboard.tabs.natal') },
   ];
   if (showProgressions) {
     tabs.push({ id: 'progressions', icon: '📈', label: t('dashboard.tabs.progressions') });

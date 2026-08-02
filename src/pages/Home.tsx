@@ -280,7 +280,7 @@ function Home() {
     };
 
     const meta = cd.meta || {
-      birth_date: formData.birth_date ? `${formData.birth_date}T${formData.birth_time}:00+03:00` : undefined,
+      birth_date: formData.birth_date ? `${formData.birth_date}T${formData.birth_time}:00` : undefined,
       birth_place: formData.city,
       latitude: formData.latitude,
       longitude: formData.longitude,
@@ -381,7 +381,7 @@ function Home() {
     }
 
     const apiData = {
-      birth_date: `${formData.birth_date}T${formData.birth_time}:00+03:00`,
+      birth_date: `${formData.birth_date}T${formData.birth_time}:00`,
       birth_place: formData.city,
       latitude: formData.latitude,
       longitude: formData.longitude,
@@ -433,7 +433,7 @@ function Home() {
           : null,
         name: chartName,
         meta: {
-          birth_date: formData.birth_date ? `${formData.birth_date}T${formData.birth_time}:00+03:00` : null,
+          birth_date: formData.birth_date ? `${formData.birth_date}T${formData.birth_time}:00` : null,
           birth_place: formData.city,
           latitude: formData.latitude,
           longitude: formData.longitude,

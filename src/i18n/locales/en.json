@@ -240,6 +240,7 @@
     },
     "tabs": {
       "natal": "Natal Chart",
+      "synastryMain": "Synastry",
       "progressions": "Progressions",
       "transits": "Transits",
       "dailyForecast": "Daily Forecast"
