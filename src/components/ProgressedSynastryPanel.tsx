@@ -8,6 +8,7 @@ import ProgressedPlanetsTable from './ProgressedPlanetsTable';
 // с пометкой "ВРЕМЕННО ОТКЛЮЧЕНО: кликабельные карточки AspectGrid" в этом файле.
 // import AspectGrid from './AspectGrid';
 import type { ProgressedSynastryData, ProgressedSynastryPerson } from '../services/api';
+import { pickLocalized } from '../i18n/localizedField';
 
 interface ProgressedSynastryPanelProps {
   data: ProgressedSynastryData | null;
@@ -20,14 +21,13 @@ interface ProgressedSynastryPanelProps {
 
 const ProgressedSynastryPanel: React.FC<ProgressedSynastryPanelProps> = ({ data, analysis, loading, error, name1, name2 }) => {
   const { t, i18n } = useTranslation();
-  const isRu = (i18n.language || 'ru').startsWith('ru');
 
   const name1Label = name1 || t('dashboard.progressedSynastry.partner1');
   const name2Label = name2 || t('dashboard.progressedSynastry.partner2');
 
-  const signName = (obj?: { sign?: string; sign_ru?: string }) => {
+  const signName = (obj?: { sign?: string; sign_ru?: string; sign_uk?: string }) => {
     if (!obj) return '—';
-    return isRu ? (obj.sign_ru || obj.sign || '—') : (obj.sign || '—');
+    return pickLocalized(i18n.language, obj.sign, obj.sign_ru, obj.sign_uk);
   };
 
   const renderPersonCard = (person: ProgressedSynastryPerson | undefined, label: string) => {
@@ -52,7 +52,7 @@ const ProgressedSynastryPanel: React.FC<ProgressedSynastryPanelProps> = ({ data,
           {person.lunar_phase && (
             <div>
               🌗 {t('dashboard.progressedSynastry.lunarPhase')}: <strong style={{ color: 'var(--text-primary)' }}>
-                {isRu ? (person.lunar_phase.phase_ru || person.lunar_phase.phase) : person.lunar_phase.phase}
+                {pickLocalized(i18n.language, person.lunar_phase.phase, person.lunar_phase.phase_ru, person.lunar_phase.phase_uk)}
               </strong>
             </div>
           )}
