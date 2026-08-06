@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 
 const api = axios.create({
   baseURL: '/api',
-  timeout: 300000,
+  timeout: 360000,
   headers: {
     'Content-Type': 'application/json'
   }
@@ -44,8 +44,8 @@ interface ChartData {
   houses_meta?: {
     house_system?: string;
     armc?: number;
-    vertex?: { longitude: number; sign?: string; sign_ru?: string; degree?: number; house?: number };
-    pars_fortuna?: { longitude: number; sign?: string; sign_ru?: string; degree?: number; house?: number };
+    vertex?: { longitude: number; sign?: string; sign_ru?: string; sign_uk?: string; degree?: number; house?: number };
+    pars_fortuna?: { longitude: number; sign?: string; sign_ru?: string; sign_uk?: string; degree?: number; house?: number };
   };
   aspects?: unknown[];
   planets?: unknown;
@@ -67,7 +67,7 @@ interface SynastryData {
 export interface ProgressedPlanet {
   planet: string;
   sign: string;
-  sign_ru?: string;
+  sign_ru?: string; sign_uk?: string;
   degree: number;
   full_degree: number;
   speed?: number;
@@ -89,7 +89,7 @@ export interface ProgressionAspect {
   planet1: string;
   planet2: string;
   aspect: string;
-  aspect_ru?: string;
+  aspect_ru?: string; aspect_uk?: string;
   orb: number;
   exactness?: number;
   // сходящийся (true) / расходящийся (false)
@@ -103,7 +103,7 @@ export interface ProgressionAspect {
 export interface LunarPhase {
   angle: number;
   phase: string;
-  phase_ru?: string;
+  phase_ru?: string; phase_uk?: string;
 }
 
 export interface ProgressionsData {
@@ -114,8 +114,8 @@ export interface ProgressionsData {
   target_date?: string;
   progressed_planets: Record<string, ProgressedPlanet>;
   lunar_phase?: LunarPhase | null;
-  progressed_ascendant?: { sign?: string; sign_ru?: string; degree?: number };
-  progressed_mc?: { sign?: string; sign_ru?: string; degree?: number };
+  progressed_ascendant?: { sign?: string; sign_ru?: string; sign_uk?: string; degree?: number };
+  progressed_mc?: { sign?: string; sign_ru?: string; sign_uk?: string; degree?: number };
   progressed_houses?: Record<string, unknown>;
   aspects_to_natal: ProgressionAspect[];
   natal_summary?: Record<string, string>;
@@ -127,7 +127,7 @@ export interface SynastryAspectItem {
   planet1: string;
   planet2: string;
   aspect: string;
-  aspect_ru?: string;
+  aspect_ru?: string; aspect_uk?: string;
   orb?: number;
   [key: string]: unknown;
 }
@@ -137,7 +137,7 @@ export interface ProgressedSynastryPerson {
   age_years: number;
   progressed_planets: Record<string, ProgressedPlanet>;
   progressed_houses?: Record<string, unknown>;
-  progressed_ascendant?: { sign?: string; sign_ru?: string; degree?: number };
+  progressed_ascendant?: { sign?: string; sign_ru?: string; sign_uk?: string; degree?: number };
   lunar_phase?: LunarPhase | null;
   natal_summary?: Record<string, string>;
 }
@@ -165,7 +165,7 @@ export interface ProgressedSynastryData {
 export interface TransitPlanet {
   planet: string;
   sign: string;
-  sign_ru?: string;
+  sign_ru?: string; sign_uk?: string;
   degree: number;
   full_degree: number;
   speed?: number;
@@ -183,7 +183,7 @@ export interface TransitAspect {
   planet1: string;
   planet2: string;
   aspect: string;
-  aspect_ru?: string;
+  aspect_ru?: string; aspect_uk?: string;
   orb: number;
   exactness?: number;
   applying?: boolean;

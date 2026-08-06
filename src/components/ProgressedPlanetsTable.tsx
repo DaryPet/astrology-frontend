@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ProgressedPlanet } from '../services/api';
+import { pickLocalized } from '../i18n/localizedField';
 
 interface ProgressedPlanetsTableProps {
   planets: Record<string, ProgressedPlanet> | undefined;
@@ -15,12 +16,11 @@ const PLANET_ORDER = [
 
 const ProgressedPlanetsTable: React.FC<ProgressedPlanetsTableProps> = ({ planets }) => {
   const { t, i18n } = useTranslation();
-  const isRu = (i18n.language || 'ru').startsWith('ru');
 
   const planetName = (key: string) => t(`planets.names.${key}`, { defaultValue: key });
   const signName = (planet?: ProgressedPlanet) => {
     if (!planet) return '—';
-    return isRu ? (planet.sign_ru || planet.sign || '—') : (planet.sign || '—');
+    return pickLocalized(i18n.language, planet.sign, planet.sign_ru, planet.sign_uk);
   };
 
   const sortedPlanets: ProgressedPlanet[] = planets

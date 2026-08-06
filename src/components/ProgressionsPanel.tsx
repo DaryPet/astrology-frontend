@@ -4,6 +4,7 @@ import MarkdownContent from './MarkdownContent';
 import ProcessingMessage from './ProcessingMessage';
 import ProgressedPlanetsTable from './ProgressedPlanetsTable';
 import type { ProgressionsData, ProgressedPlanet, ProgressionAspect } from '../services/api';
+import { pickLocalized } from '../i18n/localizedField';
 
 interface ProgressionsPanelProps {
   data: ProgressionsData | null;
@@ -14,14 +15,13 @@ interface ProgressionsPanelProps {
 
 const ProgressionsPanel: React.FC<ProgressionsPanelProps> = ({ data, analysis, loading, error }) => {
   const { t, i18n } = useTranslation();
-  const isRu = (i18n.language || 'ru').startsWith('ru');
 
   const planetName = (key: string) => t(`planets.names.${key}`, { defaultValue: key });
-  const signName = (planet?: ProgressedPlanet | { sign?: string; sign_ru?: string }) => {
+  const signName = (planet?: ProgressedPlanet | { sign?: string; sign_ru?: string; sign_uk?: string }) => {
     if (!planet) return '—';
-    return isRu ? (planet.sign_ru || planet.sign || '—') : (planet.sign || '—');
+    return pickLocalized(i18n.language, planet.sign, planet.sign_ru, planet.sign_uk);
   };
-  const aspectName = (asp: ProgressionAspect) => (isRu ? (asp.aspect_ru || asp.aspect) : asp.aspect);
+  const aspectName = (asp: ProgressionAspect) => pickLocalized(i18n.language, asp.aspect, asp.aspect_ru, asp.aspect_uk);
 
   const progMoon = data?.progressed_planets?.Moon;
   const progSun = data?.progressed_planets?.Sun;
@@ -76,7 +76,7 @@ const ProgressionsPanel: React.FC<ProgressionsPanelProps> = ({ data, analysis, l
                   🌗 {t('dashboard.progressions.lunarPhase')}
                 </div>
                 <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginTop: '4px' }}>
-                  {isRu ? (data.lunar_phase.phase_ru || data.lunar_phase.phase) : data.lunar_phase.phase}
+                  {pickLocalized(i18n.language, data.lunar_phase.phase, data.lunar_phase.phase_ru, data.lunar_phase.phase_uk)}
                 </div>
               </div>
             )}

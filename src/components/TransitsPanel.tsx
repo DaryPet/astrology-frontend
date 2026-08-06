@@ -9,6 +9,7 @@ import ProcessingMessage from './ProcessingMessage';
 import LocationInput from './LocationInput';
 import type { TransitsData, TransitPlanet, TransitAspect } from '../services/api';
 import type { Location } from './LocationInput';
+import { pickLocalized } from '../i18n/localizedField';
 
 interface TransitsPanelProps {
   data: TransitsData | null;
@@ -39,18 +40,17 @@ const TransitsPanel: React.FC<TransitsPanelProps> = ({
   onRunAnalysis, transitsRemaining, transitsLimit
 }) => {
   const { t, i18n } = useTranslation();
-  const isRu = (i18n.language || 'ru').startsWith('ru');
 
   const handleLocationSelect = (location: Location) => {
     onLocationChange?.(location);
   };
 
   const planetName = (key: string) => t(`planets.names.${key}`, { defaultValue: key });
-  const signName = (planet?: TransitPlanet | { sign?: string; sign_ru?: string }) => {
+  const signName = (planet?: TransitPlanet | { sign?: string; sign_ru?: string; sign_uk?: string }) => {
     if (!planet) return '—';
-    return isRu ? (planet.sign_ru || planet.sign || '—') : (planet.sign || '—');
+    return pickLocalized(i18n.language, planet.sign, planet.sign_ru, planet.sign_uk);
   };
-  const aspectName = (asp: TransitAspect) => (isRu ? (asp.aspect_ru || asp.aspect) : asp.aspect);
+  const aspectName = (asp: TransitAspect) => pickLocalized(i18n.language, asp.aspect, asp.aspect_ru, asp.aspect_uk);
 
   const sortedPlanets: TransitPlanet[] = data
     ? PLANET_ORDER
@@ -236,7 +236,7 @@ const TransitsPanel: React.FC<TransitsPanelProps> = ({
                   🌗 {t('dashboard.progressions.lunarPhase')}
                 </div>
                 <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginTop: '4px' }}>
-                  {isRu ? (data.lunar_phase.phase_ru || data.lunar_phase.phase) : data.lunar_phase.phase}
+                  {pickLocalized(i18n.language, data.lunar_phase.phase, data.lunar_phase.phase_ru, data.lunar_phase.phase_uk)}
                 </div>
               </div>
             )}
