@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 
 const api = axios.create({
   baseURL: '/api',
-  timeout: 300000,
+  timeout: 360000,
   headers: {
     'Content-Type': 'application/json'
   }
