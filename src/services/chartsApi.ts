@@ -11,33 +11,6 @@ export interface ChartResponse {
 
 const CHARTS_LIMIT = 5;
 
-// Helper function to generate summary via LLM
-async function generateSummary(interpretation: string): Promise<string> {
-  try {
-    // Assuming there's an API endpoint to generate summaries
-    // This could be a direct LLM API call or a backend proxy
-    const response = await fetch('/api/generate-summary', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        text: interpretation,
-        language: 'en'
-      })
-    });
-    if (!response.ok) {
-      throw new Error('Failed to generate summary');
-    }
-    const data = await response.json();
-    return data.summary || interpretation.substring(0, 500); // Fallback to truncated original
-  } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error('Error generating summary:', error);
-    return interpretation.substring(0, 500); // Fallback to truncated original
-  }
-}
-
 export const chartsApi = {
 
   async saveChart(userId: string, chartData: Record<string, unknown>): Promise<ChartResponse> {
@@ -194,9 +167,6 @@ export const chartsApi = {
       throw new Error(`Chart with id ${chartId} does not exist`);
     }
 
-    // Generate summary
-    const summary = await generateSummary(interpretation);
-
     // Upsert interpretation (update if exists, insert if not)
     // Conflict target: (chart_id, type, name) - ensures unique analysis per chart+type+planet
     const { data, error } = await supabase
@@ -205,7 +175,6 @@ export const chartsApi = {
         chart_id: chartId,
         type,
         interpretation,
-        summary,
         name, // planet name for type='planet'
         created_at: new Date().toISOString()
       }, {

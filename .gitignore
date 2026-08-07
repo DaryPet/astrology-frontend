@@ -49,3 +49,5 @@ openspec/changes/
 .vite/
 .agents
 .claude/
+# local archive, not meant to be tracked
+src.zip
