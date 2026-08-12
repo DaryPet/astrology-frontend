@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { astrologyAPI } from '../services/api';
 import { chartsApi } from '../services/chartsApi';
 import { getFullAnalysis } from '../services/analysisCache';
+import { streamFullAnalysis, type FullAnalysisPayload } from '../services/streamApi';
 import i18n from '../i18n';
 import Header from '../components/Header';
 import ProcessingMessage from '../components/ProcessingMessage';
@@ -176,6 +177,16 @@ const Dashboard = () => {
   const [advancedAnalysis, setAdvancedAnalysis] = useState<string | null>(null);
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [analysisError, setAnalysisError] = useState<string>('');
+  // Стриминг натального анализа (см. plans/streaming-analysis-frontend.md).
+  // Синастрии/прогрессий/транзитов не касается — у них остаётся старый axios-путь.
+  const [streamPhase, setStreamPhase] = useState<'idle' | 'searching' | 'generating' | 'typing' | 'done' | 'error'>('idle');
+  const [displayedText, setDisplayedText] = useState('');
+  const verifiedTextRef = useRef('');
+  const streamDeltaReceivedRef = useRef(false);
+  const streamAbortRef = useRef<AbortController | null>(null);
+  const finalTextRef = useRef<string | null>(null);
+  const finishStreamRef = useRef<((analysis: string) => void) | null>(null);
+  const [finalReceived, setFinalReceived] = useState(false);
   const [saving, setSaving] = useState(false);
   const [analysisMode, setAnalysisMode] = useState<string>(() => {
     return location.state?.analysisMode
@@ -432,6 +443,127 @@ const Dashboard = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chartIdFromUrl]);
 
+  // Существующий нестримовый путь (axios, через analysisCache.getFullAnalysis).
+  // Используется как есть для синастрии, и как молчаливый fallback для натала —
+  // см. runNatalStream ниже — если стрим упал до первой дельты.
+  const runAxiosAnalysis = useCallback(async (mode: string) => {
+    if (!chartDataForAnalysis) return;
+    try {
+      const { analysis } = await getFullAnalysis(chartDataForAnalysis, mode, i18n.language);
+      console.log('analysis received:', analysis?.substring(0, 50));
+      setFullAnalysis(analysis);
+      console.log('setFullAnalysis called');
+      if (mode === 'simple') setSimpleAnalysis(analysis);
+      else setAdvancedAnalysis(analysis);
+      // localStorage.removeItem('pendingAnalysisJob');
+      // localStorage.removeItem('pendingAnalysisResult');
+
+      const currentChartId = parseInt(localStorage.getItem('savedChartId') || '0', 10) || null;
+      if (currentChartId) {
+        localStorage.setItem(`savedFullAnalysis_${currentChartId}_${mode}`, analysis);
+        const isSynastry = chartDataForAnalysis?.type === 'synastry';
+        const type = isSynastry ? `synastry_${mode}` : `full_${mode}`;
+        chartsApi.saveInterpretation(currentChartId, type, analysis).catch(() => {});
+      }
+    } catch (err) {
+      const errorDetail = (err as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
+      if (typeof errorDetail === 'string') {
+        setAnalysisError(errorDetail);
+      } else if (Array.isArray(errorDetail)) {
+        setAnalysisError(errorDetail.map((e: { msg?: string }) => e.msg || JSON.stringify(e)).join(', '));
+      } else {
+        setAnalysisError(t('dashboard.errors.analysisError'));
+      }
+    } finally {
+      setAnalysisLoading(false);
+      isLoadingRef.current = false;
+    }
+  }, [chartDataForAnalysis, t]);
+
+  // Стриминговый путь для натального анализа (chart_data.type !== 'synastry').
+  // На экран попадает только verifiedTextRef (то, что реально пришло дельтами
+  // или зафиксировано final'ом) — печатающая машинка (см. эффект ниже) лишь
+  // проигрывает уже проверенный текст.
+  const runNatalStream = useCallback(async (mode: string) => {
+    if (!chartDataForAnalysis) return;
+
+    verifiedTextRef.current = '';
+    finalTextRef.current = null;
+    streamDeltaReceivedRef.current = false;
+    setFinalReceived(false);
+    setDisplayedText('');
+    setStreamPhase('searching');
+
+    streamAbortRef.current?.abort();
+    const abortCtrl = new AbortController();
+    streamAbortRef.current = abortCtrl;
+
+    const payload: FullAnalysisPayload = {
+      chart_data: chartDataForAnalysis as unknown as Record<string, unknown>,
+      language: i18n.language,
+      top_books: 5,
+      mode,
+      birth_date: chartDataForAnalysis.meta?.birth_date || null,
+      birth_place: chartDataForAnalysis.meta?.birth_place || null,
+    };
+
+    finishStreamRef.current = (analysis: string) => {
+      setFullAnalysis(analysis);
+      if (mode === 'simple') setSimpleAnalysis(analysis);
+      else setAdvancedAnalysis(analysis);
+
+      const currentChartId = parseInt(localStorage.getItem('savedChartId') || '0', 10) || null;
+      if (currentChartId) {
+        localStorage.setItem(`savedFullAnalysis_${currentChartId}_${mode}`, analysis);
+        chartsApi.saveInterpretation(currentChartId, `full_${mode}`, analysis).catch(() => {});
+      }
+
+      setAnalysisLoading(false);
+      isLoadingRef.current = false;
+    };
+
+    await streamFullAnalysis(
+      payload,
+      {
+        onStage: (stage) => {
+          setStreamPhase(prev => {
+            if (prev === 'typing' || prev === 'done') return prev;
+            return stage === 'generating' ? 'generating' : 'searching';
+          });
+        },
+        onDelta: (text) => {
+          streamDeltaReceivedRef.current = true;
+          verifiedTextRef.current += text;
+          setStreamPhase(prev => (prev === 'searching' || prev === 'generating') ? 'typing' : prev);
+        },
+        onFinal: (result) => {
+          // Канонический итог — перекрывает накопленные дельты (в норме побуквенно совпадает).
+          verifiedTextRef.current = result.analysis;
+          finalTextRef.current = result.analysis;
+          setFinalReceived(true);
+          setStreamPhase(prev => prev === 'done' ? prev : 'typing');
+        },
+        onError: (detail) => {
+          if (!streamDeltaReceivedRef.current) {
+            // Упало до первой дельты — тихий откат на существующий axios-путь
+            // (это же сигнал вызывающему коду сделать fallback, план шаг 1.4).
+            runAxiosAnalysis(mode);
+            return;
+          }
+          // После первой дельты повторный запрос не делаем (повторная оплата генерации) —
+          // показываем ошибку, наполовину напечатанный текст результатом не считается.
+          setStreamPhase('error');
+          setDisplayedText('');
+          verifiedTextRef.current = '';
+          setAnalysisError(detail || t('dashboard.errors.analysisError'));
+          setAnalysisLoading(false);
+          isLoadingRef.current = false;
+        },
+      },
+      abortCtrl.signal
+    );
+  }, [chartDataForAnalysis, runAxiosAnalysis, t]);
+
   const loadFullAnalysis = useCallback(async (mode = analysisMode) => {
     if (!chartDataForAnalysis) return;
     if (isLoadingRef.current) return;
@@ -449,37 +581,49 @@ const Dashboard = () => {
       return;
     }
 
-    try {
-      const { analysis } = await getFullAnalysis(chartDataForAnalysis, mode, i18n.language);
-      console.log('analysis received:', analysis?.substring(0, 50));
-      setFullAnalysis(analysis);
-      console.log('setFullAnalysis called');
-      if (mode === 'simple') setSimpleAnalysis(analysis);
-      else setAdvancedAnalysis(analysis);
-      // localStorage.removeItem('pendingAnalysisJob');
-      // localStorage.removeItem('pendingAnalysisResult');
-
-      const currentChartId = parseInt(localStorage.getItem('savedChartId') || '0', 10) || null;
-      if (currentChartId) {
-        localStorage.setItem(`savedFullAnalysis_${currentChartId}_${mode}`, analysis);
-        const isSynastry = chartDataForAnalysis.type === 'synastry';
-        const type = isSynastry ? `synastry_${mode}` : `full_${mode}`;
-        chartsApi.saveInterpretation(currentChartId, type, analysis).catch(() => {});
-      }
-    } catch (err) {
-      const errorDetail = (err as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
-      if (typeof errorDetail === 'string') {
-        setAnalysisError(errorDetail);
-      } else if (Array.isArray(errorDetail)) {
-        setAnalysisError(errorDetail.map((e: { msg?: string }) => e.msg || JSON.stringify(e)).join(', '));
-      } else {
-        setAnalysisError(t('dashboard.errors.analysisError'));
-      }
-    } finally {
-      setAnalysisLoading(false);
-      isLoadingRef.current = false;
+    if (chartDataForAnalysis.type === 'synastry') {
+      await runAxiosAnalysis(mode);
+      return;
     }
-  }, [chartDataForAnalysis, t, analysisMode, simpleAnalysis, advancedAnalysis]);
+
+    await runNatalStream(mode);
+  }, [chartDataForAnalysis, analysisMode, simpleAnalysis, advancedAnalysis, runAxiosAnalysis, runNatalStream]);
+
+  // Печатающая машинка: переносит по N символов из verifiedTextRef (проверено
+  // сервером) в displayedText. N адаптивный — растёт с непоказанным хвостом,
+  // это и даёт ровную непрерывную печать, хотя текст приходит абзацами.
+  useEffect(() => {
+    if (streamPhase !== 'searching' && streamPhase !== 'generating' && streamPhase !== 'typing') {
+      return;
+    }
+    const TICK_MS = 35;
+    const id = window.setInterval(() => {
+      setDisplayedText(prev => {
+        const target = verifiedTextRef.current;
+        const backlog = target.length - prev.length;
+        if (backlog <= 0) return prev;
+        const step = Math.min(backlog, 1 + Math.floor(backlog / 20));
+        return target.slice(0, prev.length + step);
+      });
+    }, TICK_MS);
+    return () => window.clearInterval(id);
+  }, [streamPhase]);
+
+  // Печать догнала final — фиксируем результат (кэш/сохранение) и завершаем.
+  useEffect(() => {
+    if (!finalReceived || finalTextRef.current == null) return;
+    if (displayedText.length < finalTextRef.current.length) return;
+    setStreamPhase('done');
+    finishStreamRef.current?.(finalTextRef.current);
+    finishStreamRef.current = null;
+  }, [displayedText, finalReceived]);
+
+  // Уход со страницы во время стрима — рвём соединение (AbortSignal).
+  useEffect(() => {
+    return () => {
+      streamAbortRef.current?.abort();
+    };
+  }, []);
 
   useEffect(() => {
     isLoadingRef.current = false;
@@ -1922,9 +2066,15 @@ const Dashboard = () => {
                   {/* Outlet «Натальная карта» — таб по умолчанию */}
                   {!showPlanetTable && analysisTab === 'natal' && (
                     <>
-                      {analysisLoading && (
+                      {analysisLoading && streamPhase !== 'typing' && !fullAnalysis && (
                         <div style={{ marginTop: '40px' }}>
-                          <ProcessingMessage />
+                          {chartDataForAnalysis?.type === 'synastry' ? (
+                            <ProcessingMessage />
+                          ) : (
+                            <ProcessingMessage
+                              title={streamPhase === 'generating' ? t('dashboard.fullAnalysis.generating') : t('dashboard.fullAnalysis.searching')}
+                            />
+                          )}
                         </div>
                       )}
 
@@ -1934,7 +2084,7 @@ const Dashboard = () => {
                         </div>
                       )}
 
-                      {fullAnalysis && (
+                      {(fullAnalysis || (chartDataForAnalysis?.type !== 'synastry' && streamPhase === 'typing')) && (
                         <div style={{ marginTop: '40px', lineHeight: '2', fontSize: '16px' }}>
                           {!savedChartId && !analysisLoading && (
                             <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
@@ -1943,7 +2093,10 @@ const Dashboard = () => {
                               </button>
                             </div>
                           )}
-                          <MarkdownContent content={fullAnalysis} />
+                          <MarkdownContent content={fullAnalysis ?? displayedText} />
+                          {!fullAnalysis && streamPhase === 'typing' && (
+                            <span className="typing-cursor" aria-hidden="true">▍</span>
+                          )}
 
                           <div id="chat-section">
                             {savedChartId && (

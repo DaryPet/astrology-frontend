@@ -304,6 +304,17 @@ body {
   margin: 20px 0;
 }
 
+/* Каретка стримингового натального анализа (см. streamApi.ts) */
+.typing-cursor {
+  display: inline-block;
+  color: var(--text-secondary);
+  animation: blink-cursor 1s step-start infinite;
+}
+
+@keyframes blink-cursor {
+  50% { opacity: 0; }
+}
+
 /* Table Styles */
 .markdown-table {
   width: 100%;

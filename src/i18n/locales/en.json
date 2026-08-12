@@ -168,7 +168,9 @@
       "analysisError": "Error loading analysis"
     },
     "fullAnalysis": {
-      "title": "Full Astrological Analysis"
+      "title": "Full Astrological Analysis",
+      "searching": "Searching sources…",
+      "generating": "Writing the analysis…"
     },
     "chat": {
       "title": "Chart Chat",
@@ -460,7 +462,7 @@
     "aspectAnalysis": "Aspect Analysis",
     "loading": "Loading analysis...",
     "processing": "Your analysis is being processed",
-    "processingHint": "This may take 2-5 minutes. Please wait...",
+    "processingHint": "Please wait...",
     "error": "Error loading analysis",
     "noData": "No data available for this planet"
   },
