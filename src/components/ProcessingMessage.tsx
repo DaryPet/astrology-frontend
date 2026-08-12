@@ -3,9 +3,10 @@ import { useTranslation } from 'react-i18next';
 
 interface ProcessingMessageProps {
   size?: 'sm' | 'md' | 'lg';
+  title?: string;
 }
 
-const ProcessingMessage = ({ size = 'md' }: ProcessingMessageProps) => {
+const ProcessingMessage = ({ size = 'md', title }: ProcessingMessageProps) => {
   const { t } = useTranslation();
 
   const sizeStyles = {
@@ -49,7 +50,7 @@ const ProcessingMessage = ({ size = 'md' }: ProcessingMessageProps) => {
           <path d="M2 12l10 5 10-5" />
         </svg>
       </div>
-      <div className="processing-title" style={styles.title}>{t('analysis.processing')}</div>
+      <div className="processing-title" style={styles.title}>{title ?? t('analysis.processing')}</div>
       <div className="processing-hint" style={styles.hint}>{t('analysis.processingHint')}</div>
       <div className="processing-dots" style={styles.dots}>
         <span style={styles.dot}></span>
