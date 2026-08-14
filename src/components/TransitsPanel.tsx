@@ -1,7 +1,3 @@
-// src/components/TransitsPanel.tsx
-// Транзиты на конкретный день: выбор даты (по умолчанию сегодня, можно любой
-// день прошлого/будущего), выбор места (по умолчанию место рождения), лунная фаза,
-// транзитные планеты по натальным домам, аспекты к наталу, AI-анализ.
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import MarkdownContent from './MarkdownContent';
@@ -9,23 +5,26 @@ import ProcessingMessage from './ProcessingMessage';
 import LocationInput from './LocationInput';
 import type { TransitsData, TransitPlanet, TransitAspect } from '../services/api';
 import type { Location } from './LocationInput';
+import type { StreamPhase } from '../hooks/useStreamedText';
 import { pickLocalized } from '../i18n/localizedField';
 
 interface TransitsPanelProps {
   data: TransitsData | null;
   analysis: string | null;
-  transitsReady?: boolean; // AI-анализ получен и должен отображаться
+  transitsReady?: boolean;
+  displayedText?: string;
+  phase?: StreamPhase;
   loading: boolean;
   error: string;
   selectedDate: string; // YYYY-MM-DD
   onDateChange: (date: string) => void;
   onLocationChange?: (location: Location | null) => void;
   transitsLocation?: Location | null;
-  analysisLocation?: string | null; // место для которого реально посчитан анализ
+  analysisLocation?: string | null;
   birthPlace?: string;
-  onRunAnalysis?: () => void; // явный запуск AI-анализа по кнопке
-  transitsRemaining?: number; // остаток дневного лимита AI-анализов
-  transitsLimit?: number; // дневной лимит AI-анализов
+  onRunAnalysis?: () => void;
+  transitsRemaining?: number;
+  transitsLimit?: number;
 }
 
 // Порядок вывода: Луна и быстрые первыми (день), потом медленные (фон)
@@ -36,7 +35,7 @@ const PLANET_ORDER = [
 ];
 
 const TransitsPanel: React.FC<TransitsPanelProps> = ({
-  data, analysis, transitsReady, loading, error, selectedDate, onDateChange, onLocationChange, transitsLocation, birthPlace, analysisLocation,
+  data, analysis, transitsReady, displayedText = '', phase = 'idle', loading, error, selectedDate, onDateChange, onLocationChange, transitsLocation, birthPlace, analysisLocation,
   onRunAnalysis, transitsRemaining, transitsLimit
 }) => {
   const { t, i18n } = useTranslation();
@@ -207,9 +206,12 @@ const TransitsPanel: React.FC<TransitsPanelProps> = ({
               : t('dashboard.transits.birthLocation')}
       </div>
 
-      {loading && (
+      {loading && phase !== 'typing' && !analysis && (
         <div style={{ marginTop: '20px' }}>
-          <ProcessingMessage size="sm" />
+          <ProcessingMessage
+            size="sm"
+            title={phase === 'generating' ? t('dashboard.fullAnalysis.generating') : t('dashboard.fullAnalysis.searching')}
+          />
         </div>
       )}
 
@@ -324,13 +326,17 @@ const TransitsPanel: React.FC<TransitsPanelProps> = ({
         </>
       )}
 
-      {/* AI-анализ дня: показываем только после явного запуска (transitsReady) */}
-      {transitsReady && analysis && (
+      {/* AI-анализ дня: показываем только после явного запуска (transitsReady),
+          либо пока идёт стриминг только что запущенного анализа (phase === 'typing'). */}
+      {((transitsReady && analysis) || phase === 'typing') && (
         <div style={{ marginTop: '24px', lineHeight: '2', fontSize: '16px' }}>
           <h4 style={{ color: 'var(--text-primary)' }}>
             {t('dashboard.transits.analysisTitle')}
           </h4>
-          <MarkdownContent content={analysis} />
+          <MarkdownContent content={analysis ?? displayedText} />
+          {!analysis && phase === 'typing' && (
+            <span className="typing-cursor" aria-hidden="true">▍</span>
+          )}
         </div>
       )}
     </div>

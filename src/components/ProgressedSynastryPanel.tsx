@@ -3,23 +3,22 @@ import { useTranslation } from 'react-i18next';
 import MarkdownContent from './MarkdownContent';
 import ProcessingMessage from './ProcessingMessage';
 import ProgressedPlanetsTable from './ProgressedPlanetsTable';
-// ВРЕМЕННО ОТКЛЮЧЕНО: карточки AspectGrid для прогрессивной синастрии — только отображение,
-// данные/аналитика не тронуты. Чтобы вернуть — раскомментировать этот импорт и три блока
-// с пометкой "ВРЕМЕННО ОТКЛЮЧЕНО: кликабельные карточки AspectGrid" в этом файле.
-// import AspectGrid from './AspectGrid';
 import type { ProgressedSynastryData, ProgressedSynastryPerson } from '../services/api';
+import type { StreamPhase } from '../hooks/useStreamedText';
 import { pickLocalized } from '../i18n/localizedField';
 
 interface ProgressedSynastryPanelProps {
   data: ProgressedSynastryData | null;
   analysis: string | null;
+  displayedText?: string;
+  phase?: StreamPhase;
   loading: boolean;
   error: string;
   name1?: string;
   name2?: string;
 }
 
-const ProgressedSynastryPanel: React.FC<ProgressedSynastryPanelProps> = ({ data, analysis, loading, error, name1, name2 }) => {
+const ProgressedSynastryPanel: React.FC<ProgressedSynastryPanelProps> = ({ data, analysis, displayedText = '', phase = 'idle', loading, error, name1, name2 }) => {
   const { t, i18n } = useTranslation();
 
   const name1Label = name1 || t('dashboard.progressedSynastry.partner1');
@@ -92,9 +91,12 @@ const ProgressedSynastryPanel: React.FC<ProgressedSynastryPanelProps> = ({ data,
         {t('dashboard.progressedSynastry.subtitle')}
       </p>
 
-      {loading && (
+      {loading && phase !== 'typing' && !analysis && (
         <div style={{ marginTop: '20px' }}>
-          <ProcessingMessage size="sm" />
+          <ProcessingMessage
+            size="sm"
+            title={phase === 'generating' ? t('dashboard.fullAnalysis.generating') : t('dashboard.fullAnalysis.searching')}
+          />
         </div>
       )}
 
@@ -129,36 +131,6 @@ const ProgressedSynastryPanel: React.FC<ProgressedSynastryPanelProps> = ({ data,
             </div>
           </div>
 
-          {/* ВРЕМЕННО ОТКЛЮЧЕНО: кликабельные карточки AspectGrid (клик ничего не открывает — нет модалки
-              анализа под прогрессивные аспекты). Код готов и рабочий, просто пока не показываем.
-              Чтобы вернуть — раскомментировать оба блока ниже, до "Динамика периода".
-          <div style={{ marginTop: '24px' }}>
-            <AspectGrid
-              aspects={data.progressed_synastry_aspects}
-              title={t('dashboard.progressedSynastry.synastryAspectsTitle')}
-              emptyTitle={t('dashboard.progressedSynastry.noAspects')}
-            />
-          </div>
-
-          <div style={{ marginTop: '24px' }}>
-            <h4 style={{ color: 'var(--text-primary)', marginBottom: '10px' }}>
-              {t('dashboard.progressedSynastry.crossOverlayTitle')}
-            </h4>
-            <div style={{ display: 'grid', gap: '16px' }}>
-              <AspectGrid
-                aspects={data.cross_overlay?.prog1_to_natal2}
-                title={t('dashboard.progressedSynastry.crossOverlay1to2', { name1: name1Label, name2: name2Label })}
-                emptyTitle={t('dashboard.progressedSynastry.noAspects')}
-              />
-              <AspectGrid
-                aspects={data.cross_overlay?.prog2_to_natal1}
-                title={t('dashboard.progressedSynastry.crossOverlay2to1', { name1: name1Label, name2: name2Label })}
-                emptyTitle={t('dashboard.progressedSynastry.noAspects')}
-              />
-            </div>
-          </div>
-          */}
-
           {/* Динамика периода: что изменилось по сравнению с натальной синастрией */}
           <div style={{ marginTop: '24px' }}>
             <h4 style={{ color: 'var(--text-primary)', marginBottom: '10px' }}>
@@ -182,31 +154,20 @@ const ProgressedSynastryPanel: React.FC<ProgressedSynastryPanelProps> = ({ data,
                 </div>
               </div>
             )}
-            {/* ВРЕМЕННО ОТКЛЮЧЕНО: кликабельные карточки AspectGrid — только отображение, данные/аналитика не тронуты.
-            <div style={{ display: 'grid', gap: '16px' }}>
-              <AspectGrid
-                aspects={data.dynamics?.new_aspects}
-                title={t('dashboard.progressedSynastry.newAspectsTitle')}
-                emptyTitle={t('dashboard.progressedSynastry.noAspects')}
-              />
-              <AspectGrid
-                aspects={data.dynamics?.faded_aspects}
-                title={t('dashboard.progressedSynastry.fadedAspectsTitle')}
-                emptyTitle={t('dashboard.progressedSynastry.noAspects')}
-              />
-            </div>
-            */}
           </div>
         </>
       )}
 
       {/* AI-анализ */}
-      {analysis && (
+      {(analysis || phase === 'typing') && (
         <div style={{ marginTop: '24px', lineHeight: '2', fontSize: '16px' }}>
           <h4 style={{ color: 'var(--text-primary)' }}>
             {t('dashboard.progressedSynastry.analysisTitle')}
           </h4>
-          <MarkdownContent content={analysis} />
+          <MarkdownContent content={analysis ?? displayedText} />
+          {!analysis && phase === 'typing' && (
+            <span className="typing-cursor" aria-hidden="true">▍</span>
+          )}
         </div>
       )}
     </div>

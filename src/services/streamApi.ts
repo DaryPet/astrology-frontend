@@ -1,11 +1,20 @@
-// SSE-клиент для стримингового натального анализа (`POST /analysis/full` c `stream: true`).
-// Пишется руками, без новых зависимостей — см. plans/streaming-analysis-frontend.md.
-// axios стримить ответ в браузере не умеет, поэтому здесь fetch; существующий
-// axios-путь (src/services/api.ts) не трогаем, он остаётся рабочим fallback'ом.
 import { supabase } from '../lib/supabase';
+export interface StreamCallbacks<TFinal> {
+  onStage: (stage: string) => void;
+  onDelta: (text: string) => void;
+  onFinal: (result: TFinal) => void;
+  onError: (detail: string) => void;
+}
 
-// Тело запроса — то же, что уходит из astrologyAPI.getFullChartAnalysis (api.ts),
-// плюс флаг stream.
+const STREAM_URLS = {
+  full: '/api/analysis/full',
+  synastry: '/api/analysis/synastry/full',
+  progressions: '/api/analysis/progressions',
+  transits: '/api/analysis/transits',
+  progressedSynastry: '/api/analysis/progressed-synastry',
+} as const;
+
+
 export interface FullAnalysisPayload {
   chart_data: Record<string, unknown>;
   language: string;
@@ -21,24 +30,124 @@ export interface StreamFinalResult {
   version: string;
 }
 
-export interface StreamCallbacks {
-  onStage: (stage: string) => void;
-  onDelta: (text: string) => void;
-  onFinal: (result: StreamFinalResult) => void;
-  onError: (detail: string) => void;
+export function streamFullAnalysis(
+  payload: FullAnalysisPayload,
+  callbacks: StreamCallbacks<StreamFinalResult>,
+  signal?: AbortSignal,
+): Promise<void> {
+  return streamAnalysis(STREAM_URLS.full, { ...payload, stream: true }, callbacks, signal);
 }
 
-const STREAM_URL = '/api/analysis/full';
 
-export async function streamFullAnalysis(
-  payload: FullAnalysisPayload,
-  callbacks: StreamCallbacks,
+export interface SynastryAnalysisPayload {
+  chart1: Record<string, unknown>;
+  chart2: Record<string, unknown>;
+  aspects?: unknown;
+  overlays?: unknown;
+  language: string;
+  top_k_per_book?: number;
+  mode: string;
+  relationship_context?: string;
+}
+
+export interface SynastryStreamFinal {
+  analysis: string;
+  chart1_summary?: unknown;
+  chart2_summary?: unknown;
+  aspects?: unknown;
+  overlays?: unknown;
+  summary?: string;
+  relevant_chunks?: unknown[];
+  language?: string;
+  relationship_context?: string;
+  created_at?: string;
+}
+
+export function streamSynastryAnalysis(
+  payload: SynastryAnalysisPayload,
+  callbacks: StreamCallbacks<SynastryStreamFinal>,
+  signal?: AbortSignal,
+): Promise<void> {
+  return streamAnalysis(STREAM_URLS.synastry, { ...payload, stream: true }, callbacks, signal);
+}
+
+
+export interface ProgressionsAnalysisPayload {
+  natal_chart: Record<string, unknown>;
+  progression_data: Record<string, unknown>;
+  language: string;
+  mode: string;
+}
+
+export interface ProgressionsStreamFinal {
+  analysis: string;
+  progressions_summary?: Record<string, unknown>;
+  language?: string;
+  version?: string;
+}
+
+export function streamProgressionsAnalysis(
+  payload: ProgressionsAnalysisPayload,
+  callbacks: StreamCallbacks<ProgressionsStreamFinal>,
+  signal?: AbortSignal,
+): Promise<void> {
+  return streamAnalysis(STREAM_URLS.progressions, { ...payload, stream: true }, callbacks, signal);
+}
+
+export interface TransitsAnalysisPayload {
+  natal_chart: Record<string, unknown>;
+  transit_data: Record<string, unknown>;
+  language: string;
+  mode: string;
+  transit_latitude?: number;
+  transit_longitude?: number;
+  transit_place?: string;
+}
+
+export interface TransitsStreamFinal {
+  analysis: string;
+  transits_summary?: Record<string, unknown>;
+  language?: string;
+  version?: string;
+}
+
+export function streamTransitsAnalysis(
+  payload: TransitsAnalysisPayload,
+  callbacks: StreamCallbacks<TransitsStreamFinal>,
+  signal?: AbortSignal,
+): Promise<void> {
+  return streamAnalysis(STREAM_URLS.transits, { ...payload, stream: true }, callbacks, signal);
+}
+
+export interface ProgressedSynastryAnalysisPayload {
+  progressed_synastry_data: Record<string, unknown>;
+  language: string;
+  mode: string;
+}
+
+export interface ProgressedSynastryStreamFinal {
+  analysis: string;
+  progressed_synastry_summary?: Record<string, unknown>;
+  language?: string;
+  version?: string;
+}
+
+export function streamProgressedSynastryAnalysis(
+  payload: ProgressedSynastryAnalysisPayload,
+  callbacks: StreamCallbacks<ProgressedSynastryStreamFinal>,
+  signal?: AbortSignal,
+): Promise<void> {
+  return streamAnalysis(STREAM_URLS.progressedSynastry, { ...payload, stream: true }, callbacks, signal);
+}
+
+async function streamAnalysis<TFinal>(
+  url: string,
+  body: Record<string, unknown>,
+  callbacks: StreamCallbacks<TFinal>,
   signal?: AbortSignal,
 ): Promise<void> {
   let response: Response;
   try {
-    // Тот же источник токена, что у axios-инстанса (api.ts): живая сессия
-    // Supabase, а не ручная копия из localStorage.
     const { data } = await supabase.auth.getSession();
     const token = data.session?.access_token;
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -46,10 +155,10 @@ export async function streamFullAnalysis(
       headers.Authorization = `Bearer ${token}`;
     }
 
-    response = await fetch(STREAM_URL, {
+    response = await fetch(url, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ ...payload, stream: true }),
+      body: JSON.stringify(body),
       signal,
     });
   } catch (err) {
@@ -63,16 +172,11 @@ export async function streamFullAnalysis(
     return;
   }
 
-  // Бекенд не всегда стримит: на кэш-попадании (тот же chart_data+mode+language
-  // уже считался недавно) он отвечает обычным JSON без единого SSE-блока —
-  // тогда парсер ниже (ждёт "\n\n") ни разу не сработает, ни один колбэк не
-  // вызовется, и вызывающий код зависнет в состоянии загрузки. Ловим это по
-  // content-type и завершаем сразу через onFinal, не трогая ридер потока.
   const contentType = response.headers.get('content-type') || '';
   if (!contentType.includes('text/event-stream')) {
     try {
       const data = await response.json();
-      callbacks.onFinal(data as StreamFinalResult);
+      callbacks.onFinal(data as TFinal);
     } catch (err) {
       callbacks.onError((err as Error).message || 'Invalid JSON response');
     }
@@ -82,6 +186,19 @@ export async function streamFullAnalysis(
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
+
+  let terminalReceived = false;
+  const trackedCallbacks: StreamCallbacks<TFinal> = {
+    ...callbacks,
+    onFinal: (result) => {
+      terminalReceived = true;
+      callbacks.onFinal(result);
+    },
+    onError: (detail) => {
+      terminalReceived = true;
+      callbacks.onError(detail);
+    },
+  };
 
   try {
     for (;;) {
@@ -94,10 +211,12 @@ export async function streamFullAnalysis(
       while (separatorIndex !== -1) {
         const block = buffer.slice(0, separatorIndex);
         buffer = buffer.slice(separatorIndex + 2);
-        dispatchBlock(block, callbacks);
+        dispatchBlock(block, trackedCallbacks);
         separatorIndex = buffer.indexOf('\n\n');
       }
-      // Неполный блок остаётся в buffer до следующего чанка.
+    }
+    if (!terminalReceived) {
+      callbacks.onError('Stream ended unexpectedly without a final result');
     }
   } catch (err) {
     if ((err as { name?: string }).name === 'AbortError') return;
@@ -105,16 +224,12 @@ export async function streamFullAnalysis(
   }
 }
 
-// Разбирает один SSE-блок вида "event: <type>\ndata: <json>" и диспетчеризует в колбэки.
-function dispatchBlock(block: string, callbacks: StreamCallbacks): void {
+function dispatchBlock<TFinal>(block: string, callbacks: StreamCallbacks<TFinal>): void {
   let eventType = '';
   let dataText = '';
 
   for (const rawLine of block.split('\n')) {
     const line = rawLine.replace(/\r$/, '');
-    // Heartbeat-комментарии бекенда (`: ping`) — стандартные SSE-комментарии,
-    // держат соединение живым во время долгих пауз (например, на стадии
-    // "searching"); это не данные, молча пропускаем.
     if (line.startsWith(':')) continue;
     if (line.startsWith('event:')) {
       eventType = line.slice('event:'.length).trim();
@@ -140,7 +255,7 @@ function dispatchBlock(block: string, callbacks: StreamCallbacks): void {
     if (typeof data.text === 'string') callbacks.onDelta(data.text);
     break;
   case 'final':
-    callbacks.onFinal(data as unknown as StreamFinalResult);
+    callbacks.onFinal(data as unknown as TFinal);
     break;
   case 'error':
     callbacks.onError(typeof data.detail === 'string' ? data.detail : 'Unknown error');
