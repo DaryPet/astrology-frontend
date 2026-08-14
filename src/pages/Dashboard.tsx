@@ -5,7 +5,14 @@ import { useTranslation } from 'react-i18next';
 import { astrologyAPI } from '../services/api';
 import { chartsApi } from '../services/chartsApi';
 import { getFullAnalysis } from '../services/analysisCache';
-import { streamFullAnalysis, type FullAnalysisPayload } from '../services/streamApi';
+import {
+  streamFullAnalysis, type FullAnalysisPayload,
+  streamSynastryAnalysis, type SynastryAnalysisPayload,
+  streamProgressionsAnalysis,
+  streamProgressedSynastryAnalysis,
+  streamTransitsAnalysis,
+} from '../services/streamApi';
+import { useStreamedText } from '../hooks/useStreamedText';
 import i18n from '../i18n';
 import Header from '../components/Header';
 import ProcessingMessage from '../components/ProcessingMessage';
@@ -21,10 +28,6 @@ import SynastryChartComponent from '../components/SynastryChartComponentV2';
 import AstroChartComponent from '../components/AstroChartComponent';
 import AspectAnalysisModal from '../components/AspectAnalysisModal';
 import AnalysisModeToggle from '../components/AnalysisModeToggle';
-// ВРЕМЕННО ОТКЛЮЧЕНО: типы отношений. Код готов и рабочий, просто пока не показываем.
-// Чтобы вернуть — раскомментировать этот импорт и все блоки с пометкой
-// "ВРЕМЕННО ОТКЛЮЧЕНО: типы отношений" в этом файле.
-// import RelationshipTypesBar from '../components/RelationshipTypesBar';
 import UnsavedAnalysisModal from '../components/UnsavedAnalysisModal';
 import ProgressionsPanel from '../components/ProgressionsPanel';
 import ProgressedSynastryPanel from '../components/ProgressedSynastryPanel';
@@ -35,7 +38,6 @@ import type { ProgressionsData, TransitsData, ProgressedSynastryData } from '../
 import type { Location } from '../components/LocationInput';
 import { isNearLimit, isAtLimit, MAX_MESSAGES, type ChatMessage } from '../services/chatStorage';
 
-// Максимальное число AI-анализов транзитов в день (на фронте, в localStorage)
 const MAX_TRANSITS_ANALYSIS_PER_DAY = 20;
 
 interface ChartPlanet {
@@ -148,14 +150,6 @@ interface PlanetData {
   [key: string]: unknown;
 }
 
-// ВРЕМЕННО ОТКЛЮЧЕНО: типы отношений. Код готов, пока закомментирован.
-// interface RelationshipTypesData {
-//   dominant_type?: string;
-//   relationship_types?: {
-//     [key: string]: { percentage?: number; label?: string; description?: string };
-//   };
-//   [key: string]: unknown;
-// }
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -177,8 +171,9 @@ const Dashboard = () => {
   const [advancedAnalysis, setAdvancedAnalysis] = useState<string | null>(null);
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [analysisError, setAnalysisError] = useState<string>('');
-  // Стриминг натального анализа (см. plans/streaming-analysis-frontend.md).
-  // Синастрии/прогрессий/транзитов не касается — у них остаётся старый axios-путь.
+  // Стриминг полного анализа — натал и синастрия (см.
+  // plans/streaming-analysis-frontend.md, plans/streaming-analysis-frontend-phase2.md).
+  // Прогрессий/транзитов не касается — у них своя машинка, см. useStreamedText.
   const [streamPhase, setStreamPhase] = useState<'idle' | 'searching' | 'generating' | 'typing' | 'done' | 'error'>('idle');
   const [displayedText, setDisplayedText] = useState('');
   const verifiedTextRef = useRef('');
@@ -198,27 +193,18 @@ const Dashboard = () => {
   const isLoadingRef = useRef(false);
   const isTransitsLoadingRef = useRef(false);
   const [savedChartId, setSavedChartId] = useState<string | number | null>(() => {
-    // Don't restore savedChartId if there's a pending analysis job
 
-    // ИЗМЕНЕНИЯ ЗДЕСЬ ЕСЛИ НАДО БУДЕТ ОТКАТИТЬ
+
     const hasPendingJob = localStorage.getItem('pendingAnalysisJob');
     if (hasPendingJob) return null;
 
-    //     const hasPendingJob = localStorage.getItem('pendingAnalysisJob');
-    // const hasPendingResult = localStorage.getItem('pendingAnalysisResult');
-    // if (hasPendingJob || hasPendingResult) return null;
-
-    // ЗДЕСЬ ЗАКНЧИЛОСЬ!
     const saved = localStorage.getItem('savedChartId');
     return saved ? parseInt(saved, 10) : null;
   });
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
-  // Карты, для которых сейчас летит запрос к астрологу (ответ приходит в фоне)
   const [pendingChatCharts, setPendingChatCharts] = useState<Set<number>>(new Set());
-  // Актуальная карта в любой момент — для фоновых ответов чата
   const savedChartIdRef = useRef<string | number | null>(null);
-  // Индикатор «печатает» только для ТЕКУЩЕЙ карты
   const chatLoading = savedChartId != null && pendingChatCharts.has(Number(savedChartId));
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
@@ -238,7 +224,7 @@ const Dashboard = () => {
   const handleTogglePlanetTable = () => {
     setShowPlanetTable(prev => {
       const next = !prev;
-      if (next) setShowProgressions(false); // таблица планет и прогрессии — взаимоисключающие виды
+      if (next) setShowProgressions(false);
       return next;
     });
   };
@@ -251,24 +237,18 @@ const Dashboard = () => {
   const [aspectLoading, setAspectLoading] = useState(false);
   const [aspectError, setAspectError] = useState<string>('');
   const [showScrollTop, setShowScrollTop] = useState(false);
-  // ВРЕМЕННО ОТКЛЮЧЕНО: типы отношений. Код готов, пока закомментирован.
-  // const [relationshipTypes, setRelationshipTypes] = useState<RelationshipTypesData | null>(null);
-  // const [relationshipTypesLoading, setRelationshipTypesLoading] = useState(false);
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null);
-  // Прогрессии — доступны ТОЛЬКО для сохранённых карт (как чат)
   const [showProgressions, setShowProgressions] = useState(false);
-  // Активный таб анализа: натальная карта (по умолчанию) | прогрессии
   const [analysisTab, setAnalysisTab] = useState<AnalysisTabId>('natal');
   const [progressionsData, setProgressionsData] = useState<ProgressionsData | null>(null);
   const [progressionsAnalysis, setProgressionsAnalysis] = useState<string | null>(null);
   const [progressionsLoading, setProgressionsLoading] = useState(false);
   const [progressionsError, setProgressionsError] = useState<string>('');
-  // Прогрессивная синастрия (только для карт type === 'synastry') — отдельные стейты,
-  // т.к. форма данных другая (person1/person2/cross_overlay/dynamics, не одиночный ProgressionsData)
   const [progressedSynastryData, setProgressedSynastryData] = useState<ProgressedSynastryData | null>(null);
   const [progressedSynastryAnalysis, setProgressedSynastryAnalysis] = useState<string | null>(null);
-  // Транзиты: выбранный день (по умолчанию сегодня), выбранное место, данные, анализ
+  const progressionsFinishRef = useRef<((analysis: string) => void) | null>(null);
+  const progressionsStream = useStreamedText((analysis) => progressionsFinishRef.current?.(analysis));
   const [transitsDate, setTransitsDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
   const [transitsLocation, setTransitsLocation] = useState<Location | null>(null);
   const [transitsDisplayLocation, setTransitsDisplayLocation] = useState<string | null>(null);
@@ -276,12 +256,11 @@ const Dashboard = () => {
   const [transitsAnalysis, setTransitsAnalysis] = useState<string | null>(null);
   const [transitsLoading, setTransitsLoading] = useState(false);
   const [transitsError, setTransitsError] = useState<string>('');
-  // transitsReady: AI-анализ транзитов получен (либо из кэша, либо явным запросом) и должен отображаться
   const [transitsReady, setTransitsReady] = useState(false);
-  // Остаток дневного лимита AI-анализов транзитов (для проактивного отображения в панели)
+  const transitsFinishRef = useRef<((analysis: string) => void) | null>(null);
+  const transitsStream = useStreamedText((analysis) => transitsFinishRef.current?.(analysis));
   const [transitsRemaining, setTransitsRemaining] = useState<number>(MAX_TRANSITS_ANALYSIS_PER_DAY);
 
-  // Держим ref в актуальном состоянии для фоновых ответов чата
   useEffect(() => {
     savedChartIdRef.current = savedChartId;
   }, [savedChartId]);
@@ -289,9 +268,7 @@ const Dashboard = () => {
   const loadChatForChart = async (chartId: number | string) => {
     try {
       const dbMessages = await chartsApi.getChatMessages(Number(chartId));
-      // Защита от гонки: пока грузили, юзер мог уйти на другую карту
       if (Number(savedChartIdRef.current) !== Number(chartId)) return;
-      // Ставим историю ВСЕГДА (включая пустую) — иначе чат предыдущей карты утечёт в новую
       setChatHistory(dbMessages as ChatMessage[]);
     } catch (err) {
       console.error('Failed to load chat history:', err);
@@ -331,13 +308,11 @@ const Dashboard = () => {
   }, [chartIdFromUrl]);
 
   useEffect(() => {
-    // Check for pending analysis job (survives navigation during processing)
     if (chartIdFromUrl) return;
 
     const pendingJob = localStorage.getItem('pendingAnalysisJob');
     const pendingResult = localStorage.getItem('pendingAnalysisResult');
 
-    // Only process if we have a pending job AND no chart loaded yet
     if (pendingJob && !chartDataForAnalysis) {
       try {
         const parsed = JSON.parse(pendingJob);
@@ -347,7 +322,6 @@ const Dashboard = () => {
             setAnalysisMode(parsed.analysisMode);
             localStorage.setItem('dashboardAnalysisMode', parsed.analysisMode);
           }
-          // Clear savedChartId since this is a pending (not yet saved) analysis
           localStorage.removeItem('savedChartId');
           setSavedChartId(null);
           savedChartIdRef.current = null;
@@ -357,7 +331,6 @@ const Dashboard = () => {
       }
     }
 
-    // Restore pending analysis result if we have chart data but no analysis yet
     if (pendingResult && chartDataForAnalysis && !fullAnalysis && !savedChartId) {
       const pendingMode = localStorage.getItem('dashboardAnalysisMode');
       setFullAnalysis(pendingResult);
@@ -391,12 +364,6 @@ const Dashboard = () => {
 
         const isSynastry = chart.chart_data?.type === 'synastry';
 
-        //ИЗМЕНЕНИЯ ЗДЕСЬ ЕСЛИ НАДО БУДЕТ ОТКАТИТЬ
-
-        // const interp = chart.chart_interpretations?.find(
-        //   (i: { type?: string; interpretation?: string }) => i.type === (isSynastry ? `synastry_${analysisMode}` : `full_${analysisMode}`)
-        // );
-
         const interp = chart.chart_interpretations?.find(
           (i: { type?: string; interpretation?: string }) => i.type === (isSynastry ? `synastry_${analysisMode}` : `full_${analysisMode}`)
         ) || chart.chart_interpretations?.find(
@@ -404,7 +371,6 @@ const Dashboard = () => {
         ) || chart.chart_interpretations?.find(
           (i: { type?: string; interpretation?: string }) => i.type === (isSynastry ? 'synastry_simple' : 'full_simple')
         );
-        // ЗДЕСЬ ЗАКНЧИЛОА!
         if (interp?.interpretation) {
           setFullAnalysis(interp.interpretation);
           if (analysisMode === 'simple') setSimpleAnalysis(interp.interpretation);
@@ -429,7 +395,6 @@ const Dashboard = () => {
               localStorage.setItem(`planetAnalysis_${chart.id}_${pa.name}`, pa.interpretation ?? '');
             }
           });
-          // Восстанавливаем транзиты из кэша если есть
           restoreTransitsFromCache(chart.id);
         }
       } catch (error) {
@@ -443,9 +408,6 @@ const Dashboard = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chartIdFromUrl]);
 
-  // Существующий нестримовый путь (axios, через analysisCache.getFullAnalysis).
-  // Используется как есть для синастрии, и как молчаливый fallback для натала —
-  // см. runNatalStream ниже — если стрим упал до первой дельты.
   const runAxiosAnalysis = useCallback(async (mode: string) => {
     if (!chartDataForAnalysis) return;
     try {
@@ -455,8 +417,6 @@ const Dashboard = () => {
       console.log('setFullAnalysis called');
       if (mode === 'simple') setSimpleAnalysis(analysis);
       else setAdvancedAnalysis(analysis);
-      // localStorage.removeItem('pendingAnalysisJob');
-      // localStorage.removeItem('pendingAnalysisResult');
 
       const currentChartId = parseInt(localStorage.getItem('savedChartId') || '0', 10) || null;
       if (currentChartId) {
@@ -480,11 +440,7 @@ const Dashboard = () => {
     }
   }, [chartDataForAnalysis, t]);
 
-  // Стриминговый путь для натального анализа (chart_data.type !== 'synastry').
-  // На экран попадает только verifiedTextRef (то, что реально пришло дельтами
-  // или зафиксировано final'ом) — печатающая машинка (см. эффект ниже) лишь
-  // проигрывает уже проверенный текст.
-  const runNatalStream = useCallback(async (mode: string) => {
+  const runFullAnalysisStream = useCallback(async (mode: string) => {
     if (!chartDataForAnalysis) return;
 
     verifiedTextRef.current = '';
@@ -498,14 +454,7 @@ const Dashboard = () => {
     const abortCtrl = new AbortController();
     streamAbortRef.current = abortCtrl;
 
-    const payload: FullAnalysisPayload = {
-      chart_data: chartDataForAnalysis as unknown as Record<string, unknown>,
-      language: i18n.language,
-      top_books: 5,
-      mode,
-      birth_date: chartDataForAnalysis.meta?.birth_date || null,
-      birth_place: chartDataForAnalysis.meta?.birth_place || null,
-    };
+    const isSynastry = chartDataForAnalysis.type === 'synastry';
 
     finishStreamRef.current = (analysis: string) => {
       setFullAnalysis(analysis);
@@ -515,53 +464,70 @@ const Dashboard = () => {
       const currentChartId = parseInt(localStorage.getItem('savedChartId') || '0', 10) || null;
       if (currentChartId) {
         localStorage.setItem(`savedFullAnalysis_${currentChartId}_${mode}`, analysis);
-        chartsApi.saveInterpretation(currentChartId, `full_${mode}`, analysis).catch(() => {});
+        const type = isSynastry ? `synastry_${mode}` : `full_${mode}`;
+        chartsApi.saveInterpretation(currentChartId, type, analysis).catch(() => {});
       }
 
       setAnalysisLoading(false);
       isLoadingRef.current = false;
     };
 
-    await streamFullAnalysis(
-      payload,
-      {
-        onStage: (stage) => {
-          setStreamPhase(prev => {
-            if (prev === 'typing' || prev === 'done') return prev;
-            return stage === 'generating' ? 'generating' : 'searching';
-          });
-        },
-        onDelta: (text) => {
-          streamDeltaReceivedRef.current = true;
-          verifiedTextRef.current += text;
-          setStreamPhase(prev => (prev === 'searching' || prev === 'generating') ? 'typing' : prev);
-        },
-        onFinal: (result) => {
-          // Канонический итог — перекрывает накопленные дельты (в норме побуквенно совпадает).
-          verifiedTextRef.current = result.analysis;
-          finalTextRef.current = result.analysis;
-          setFinalReceived(true);
-          setStreamPhase(prev => prev === 'done' ? prev : 'typing');
-        },
-        onError: (detail) => {
-          if (!streamDeltaReceivedRef.current) {
-            // Упало до первой дельты — тихий откат на существующий axios-путь
-            // (это же сигнал вызывающему коду сделать fallback, план шаг 1.4).
-            runAxiosAnalysis(mode);
-            return;
-          }
-          // После первой дельты повторный запрос не делаем (повторная оплата генерации) —
-          // показываем ошибку, наполовину напечатанный текст результатом не считается.
-          setStreamPhase('error');
-          setDisplayedText('');
-          verifiedTextRef.current = '';
-          setAnalysisError(detail || t('dashboard.errors.analysisError'));
-          setAnalysisLoading(false);
-          isLoadingRef.current = false;
-        },
+    const callbacks = {
+      onStage: (stage: string) => {
+        setStreamPhase(prev => {
+          if (prev === 'typing' || prev === 'done') return prev;
+          return stage === 'generating' ? 'generating' : 'searching';
+        });
       },
-      abortCtrl.signal
-    );
+      onDelta: (text: string) => {
+        streamDeltaReceivedRef.current = true;
+        verifiedTextRef.current += text;
+        setStreamPhase(prev => (prev === 'searching' || prev === 'generating') ? 'typing' : prev);
+      },
+      onFinal: (result: { analysis: string }) => {
+        verifiedTextRef.current = result.analysis;
+        finalTextRef.current = result.analysis;
+        setFinalReceived(true);
+        setStreamPhase(prev => prev === 'done' ? prev : 'typing');
+      },
+      onError: (detail: string) => {
+        if (!streamDeltaReceivedRef.current) {
+          runAxiosAnalysis(mode);
+          return;
+        }
+        setStreamPhase('error');
+        setDisplayedText('');
+        verifiedTextRef.current = '';
+        setAnalysisError(detail || t('dashboard.errors.analysisError'));
+        setAnalysisLoading(false);
+        isLoadingRef.current = false;
+      },
+    };
+
+    if (isSynastry) {
+      const payload: SynastryAnalysisPayload = {
+        chart1: (chartDataForAnalysis.chart1 ?? {}) as Record<string, unknown>,
+        chart2: (chartDataForAnalysis.chart2 ?? {}) as Record<string, unknown>,
+        aspects: chartDataForAnalysis.aspects,
+        overlays: chartDataForAnalysis.overlays,
+        language: i18n.language,
+        top_k_per_book: 5,
+        mode,
+        relationship_context: chartDataForAnalysis.relationship_context as string | undefined,
+      };
+      await streamSynastryAnalysis(payload, callbacks, abortCtrl.signal);
+      return;
+    }
+
+    const payload: FullAnalysisPayload = {
+      chart_data: chartDataForAnalysis as unknown as Record<string, unknown>,
+      language: i18n.language,
+      top_books: 5,
+      mode,
+      birth_date: chartDataForAnalysis.meta?.birth_date || null,
+      birth_place: chartDataForAnalysis.meta?.birth_place || null,
+    };
+    await streamFullAnalysis(payload, callbacks, abortCtrl.signal);
   }, [chartDataForAnalysis, runAxiosAnalysis, t]);
 
   const loadFullAnalysis = useCallback(async (mode = analysisMode) => {
@@ -581,17 +547,9 @@ const Dashboard = () => {
       return;
     }
 
-    if (chartDataForAnalysis.type === 'synastry') {
-      await runAxiosAnalysis(mode);
-      return;
-    }
+    await runFullAnalysisStream(mode);
+  }, [chartDataForAnalysis, analysisMode, simpleAnalysis, advancedAnalysis, runFullAnalysisStream]);
 
-    await runNatalStream(mode);
-  }, [chartDataForAnalysis, analysisMode, simpleAnalysis, advancedAnalysis, runAxiosAnalysis, runNatalStream]);
-
-  // Печатающая машинка: переносит по N символов из verifiedTextRef (проверено
-  // сервером) в displayedText. N адаптивный — растёт с непоказанным хвостом,
-  // это и даёт ровную непрерывную печать, хотя текст приходит абзацами.
   useEffect(() => {
     if (streamPhase !== 'searching' && streamPhase !== 'generating' && streamPhase !== 'typing') {
       return;
@@ -609,7 +567,6 @@ const Dashboard = () => {
     return () => window.clearInterval(id);
   }, [streamPhase]);
 
-  // Печать догнала final — фиксируем результат (кэш/сохранение) и завершаем.
   useEffect(() => {
     if (!finalReceived || finalTextRef.current == null) return;
     if (displayedText.length < finalTextRef.current.length) return;
@@ -618,7 +575,6 @@ const Dashboard = () => {
     finishStreamRef.current = null;
   }, [displayedText, finalReceived]);
 
-  // Уход со страницы во время стрима — рвём соединение (AbortSignal).
   useEffect(() => {
     return () => {
       streamAbortRef.current?.abort();
@@ -629,7 +585,6 @@ const Dashboard = () => {
     isLoadingRef.current = false;
   }, [chartIdFromUrl]);
 
-  // Сброс состояния прогрессий (при смене карты / выходе)
   const resetProgressions = useCallback(() => {
     setShowProgressions(false);
     setAnalysisTab('natal');
@@ -638,7 +593,6 @@ const Dashboard = () => {
     setProgressionsError('');
     setProgressedSynastryData(null);
     setProgressedSynastryAnalysis(null);
-    // Транзиты сбрасываем вместе с прогрессиями (тот же жизненный цикл карты)
     setTransitsDate(new Date().toISOString().slice(0, 10));
     setTransitsLocation(null);
     setTransitsData(null);
@@ -647,7 +601,6 @@ const Dashboard = () => {
     setTransitsReady(false);
   }, []);
 
-  // Остаток дневного лимита AI-анализов транзитов из localStorage (кэш-хиты его не тратят)
   const refreshTransitsRemaining = useCallback(() => {
     const today = new Date().toISOString().slice(0, 10);
     const usedToday = parseInt(localStorage.getItem(`transits_limit|${today}`) || '0', 10);
@@ -658,11 +611,6 @@ const Dashboard = () => {
     refreshTransitsRemaining();
   }, [refreshTransitsRemaining]);
 
-  // Восстанавливаем транзиты из localStorage-кэша при возврате на карту.
-  // ВАЖНО: вызывается внутри loadChartFromUrl, когда chartDataForAnalysis/savedChartId
-  // ещё не зафлашены React'ом — поэтому здесь НЕ считаем позиции (loadTransitsData),
-  // только восстанавливаем уже готовый текст анализа. Позиции досчитаются отложенно,
-  // когда пользователь откроет вкладку «Транзиты» (см. AnalysisTabs.onChange).
   const restoreTransitsFromCache = (chartId: string | number) => {
     const lastKey = localStorage.getItem(`transits_last_key|${chartId}`);
     if (!lastKey) return;
@@ -675,10 +623,7 @@ const Dashboard = () => {
     }
   };
 
-  // Загрузка прогрессий: расчёт позиций (дёшево, всегда свежий) +
-  // AI-анализ (кэшируется в Supabase по chart_id + режим + период YYYY-MM)
   const loadProgressions = useCallback(async (mode = analysisMode) => {
-    // Гейтинг — как у чата: только для сохранённых карт с готовым анализом
     if (!chartDataForAnalysis || !savedChartId) return;
 
     const isSynastry = chartDataForAnalysis.type === 'synastry';
@@ -691,6 +636,7 @@ const Dashboard = () => {
         const { chart1, chart2 } = chartDataForAnalysis;
         if (!chart1?.birth_date || !chart2?.birth_date) {
           setProgressionsError(t('dashboard.progressions.noBirthData'));
+          setProgressionsLoading(false);
           return;
         }
 
@@ -704,7 +650,6 @@ const Dashboard = () => {
           house_system: c.house_system || 'Placidus'
         });
 
-        // 1. Расчёт прогрессивной синастрии (Swiss Ephemeris, без LLM)
         const data = await astrologyAPI.calculateProgressedSynastry({
           chart1: buildPersonInput(chart1),
           chart2: buildPersonInput(chart2),
@@ -712,35 +657,63 @@ const Dashboard = () => {
         });
         setProgressedSynastryData(data);
 
-        // 2. AI-анализ: сначала из БД (по периоду из ответа расчёта и режиму)
         const cached = await chartsApi.getProgressedSynastryAnalysis(Number(savedChartId), mode, data.period);
         if (cached) {
           setProgressedSynastryAnalysis(cached);
+          setProgressionsLoading(false);
           return;
         }
+        progressionsStream.reset();
+        progressionsFinishRef.current = (analysis: string) => {
+          setProgressedSynastryAnalysis(analysis);
+          chartsApi.saveProgressedSynastryAnalysis(Number(savedChartId), mode, data.period, analysis).catch(err => {
+            console.error('Failed to save progressed synastry analysis:', err);
+          });
+          setProgressionsLoading(false);
+        };
 
-        // 3. Нет в кэше — запрашиваем LLM и сохраняем (передаём весь расчёт обратно, как рекомендовано бэкендом)
-        const result = await astrologyAPI.getProgressedSynastryAnalysis({
-          progressed_synastry_data: data,
-          language: i18n.language || 'ru'
-        }, mode);
-
-        setProgressedSynastryAnalysis(result.analysis);
-        chartsApi.saveProgressedSynastryAnalysis(Number(savedChartId), mode, data.period, result.analysis).catch(err => {
-          console.error('Failed to save progressed synastry analysis:', err);
-        });
+        await streamProgressedSynastryAnalysis(
+          { progressed_synastry_data: data as unknown as Record<string, unknown>, language: i18n.language || 'ru', mode },
+          {
+            onStage: progressionsStream.handleStage,
+            onDelta: progressionsStream.handleDelta,
+            onFinal: (result) => progressionsStream.handleFinal(result.analysis),
+            onError: async (detail) => {
+              if (!progressionsStream.hasDelta()) {
+                try {
+                  const result = await astrologyAPI.getProgressedSynastryAnalysis({
+                    progressed_synastry_data: data,
+                    language: i18n.language || 'ru'
+                  }, mode);
+                  setProgressedSynastryAnalysis(result.analysis);
+                  chartsApi.saveProgressedSynastryAnalysis(Number(savedChartId), mode, data.period, result.analysis).catch(err => {
+                    console.error('Failed to save progressed synastry analysis:', err);
+                  });
+                } catch (err) {
+                  const errorDetail = (err as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
+                  setProgressionsError(typeof errorDetail === 'string' ? errorDetail : t('dashboard.progressions.error'));
+                } finally {
+                  setProgressionsLoading(false);
+                }
+                return;
+              }
+              progressionsStream.handleError();
+              setProgressionsError(detail || t('dashboard.progressions.error'));
+              setProgressionsLoading(false);
+            },
+          }
+        );
         return;
       }
 
       const meta = chartDataForAnalysis.meta;
       if (!meta?.birth_date) {
         setProgressionsError(t('dashboard.progressions.noBirthData'));
+        setProgressionsLoading(false);
         return;
       }
 
       const period = new Date().toISOString().slice(0, 7); // YYYY-MM
-
-      // 1. Расчёт прогрессивных позиций (Swiss Ephemeris, без LLM)
       const data = await astrologyAPI.calculateProgressions({
         birth_date: meta.birth_date,
         birth_place: meta.birth_place,
@@ -751,42 +724,66 @@ const Dashboard = () => {
       });
       setProgressionsData(data);
 
-      // 2. AI-анализ: сначала из БД (по периоду и режиму)
       const cached = await chartsApi.getProgressionsAnalysis(Number(savedChartId), mode, period);
       if (cached) {
         setProgressionsAnalysis(cached);
+        setProgressionsLoading(false);
         return;
       }
 
-      // 3. Нет в кэше — запрашиваем LLM и сохраняем
-      const result = await astrologyAPI.getProgressionsAnalysis({
-        natal_chart: chartDataForAnalysis,
-        progression_data: data,
-        language: i18n.language || 'ru'
-      }, mode);
+      progressionsStream.reset();
+      progressionsFinishRef.current = (analysis: string) => {
+        setProgressionsAnalysis(analysis);
+        chartsApi.saveProgressionsAnalysis(Number(savedChartId), mode, period, analysis).catch(err => {
+          console.error('Failed to save progressions analysis:', err);
+        });
+        setProgressionsLoading(false);
+      };
 
-      setProgressionsAnalysis(result.analysis);
-      chartsApi.saveProgressionsAnalysis(Number(savedChartId), mode, period, result.analysis).catch(err => {
-        console.error('Failed to save progressions analysis:', err);
-      });
+      await streamProgressionsAnalysis(
+        { natal_chart: chartDataForAnalysis as unknown as Record<string, unknown>, progression_data: data as unknown as Record<string, unknown>, language: i18n.language || 'ru', mode },
+        {
+          onStage: progressionsStream.handleStage,
+          onDelta: progressionsStream.handleDelta,
+          onFinal: (result) => progressionsStream.handleFinal(result.analysis),
+          onError: async (detail) => {
+            if (!progressionsStream.hasDelta()) {
+              try {
+                const result = await astrologyAPI.getProgressionsAnalysis({
+                  natal_chart: chartDataForAnalysis,
+                  progression_data: data,
+                  language: i18n.language || 'ru'
+                }, mode);
+                setProgressionsAnalysis(result.analysis);
+                chartsApi.saveProgressionsAnalysis(Number(savedChartId), mode, period, result.analysis).catch(err => {
+                  console.error('Failed to save progressions analysis:', err);
+                });
+              } catch (err) {
+                const errorDetail = (err as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
+                setProgressionsError(typeof errorDetail === 'string' ? errorDetail : t('dashboard.progressions.error'));
+              } finally {
+                setProgressionsLoading(false);
+              }
+              return;
+            }
+            progressionsStream.handleError();
+            setProgressionsError(detail || t('dashboard.progressions.error'));
+            setProgressionsLoading(false);
+          },
+        }
+      );
     } catch (err) {
       const errorDetail = (err as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
       setProgressionsError(typeof errorDetail === 'string' ? errorDetail : t('dashboard.progressions.error'));
-    } finally {
       setProgressionsLoading(false);
     }
-  }, [chartDataForAnalysis, savedChartId, analysisMode, t]);
+  }, [chartDataForAnalysis, savedChartId, analysisMode, t, progressionsStream]);
 
-  // Транзиты: расчёт позиций (Swiss Ephemeris, без LLM, всегда свежий) —
-  // считается автоматически (вкладка/дата/локация). AI-анализ — отдельно,
-  // дорогой, лимит MAX_TRANSITS_ANALYSIS_PER_DAY/день, запускается ТОЛЬКО
-  // по явному действию пользователя (кнопка «Дать анализ», см. runTransitsAnalysis).
-  // БД не используется — транзиты слишком динамичны (меняются от дня и локации).
-  // isTransitsLoadingRef блокирует двойные запросы (общий для обеих функций).
+
   const loadTransitsData = useCallback(async (date?: string, opts?: { keepAnalysis?: boolean }) => {
     if (!chartDataForAnalysis || !savedChartId) return;
     if (chartDataForAnalysis.type === 'synastry') return;
-    if (isTransitsLoadingRef.current) return; // блокируем двойной вызов
+    if (isTransitsLoadingRef.current) return;
 
     const meta = chartDataForAnalysis.meta;
     if (!meta?.birth_date) {
@@ -816,8 +813,6 @@ const Dashboard = () => {
       });
       setTransitsData(data);
 
-      // Новые позиции делают старый AI-анализ неактуальным — сбрасываем,
-      // кроме случая восстановления уже готового анализа (возврат на карту/вкладку).
       if (!opts?.keepAnalysis) {
         setTransitsAnalysis(null);
         setTransitsReady(false);
@@ -831,12 +826,10 @@ const Dashboard = () => {
     }
   }, [chartDataForAnalysis, savedChartId, transitsDate, transitsLocation, t]);
 
-  // AI-анализ транзитов: запускается только по кнопке «Дать анализ».
-  // Если позиции для текущего дня/локации ещё не посчитаны — считает их первым шагом.
   const runTransitsAnalysis = useCallback(async (date?: string, mode = analysisMode) => {
     if (!chartDataForAnalysis || !savedChartId) return;
     if (chartDataForAnalysis.type === 'synastry') return;
-    if (isTransitsLoadingRef.current) return; // блокируем двойной вызов
+    if (isTransitsLoadingRef.current) return;
 
     const meta = chartDataForAnalysis.meta;
     if (!meta?.birth_date) {
@@ -853,7 +846,6 @@ const Dashboard = () => {
     isTransitsLoadingRef.current = true;
 
     try {
-      // 1. Позиции нужны для запроса к LLM — считаем, если ещё не посчитаны
       let data = transitsData;
       if (!data) {
         data = await astrologyAPI.calculateTransits({
@@ -872,64 +864,105 @@ const Dashboard = () => {
         setTransitsData(data);
       }
 
-      // 2. localStorage-кэш (в пределах сессии браузера) — не тратит дневной лимит
       const cached = localStorage.getItem(cacheKey);
       if (cached) {
         setTransitsAnalysis(cached);
         setTransitsReady(true);
+        setTransitsLoading(false);
+        isTransitsLoadingRef.current = false;
         return;
       }
 
-      // 3. Лимит: не более MAX_TRANSITS_ANALYSIS_PER_DAY AI-запросов в день
       const today = new Date().toISOString().slice(0, 10);
       const limitKey = `transits_limit|${today}`;
       const usedToday = parseInt(localStorage.getItem(limitKey) || '0', 10);
       if (usedToday >= MAX_TRANSITS_ANALYSIS_PER_DAY) {
         setTransitsError(t('dashboard.transits.limitReached', { limit: MAX_TRANSITS_ANALYSIS_PER_DAY }));
+        setTransitsLoading(false);
+        isTransitsLoadingRef.current = false;
         return;
       }
 
-      // 4. Запрос к LLM
-      const result = await astrologyAPI.getTransitsAnalysis({
-        natal_chart: chartDataForAnalysis,
-        transit_data: data,
-        language: i18n.language || 'ru',
-        ...(transitsLocation && {
-          transit_latitude: transitsLocation.lat,
-          transit_longitude: transitsLocation.lon,
-          transit_place: transitsLocation.display_name,
-        }),
-      }, mode);
+      const applyTransitsResult = (analysis: string) => {
+        setTransitsAnalysis(analysis);
+        setTransitsReady(true);
 
-      setTransitsAnalysis(result.analysis);
-      setTransitsReady(true);
+        localStorage.setItem(cacheKey, analysis);
+        localStorage.setItem(`transits_last_key|${savedChartId}`, cacheKey);
+        const locationName = transitsLocation?.display_name || meta.birth_place || null;
+        if (locationName) localStorage.setItem(`transits_location_name|${savedChartId}`, locationName);
+        setTransitsDisplayLocation(locationName);
+        localStorage.setItem(limitKey, String(usedToday + 1));
+        refreshTransitsRemaining();
+      };
 
-      // 5. Сохраняем в localStorage + обновляем счётчик
-      localStorage.setItem(cacheKey, result.analysis);
-      localStorage.setItem(`transits_last_key|${savedChartId}`, cacheKey);
-      const locationName = transitsLocation?.display_name || meta.birth_place || null;
-      if (locationName) localStorage.setItem(`transits_location_name|${savedChartId}`, locationName);
-      setTransitsDisplayLocation(locationName);
-      localStorage.setItem(limitKey, String(usedToday + 1));
-      refreshTransitsRemaining();
+      transitsStream.reset();
+      transitsFinishRef.current = (analysis: string) => {
+        applyTransitsResult(analysis);
+        setTransitsLoading(false);
+        isTransitsLoadingRef.current = false;
+      };
+
+      await streamTransitsAnalysis(
+        {
+          natal_chart: chartDataForAnalysis as unknown as Record<string, unknown>,
+          transit_data: data as unknown as Record<string, unknown>,
+          language: i18n.language || 'ru',
+          mode,
+          ...(transitsLocation && {
+            transit_latitude: transitsLocation.lat,
+            transit_longitude: transitsLocation.lon,
+            transit_place: transitsLocation.display_name,
+          }),
+        },
+        {
+          onStage: transitsStream.handleStage,
+          onDelta: transitsStream.handleDelta,
+          onFinal: (result) => transitsStream.handleFinal(result.analysis),
+          onError: async (detail) => {
+            if (!transitsStream.hasDelta()) {
+              try {
+                const result = await astrologyAPI.getTransitsAnalysis({
+                  natal_chart: chartDataForAnalysis,
+                  transit_data: data,
+                  language: i18n.language || 'ru',
+                  ...(transitsLocation && {
+                    transit_latitude: transitsLocation.lat,
+                    transit_longitude: transitsLocation.lon,
+                    transit_place: transitsLocation.display_name,
+                  }),
+                }, mode);
+                applyTransitsResult(result.analysis);
+              } catch (err) {
+                const errorDetail = (err as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
+                setTransitsError(typeof errorDetail === 'string' ? errorDetail : t('dashboard.transits.error'));
+              } finally {
+                setTransitsLoading(false);
+                isTransitsLoadingRef.current = false;
+              }
+              return;
+            }
+            transitsStream.handleError();
+            setTransitsError(detail || t('dashboard.transits.error'));
+            setTransitsLoading(false);
+            isTransitsLoadingRef.current = false;
+          },
+        }
+      );
 
     } catch (err) {
       const errorDetail = (err as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
       setTransitsError(typeof errorDetail === 'string' ? errorDetail : t('dashboard.transits.error'));
-    } finally {
       setTransitsLoading(false);
       isTransitsLoadingRef.current = false;
     }
-  }, [chartDataForAnalysis, savedChartId, analysisMode, transitsDate, transitsLocation, transitsData, t, refreshTransitsRemaining]);
+  }, [chartDataForAnalysis, savedChartId, analysisMode, transitsDate, transitsLocation, transitsData, t, refreshTransitsRemaining, transitsStream]);
 
-  // Смена дня в пикере: пересчёт позиций для нового дня. AI НЕ запускаем —
-  // старый анализ был для другого дня и сбрасывается внутри loadTransitsData.
   const handleTransitsDateChange = useCallback((date: string) => {
     setTransitsDate(date);
     loadTransitsData(date);
   }, [loadTransitsData]);
 
-  // При смене режима (simple/advanced) — перезагружаем анализ прогрессий для нового режима
   useEffect(() => {
     if (!showProgressions) return;
     setProgressionsAnalysis(null);
@@ -938,8 +971,6 @@ const Dashboard = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [analysisMode]);
 
-  // При смене режима (simple/advanced) — старый анализ транзитов был для другого режима.
-  // Позиции от режима не зависят, поэтому НЕ пересчитываем; AI НЕ запускаем — ждём кнопку.
   useEffect(() => {
     if (analysisTab !== 'transits') return;
     setTransitsAnalysis(null);
@@ -947,10 +978,9 @@ const Dashboard = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [analysisMode]);
 
-  // При смене места транзита — пересчитываем позиции (AI НЕ запускаем)
   useEffect(() => {
     if (analysisTab !== 'transits') return;
-    if (!transitsLocation) return; // Только при выбранном альтернативном месте
+    if (!transitsLocation) return;
     loadTransitsData(transitsDate);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [transitsLocation]);
@@ -959,7 +989,6 @@ const Dashboard = () => {
     if (chatLoading) return;
     if (!chatInput.trim() || !chartDataForAnalysis || !fullAnalysis || !savedChartId || !user) return;
 
-    // Фиксируем карту и юзера НА МОМЕНТ ОТПРАВКИ — ответ может прийти, когда юзер уже на другой карте
     const chartIdAtSend = Number(savedChartId);
     const userId = user.id;
 
@@ -967,7 +996,6 @@ const Dashboard = () => {
     const currentHistory = [...chatHistory];
     const userMessage = { role: 'user' as const, content: questionText };
     setChatHistory(prev => [...prev, userMessage]);
-    // В БД пишем ТОЛЬКО новое сообщение (не всю историю) — без дублей
     chartsApi.appendChatMessages(chartIdAtSend, userId, [userMessage]).catch(err => {
       console.error('Failed to save chat message:', err);
     });
@@ -988,16 +1016,13 @@ const Dashboard = () => {
         content: (response as { data?: { answer?: string; relevant_chunks?: unknown[] } })?.data?.answer || t('dashboard.chat.noAnswer'),
         relevant_chunks: (response as { data?: { relevant_chunks?: unknown[] } })?.data?.relevant_chunks || []
       };
-      // Ответ ВСЕГДА сохраняем в БД для той карты, где был задан вопрос
       chartsApi.appendChatMessages(chartIdAtSend, userId, [botMessage]).catch(err => {
         console.error('Failed to save chat message:', err);
       });
-      // UI обновляем только если юзер сейчас на той же карте; иначе ответ подтянется из БД при возврате
       if (Number(savedChartIdRef.current) === chartIdAtSend) {
         setChatHistory(prev => [...prev, botMessage]);
       }
     } catch (error) {
-      // Ошибку показываем только на той же карте и в БД не пишем
       if (Number(savedChartIdRef.current) === chartIdAtSend) {
         setChatHistory(prev => [...prev, {
           role: 'assistant' as const,
@@ -1030,45 +1055,11 @@ const Dashboard = () => {
     }
   }, [showFullAnalysis, chartDataForAnalysis, fullAnalysis, analysisLoading, loadFullAnalysis, analysisMode, simpleAnalysis, advancedAnalysis]);
 
-  // Save pending analysis result for navigation persistence (only when no saved chart yet)
   useEffect(() => {
     if (fullAnalysis && !savedChartId) {
       localStorage.setItem('pendingAnalysisResult', fullAnalysis);
     }
   }, [fullAnalysis, savedChartId]);
-
-  // ВРЕМЕННО ОТКЛЮЧЕНО: типы отношений. Код готов и рабочий, пока не запрашиваем с бэкенда.
-  // useEffect(() => {
-  //   setRelationshipTypes(null);
-  // }, [savedChartId]);
-
-  // useEffect(() => {
-  //   if (chartDataForAnalysis?.type === 'synastry' && fullAnalysis && savedChartId && !relationshipTypes) {
-  //     const storageKey = `relationshipTypes_${savedChartId}`;
-  //     const cached = localStorage.getItem(storageKey);
-  //     if (cached) {
-  //       try {
-  //         setRelationshipTypes(JSON.parse(cached));
-  //         return;
-  //       } catch { }
-  //     }
-  //     const loadRelationshipTypes = async () => {
-  //       setRelationshipTypesLoading(true);
-  //       try {
-  //         const result = await astrologyAPI.getRelationshipTypes(fullAnalysis, i18n.language);
-  //         console.log('Relationship Types Response:', result);
-  //         setRelationshipTypes(result);
-  //         localStorage.setItem(storageKey, JSON.stringify(result));
-  //       } catch (err) {
-  //         console.error('Failed to load relationship types:', err);
-  //       } finally {
-  //         setRelationshipTypesLoading(false);
-  //       }
-  //     };
-  //     loadRelationshipTypes();
-  //   }
-  //
-  // }, [chartDataForAnalysis, fullAnalysis, relationshipTypes, savedChartId]);
 
   const loadHistoryCharts = useCallback(async () => {
     if (!user) return;
@@ -1144,20 +1135,8 @@ const Dashboard = () => {
           console.error('Failed to save chat history:', err);
         }
       }
-
-      // Clear pending analysis items since we've saved the chart
       localStorage.removeItem('pendingAnalysisJob');
       localStorage.removeItem('pendingAnalysisResult');
-
-      // ВРЕМЕННО ОТКЛЮЧЕНО: типы отношений. Код готов, пока не сохраняем в БД.
-      // if (isSynastry && relationshipTypes) {
-      //   try {
-      //     await chartsApi.saveRelationshipTypes(saved.id, relationshipTypes);
-      //   } catch (err) {
-      //     console.error('Failed to save relationship types to DB:', err);
-      //   }
-      // }
-
       await loadHistoryCharts();
     } catch {
       setSaving(false);
@@ -1201,7 +1180,6 @@ const Dashboard = () => {
       savedChartIdRef.current = saved.id;
       localStorage.setItem('savedChartId', saved.id.toString());
 
-      // Save chat history to database
       if (chatHistory.length > 0) {
         try {
           await chartsApi.saveChatMessages(Number(saved.id), user.id, chatHistory);
@@ -1210,7 +1188,6 @@ const Dashboard = () => {
         }
       }
 
-      // Clear pending analysis items since we've saved the chart
       localStorage.removeItem('pendingAnalysisJob');
       localStorage.removeItem('pendingAnalysisResult');
 
@@ -1499,8 +1476,6 @@ const Dashboard = () => {
     resetProgressions();
     setSavedChartId(chart.id);
     savedChartIdRef.current = chart.id;
-
-    // Load chat history from database (с предварительной очисткой — без утечки между картами)
     setChatHistory([]);
     loadChatForChart(chart.id).catch(err => {
       console.error('Failed to load chat history:', err);
@@ -1558,7 +1533,6 @@ const Dashboard = () => {
     setDeletingChart(true);
     try {
       await chartsApi.deleteChart(Number(chartToDelete.id));
-      // Clear chat if currently viewing the deleted chart
       if (savedChartId === chartToDelete.id) {
         setChatHistory([]);
       }
@@ -1852,9 +1826,6 @@ const Dashboard = () => {
                     />
                   </div>
 
-                  {/* Колесо синастрии. Рисуется только при наличии домов: у карт,
-                      сохранённых до появления houses в chart_data, куспидов нет —
-                      без них зодиак не повернуть по ASC и домовую сетку не построить. */}
                   {chartDataForAnalysis?.type === 'synastry'
                     && chartDataForAnalysis.chart1?.planets
                     && chartDataForAnalysis.chart2?.planets
@@ -1887,8 +1858,6 @@ const Dashboard = () => {
                     </div>
                   )}
 
-                  {/* Колесо натальной карты. Данные (planets/houses/houses_meta) уже лежат
-                      в chart_data, ничего досохранять не потребовалось. */}
                   {chartDataForAnalysis
                     && chartDataForAnalysis.type !== 'synastry'
                     && chartDataForAnalysis.planets
@@ -1898,9 +1867,6 @@ const Dashboard = () => {
                         chartData={{
                           planets: chartDataForAnalysis.planets,
                           houses: chartDataForAnalysis.houses,
-                          // На главной в компонент уходит сырой ответ API, где vertex лежит
-                          // в корне. В сохранённых данных он внутри houses_meta — пробрасываем,
-                          // иначе точка Vx не отрисуется.
                           vertex: (chartDataForAnalysis.houses_meta as { vertex?: { longitude: number } } | undefined)?.vertex,
                           houses_meta: chartDataForAnalysis.houses_meta as { pars_fortuna?: { longitude: number } } | undefined,
                         }}
@@ -1908,17 +1874,6 @@ const Dashboard = () => {
                       />
                     </div>
                   )}
-
-                  {/* ВРЕМЕННО ОТКЛЮЧЕНО: типы отношений. Код готов и рабочий, пока не показываем. */}
-                  {/* {chartDataForAnalysis?.type === 'synastry' && fullAnalysis && relationshipTypes && !relationshipTypesLoading && (
-                    <div style={{ marginTop: '30px', marginBottom: '20px' }}>
-                      <RelationshipTypesBar
-                        data={relationshipTypes?.relationship_types || {}}
-                        dominantType={relationshipTypes?.dominant_type}
-                      />
-                    </div>
-                  )} */}
-
                   <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '16px', flexWrap: 'wrap' }}>
                     {savedChartId && fullAnalysis && (
                       <button
@@ -1984,7 +1939,6 @@ const Dashboard = () => {
                     </button>
                   </div>
 
-                  {/* Табы видов анализа: Натальная карта | Прогрессии (outlet-паттерн внутри страницы) */}
                   {!showPlanetTable && (
                     <AnalysisTabs
                       active={analysisTab}
@@ -2001,9 +1955,6 @@ const Dashboard = () => {
                         if (tab === 'progressions' && !hasProgressionsData) {
                           loadProgressions();
                         }
-                        // Транзиты: позиции считаем автоматически при открытии вкладки
-                        // (дёшево, без LLM); AI-анализ — только по кнопке «Дать анализ».
-                        // keepAnalysis сохраняет уже восстановленный из кэша анализ карты.
                         if (tab === 'transits' && !transitsData) {
                           loadTransitsData(transitsDate, { keepAnalysis: transitsReady });
                         }
@@ -2011,13 +1962,14 @@ const Dashboard = () => {
                     />
                   )}
 
-                  {/* Outlet «Прогрессии»: натальный анализ при этом скрыт (см. условие ниже) */}
                   {analysisTab === 'progressions' && !showPlanetTable && savedChartId && (
                     <div id="progressions-section">
                       {chartDataForAnalysis?.type === 'synastry' ? (
                         <ProgressedSynastryPanel
                           data={progressedSynastryData}
                           analysis={progressedSynastryAnalysis}
+                          displayedText={progressionsStream.displayedText}
+                          phase={progressionsStream.phase}
                           loading={progressionsLoading}
                           error={progressionsError}
                           name1={chartDataForAnalysis.person1_name}
@@ -2027,6 +1979,8 @@ const Dashboard = () => {
                         <ProgressionsPanel
                           data={progressionsData}
                           analysis={progressionsAnalysis}
+                          displayedText={progressionsStream.displayedText}
+                          phase={progressionsStream.phase}
                           loading={progressionsLoading}
                           error={progressionsError}
                         />
@@ -2034,13 +1988,14 @@ const Dashboard = () => {
                     </div>
                   )}
 
-                  {/* Outlet «Транзиты»: выбор дня, выбор места */}
                   {analysisTab === 'transits' && !showPlanetTable && savedChartId && (
                     <div id="transits-section">
                       <TransitsPanel
                         data={transitsData}
                         analysis={transitsAnalysis}
                         transitsReady={transitsReady}
+                        displayedText={transitsStream.displayedText}
+                        phase={transitsStream.phase}
                         loading={transitsLoading}
                         error={transitsError}
                         selectedDate={transitsDate}
@@ -2056,25 +2011,19 @@ const Dashboard = () => {
                     </div>
                   )}
 
-                  {/* Outlet «Прогноз дня»: оценка 1-10, категория, summary */}
                   {analysisTab === 'dailyForecast' && !showPlanetTable && savedChartId && (
                     <div id="daily-forecast-section">
                       <DailyForecastPanel natalChart={chartDataForAnalysis} />
                     </div>
                   )}
 
-                  {/* Outlet «Натальная карта» — таб по умолчанию */}
                   {!showPlanetTable && analysisTab === 'natal' && (
                     <>
                       {analysisLoading && streamPhase !== 'typing' && !fullAnalysis && (
                         <div style={{ marginTop: '40px' }}>
-                          {chartDataForAnalysis?.type === 'synastry' ? (
-                            <ProcessingMessage />
-                          ) : (
-                            <ProcessingMessage
-                              title={streamPhase === 'generating' ? t('dashboard.fullAnalysis.generating') : t('dashboard.fullAnalysis.searching')}
-                            />
-                          )}
+                          <ProcessingMessage
+                            title={streamPhase === 'generating' ? t('dashboard.fullAnalysis.generating') : t('dashboard.fullAnalysis.searching')}
+                          />
                         </div>
                       )}
 
@@ -2084,7 +2033,7 @@ const Dashboard = () => {
                         </div>
                       )}
 
-                      {(fullAnalysis || (chartDataForAnalysis?.type !== 'synastry' && streamPhase === 'typing')) && (
+                      {(fullAnalysis || streamPhase === 'typing') && (
                         <div style={{ marginTop: '40px', lineHeight: '2', fontSize: '16px' }}>
                           {!savedChartId && !analysisLoading && (
                             <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>

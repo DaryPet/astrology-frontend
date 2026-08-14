@@ -4,16 +4,19 @@ import MarkdownContent from './MarkdownContent';
 import ProcessingMessage from './ProcessingMessage';
 import ProgressedPlanetsTable from './ProgressedPlanetsTable';
 import type { ProgressionsData, ProgressedPlanet, ProgressionAspect } from '../services/api';
+import type { StreamPhase } from '../hooks/useStreamedText';
 import { pickLocalized } from '../i18n/localizedField';
 
 interface ProgressionsPanelProps {
   data: ProgressionsData | null;
   analysis: string | null;
+  displayedText?: string;
+  phase?: StreamPhase;
   loading: boolean;
   error: string;
 }
 
-const ProgressionsPanel: React.FC<ProgressionsPanelProps> = ({ data, analysis, loading, error }) => {
+const ProgressionsPanel: React.FC<ProgressionsPanelProps> = ({ data, analysis, displayedText = '', phase = 'idle', loading, error }) => {
   const { t, i18n } = useTranslation();
 
   const planetName = (key: string) => t(`planets.names.${key}`, { defaultValue: key });
@@ -48,9 +51,12 @@ const ProgressionsPanel: React.FC<ProgressionsPanelProps> = ({ data, analysis, l
         {t('dashboard.progressions.subtitle')}
       </p>
 
-      {loading && (
+      {loading && phase !== 'typing' && !analysis && (
         <div style={{ marginTop: '20px' }}>
-          <ProcessingMessage size="sm" />
+          <ProcessingMessage
+            size="sm"
+            title={phase === 'generating' ? t('dashboard.fullAnalysis.generating') : t('dashboard.fullAnalysis.searching')}
+          />
         </div>
       )}
 
@@ -164,12 +170,15 @@ const ProgressionsPanel: React.FC<ProgressionsPanelProps> = ({ data, analysis, l
       )}
 
       {/* AI-анализ */}
-      {analysis && (
+      {(analysis || phase === 'typing') && (
         <div style={{ marginTop: '24px', lineHeight: '2', fontSize: '16px' }}>
           <h4 style={{ color: 'var(--text-primary)' }}>
             {t('dashboard.progressions.analysisTitle')}
           </h4>
-          <MarkdownContent content={analysis} />
+          <MarkdownContent content={analysis ?? displayedText} />
+          {!analysis && phase === 'typing' && (
+            <span className="typing-cursor" aria-hidden="true">▍</span>
+          )}
         </div>
       )}
     </div>

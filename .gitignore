@@ -51,3 +51,4 @@ openspec/changes/
 .claude/
 # local archive, not meant to be tracked
 src.zip
+plans/
