@@ -221,9 +221,9 @@ const TransitsPanel: React.FC<TransitsPanelProps> = ({
         </div>
       )}
 
-      {/* AI-анализ дня: показываем только после явного запуска (transitsReady),
-          либо пока идёт стриминг только что запущенного анализа (phase === 'typing').
-          Стоит ровно на месте спиннера — до таблицы планет и списков аспектов. */}
+      {/* Daily AI analysis: shown only after an explicit run (transitsReady),
+          or while a just-started analysis is streaming (phase === 'typing').
+          Sits right where the spinner is — above the planet table and aspect lists. */}
       {((transitsReady && analysis) || phase === 'typing') && (
         <div style={{ marginTop: '24px', lineHeight: '2', fontSize: '16px' }}>
           <h4 style={{ color: 'var(--text-primary)' }}>

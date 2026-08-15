@@ -248,6 +248,10 @@ const Dashboard = () => {
   // у второго вызова номер поколения выше, и колбэки первого перестают писать
   // в live-ячейку/состояние (сами запросы при этом не отменяются).
   const planetGenerationRef = useRef<Record<string, number>>({});
+  // While a request for this planet is already in flight, a repeat click on it
+  // won't start a new one (unlike the generation counter above, this blocks
+  // instead of superseding).
+  const planetInFlightRef = useRef<Record<string, boolean>>({});
   const [selectedAspect, setSelectedAspect] = useState<AspectData | null>(null);
   const [selectedAspectKey, setSelectedAspectKey] = useState<string | null>(null);
   const selectedAspectKeyRef = useRef<string | null>(null);
@@ -256,6 +260,9 @@ const Dashboard = () => {
   const [aspectError, setAspectError] = useState<string>('');
   const [aspectLiveStreams, setAspectLiveStreams] = useState<Record<string, { phase: StreamPhase; text: string }>>({});
   const aspectGenerationRef = useRef<Record<string, number>>({});
+  // While a request for this aspect is already in flight, a repeat click on it
+  // won't start a new one (same as planetInFlightRef for planets).
+  const aspectInFlightRef = useRef<Record<string, boolean>>({});
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null);
@@ -1377,6 +1384,12 @@ const Dashboard = () => {
     setSelectedPlanet({ ...planetData, name: planetName });
     setSelectedPlanetKey(planetKey);
     selectedPlanetKeyRef.current = planetKey;
+
+    // A repeat click on this same planet while its request is already in
+    // flight doesn't start a new one — it just reopens the card on the
+    // current progress.
+    if (planetInFlightRef.current[planetKey]) return;
+
     setPlanetAnalysis(null);
     setPlanetAnalysisError('');
     setPlanetAnalysisLoading(true);
@@ -1394,6 +1407,8 @@ const Dashboard = () => {
       }
       return;
     }
+
+    planetInFlightRef.current[planetKey] = true;
 
     const planetPayload = {
       planet: planetData.name ?? '',
@@ -1466,6 +1481,7 @@ const Dashboard = () => {
         onFinal: (result) => {
           persistPlanetAnalysis(result.analysis);
           clearLive();
+          planetInFlightRef.current[planetKey] = false;
           if (isStillOpen()) {
             setPlanetAnalysis(result.analysis);
             setPlanetAnalysisLoading(false);
@@ -1481,11 +1497,13 @@ const Dashboard = () => {
               if (isStillOpen()) reportPlanetError(err);
             } finally {
               clearLive();
+              planetInFlightRef.current[planetKey] = false;
               if (isStillOpen()) setPlanetAnalysisLoading(false);
             }
             return;
           }
           clearLive();
+          planetInFlightRef.current[planetKey] = false;
           if (isStillOpen()) {
             setPlanetAnalysisError(detail || 'Failed to load planet analysis');
             setPlanetAnalysisLoading(false);
@@ -1510,6 +1528,12 @@ const Dashboard = () => {
     setSelectedAspect(aspect);
     setSelectedAspectKey(aspectKey);
     selectedAspectKeyRef.current = aspectKey;
+
+    // A repeat click on this same aspect while its request is already in
+    // flight doesn't start a new one — it just reopens the card on the
+    // current progress.
+    if (aspectInFlightRef.current[aspectKey]) return;
+
     setAspectLoading(true);
     setAspectError('');
 
@@ -1521,6 +1545,7 @@ const Dashboard = () => {
       return;
     }
 
+    aspectInFlightRef.current[aspectKey] = true;
     setAspectAnalysis(null);
 
     const aspectPayload = {
@@ -1577,6 +1602,7 @@ const Dashboard = () => {
         onFinal: (result) => {
           localStorage.setItem(storageKey, result.analysis);
           clearLive();
+          aspectInFlightRef.current[aspectKey] = false;
           if (isStillOpen()) {
             setAspectAnalysis(result.analysis);
             setAspectLoading(false);
@@ -1592,11 +1618,13 @@ const Dashboard = () => {
               if (isStillOpen()) reportAspectError(err);
             } finally {
               clearLive();
+              aspectInFlightRef.current[aspectKey] = false;
               if (isStillOpen()) setAspectLoading(false);
             }
             return;
           }
           clearLive();
+          aspectInFlightRef.current[aspectKey] = false;
           if (isStillOpen()) {
             setAspectError(detail || t('analysis.error'));
             setAspectLoading(false);
