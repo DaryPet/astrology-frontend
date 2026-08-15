@@ -1,7 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { geocodeAPI, astrologyAPI } from '../services/api';
+import { streamPlanetAnalysis } from '../services/streamApi';
+import type { StreamPhase } from '../hooks/useStreamedText';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import i18n from '../i18n';
@@ -119,9 +121,16 @@ function Home() {
   const [nameError, setNameError] = useState<string>('');
   const [chartData, setChartData] = useState<ChartData | null>(null);
   const [selectedPlanet, setSelectedPlanet] = useState<ChartPlanet | null>(null);
+  const [selectedPlanetKey, setSelectedPlanetKey] = useState<string | null>(null);
+  const selectedPlanetKeyRef = useRef<string | null>(null);
   const [planetAnalysis, setPlanetAnalysis] = useState<string | null>(null);
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [analysisError, setAnalysisError] = useState<string>('');
+  // Своя ячейка на каждую карточку планеты (ключ — имя планеты), плюс номер
+  // поколения на случай повторного клика по той же карточке до ответа —
+  // карточки кликаются параллельно и независимо, ничего не отменяем.
+  const [planetLiveStreams, setPlanetLiveStreams] = useState<Record<string, { phase: StreamPhase; text: string }>>({});
+  const planetGenerationRef = useRef<Record<string, number>>({});
   const [analysisMode, setAnalysisMode] = useState<string>(() => {
     return localStorage.getItem('analysisMode') || 'simple';
   });
@@ -173,8 +182,11 @@ function Home() {
   };
 
   const handlePlanetClick = async (planetData: ChartPlanet & { name?: string }) => {
+    const planetKey = planetData.name ?? '';
     const planetName = planetData.name ? t('planets.names.' + planetData.name) : '';
     setSelectedPlanet({ ...planetData, name: planetName });
+    setSelectedPlanetKey(planetKey);
+    selectedPlanetKeyRef.current = planetKey;
     setPlanetAnalysis(null);
     setAnalysisError('');
     setAnalysisLoading(true);
@@ -186,21 +198,18 @@ function Home() {
       return;
     }
 
-    try {
-      const result = await astrologyAPI.getPlanetAnalysis({
-        planet: planetData.name,
-        sign: planetData.sign,
-        degree: planetData.degree,
-        house: planetData.house,
-        house_sign: planetData.house_sign,
-        aspects: planetData.aspects,
-        is_retrograde: planetData.is_retrograde,
-        language: i18n.language
-      }, analysisMode);
+    const planetPayload = {
+      planet: planetData.name ?? '',
+      sign: planetData.sign,
+      degree: planetData.degree,
+      house: planetData.house,
+      house_sign: planetData.house_sign,
+      aspects: planetData.aspects,
+      is_retrograde: planetData.is_retrograde,
+      language: i18n.language
+    };
 
-      setPlanetAnalysis(result.analysis);
-      localStorage.setItem(`planetAnalysis_${planetData.name}`, result.analysis);
-    } catch (err) {
+    const reportPlanetError = (err: unknown) => {
       console.error('Planet analysis error:', err);
       const errorDetail = (err as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
       if (typeof errorDetail === 'string') {
@@ -212,13 +221,75 @@ function Home() {
       } else {
         setAnalysisError('Failed to load planet analysis');
       }
-    } finally {
-      setAnalysisLoading(false);
-    }
+    };
+
+    const myGeneration = (planetGenerationRef.current[planetKey] ?? 0) + 1;
+    planetGenerationRef.current[planetKey] = myGeneration;
+    const isCurrentGeneration = () => planetGenerationRef.current[planetKey] === myGeneration;
+    const isStillOpen = () => isCurrentGeneration() && selectedPlanetKeyRef.current === planetKey;
+    const clearLive = () => {
+      if (!isCurrentGeneration()) return;
+      setPlanetLiveStreams(prev => {
+        if (!(planetKey in prev)) return prev;
+        const next = { ...prev };
+        delete next[planetKey];
+        return next;
+      });
+    };
+
+    let accumulated = '';
+    await streamPlanetAnalysis(
+      { ...planetPayload, mode: analysisMode },
+      {
+        onStage: (stage) => {
+          if (!isCurrentGeneration()) return;
+          setPlanetLiveStreams(prev => {
+            const cur = prev[planetKey];
+            if (cur?.phase === 'typing') return prev;
+            return { ...prev, [planetKey]: { phase: stage === 'generating' ? 'generating' : 'searching', text: cur?.text ?? '' } };
+          });
+        },
+        onDelta: (text) => {
+          accumulated += text;
+          if (!isCurrentGeneration()) return;
+          setPlanetLiveStreams(prev => ({ ...prev, [planetKey]: { phase: 'typing', text: accumulated } }));
+        },
+        onFinal: (result) => {
+          localStorage.setItem(`planetAnalysis_${planetData.name}`, result.analysis);
+          clearLive();
+          if (isStillOpen()) {
+            setPlanetAnalysis(result.analysis);
+            setAnalysisLoading(false);
+          }
+        },
+        onError: async (detail) => {
+          if (!accumulated) {
+            try {
+              const result = await astrologyAPI.getPlanetAnalysis(planetPayload, analysisMode);
+              localStorage.setItem(`planetAnalysis_${planetData.name}`, result.analysis);
+              if (isStillOpen()) setPlanetAnalysis(result.analysis);
+            } catch (err) {
+              if (isStillOpen()) reportPlanetError(err);
+            } finally {
+              clearLive();
+              if (isStillOpen()) setAnalysisLoading(false);
+            }
+            return;
+          }
+          clearLive();
+          if (isStillOpen()) {
+            setAnalysisError(detail || 'Failed to load planet analysis');
+            setAnalysisLoading(false);
+          }
+        },
+      }
+    );
   };
 
   const handleCloseAnalysis = () => {
     setSelectedPlanet(null);
+    setSelectedPlanetKey(null);
+    selectedPlanetKeyRef.current = null;
     setPlanetAnalysis(null);
     setAnalysisError('');
   };
@@ -665,6 +736,8 @@ function Home() {
             <PlanetAnalysisModal
               planet={selectedPlanet ?? undefined}
               analysis={planetAnalysis}
+              displayedText={(selectedPlanetKey && planetLiveStreams[selectedPlanetKey]?.text) || ''}
+              phase={(selectedPlanetKey && planetLiveStreams[selectedPlanetKey]?.phase) || 'idle'}
               isOpen={!!selectedPlanet}
               onClose={handleCloseAnalysis}
               loading={analysisLoading}
