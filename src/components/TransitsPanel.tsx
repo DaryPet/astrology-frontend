@@ -221,6 +221,20 @@ const TransitsPanel: React.FC<TransitsPanelProps> = ({
         </div>
       )}
 
+      {/* AI-анализ дня: показываем только после явного запуска (transitsReady),
+          либо пока идёт стриминг только что запущенного анализа (phase === 'typing').
+          Стоит ровно на месте спиннера — до таблицы планет и списков аспектов. */}
+      {((transitsReady && analysis) || phase === 'typing') && (
+        <div style={{ marginTop: '24px', lineHeight: '2', fontSize: '16px' }}>
+          <h4 style={{ color: 'var(--text-primary)' }}>
+            {t('dashboard.transits.analysisTitle')}
+          </h4>
+          <MarkdownContent content={analysis ?? displayedText} />
+          {!analysis && phase === 'typing' && (
+            <span className="typing-cursor" aria-hidden="true">▍</span>
+          )}
+        </div>
+      )}
 
       {data && (
         <>
@@ -324,20 +338,6 @@ const TransitsPanel: React.FC<TransitsPanelProps> = ({
             )}
           </div>
         </>
-      )}
-
-      {/* AI-анализ дня: показываем только после явного запуска (transitsReady),
-          либо пока идёт стриминг только что запущенного анализа (phase === 'typing'). */}
-      {((transitsReady && analysis) || phase === 'typing') && (
-        <div style={{ marginTop: '24px', lineHeight: '2', fontSize: '16px' }}>
-          <h4 style={{ color: 'var(--text-primary)' }}>
-            {t('dashboard.transits.analysisTitle')}
-          </h4>
-          <MarkdownContent content={analysis ?? displayedText} />
-          {!analysis && phase === 'typing' && (
-            <span className="typing-cursor" aria-hidden="true">▍</span>
-          )}
-        </div>
       )}
     </div>
   );

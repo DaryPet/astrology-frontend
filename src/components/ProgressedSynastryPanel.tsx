@@ -106,6 +106,19 @@ const ProgressedSynastryPanel: React.FC<ProgressedSynastryPanelProps> = ({ data,
         </div>
       )}
 
+      {/* AI-анализ: стоит ровно на месте спиннера — до карточек партнёров и таблиц планет. */}
+      {(analysis || phase === 'typing') && (
+        <div style={{ marginTop: '24px', lineHeight: '2', fontSize: '16px' }}>
+          <h4 style={{ color: 'var(--text-primary)' }}>
+            {t('dashboard.progressedSynastry.analysisTitle')}
+          </h4>
+          <MarkdownContent content={analysis ?? displayedText} />
+          {!analysis && phase === 'typing' && (
+            <span className="typing-cursor" aria-hidden="true">▍</span>
+          )}
+        </div>
+      )}
+
       {data && (
         <>
           {/* Карточки партнёров: возраст, лунная фаза, прогр. Солнце/Луна/асцендент */}
@@ -156,19 +169,6 @@ const ProgressedSynastryPanel: React.FC<ProgressedSynastryPanelProps> = ({ data,
             )}
           </div>
         </>
-      )}
-
-      {/* AI-анализ */}
-      {(analysis || phase === 'typing') && (
-        <div style={{ marginTop: '24px', lineHeight: '2', fontSize: '16px' }}>
-          <h4 style={{ color: 'var(--text-primary)' }}>
-            {t('dashboard.progressedSynastry.analysisTitle')}
-          </h4>
-          <MarkdownContent content={analysis ?? displayedText} />
-          {!analysis && phase === 'typing' && (
-            <span className="typing-cursor" aria-hidden="true">▍</span>
-          )}
-        </div>
       )}
     </div>
   );
