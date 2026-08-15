@@ -66,6 +66,19 @@ const ProgressionsPanel: React.FC<ProgressionsPanelProps> = ({ data, analysis, d
         </div>
       )}
 
+      {/* AI-анализ: стоит ровно на месте спиннера — до таблицы планет и списков аспектов. */}
+      {(analysis || phase === 'typing') && (
+        <div style={{ marginTop: '24px', lineHeight: '2', fontSize: '16px' }}>
+          <h4 style={{ color: 'var(--text-primary)' }}>
+            {t('dashboard.progressions.analysisTitle')}
+          </h4>
+          <MarkdownContent content={analysis ?? displayedText} />
+          {!analysis && phase === 'typing' && (
+            <span className="typing-cursor" aria-hidden="true">▍</span>
+          )}
+        </div>
+      )}
+
       {data && (
         <>
           {/* Ключевые точки: лунная фаза + прогрессивные Луна и Солнце */}
@@ -167,19 +180,6 @@ const ProgressionsPanel: React.FC<ProgressionsPanelProps> = ({ data, analysis, d
             )}
           </div>
         </>
-      )}
-
-      {/* AI-анализ */}
-      {(analysis || phase === 'typing') && (
-        <div style={{ marginTop: '24px', lineHeight: '2', fontSize: '16px' }}>
-          <h4 style={{ color: 'var(--text-primary)' }}>
-            {t('dashboard.progressions.analysisTitle')}
-          </h4>
-          <MarkdownContent content={analysis ?? displayedText} />
-          {!analysis && phase === 'typing' && (
-            <span className="typing-cursor" aria-hidden="true">▍</span>
-          )}
-        </div>
       )}
     </div>
   );
