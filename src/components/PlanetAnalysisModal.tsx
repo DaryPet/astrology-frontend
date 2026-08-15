@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import ProcessingMessage from './ProcessingMessage';
 import MarkdownContent from './MarkdownContent';
+import type { StreamPhase } from '../hooks/useStreamedText';
 
 interface PlanetAnalysisModalProps {
   planet?: {
@@ -12,13 +13,15 @@ interface PlanetAnalysisModalProps {
     [key: string]: unknown;
   };
   analysis?: string | null;
+  displayedText?: string;
+  phase?: StreamPhase;
   isOpen: boolean;
   onClose: () => void;
   loading?: boolean;
   error?: string;
 }
 
-const PlanetAnalysisModal = ({ planet, analysis, isOpen, onClose, loading, error }: PlanetAnalysisModalProps) => {
+const PlanetAnalysisModal = ({ planet, analysis, displayedText = '', phase = 'idle', isOpen, onClose, loading, error }: PlanetAnalysisModalProps) => {
   const { t } = useTranslation();
 
   if (!isOpen) return null;
@@ -128,8 +131,10 @@ const PlanetAnalysisModal = ({ planet, analysis, isOpen, onClose, loading, error
           </div>
         )}
 
-        {loading && (
-          <ProcessingMessage />
+        {loading && phase !== 'typing' && (
+          <ProcessingMessage
+            title={phase === 'generating' ? t('dashboard.fullAnalysis.generating') : phase === 'searching' ? t('dashboard.fullAnalysis.searching') : undefined}
+          />
         )}
 
         {error && (
@@ -141,6 +146,15 @@ const PlanetAnalysisModal = ({ planet, analysis, isOpen, onClose, loading, error
             marginBottom: '16px'
           }}>
             {error}
+          </div>
+        )}
+
+        {phase === 'typing' && !analysis && (
+          <div className="markdown-content" style={{
+            marginTop: '12px'
+          }}>
+            <MarkdownContent content={displayedText} />
+            <span className="typing-cursor" aria-hidden="true">▍</span>
           </div>
         )}
 

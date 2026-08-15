@@ -1,9 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import { geocodeAPI, astrologyAPI } from '../services/api';
+import { streamSynastryAspectAnalysis } from '../services/streamApi';
+import type { StreamPhase } from '../hooks/useStreamedText';
 import Header from '../components/Header';
 import LocationInput from '../components/LocationInput';
 // СТАРЫЙ рендер синастрии (D3, чёрный центр). Не удалять — вернуть при необходимости:
@@ -72,8 +74,15 @@ function Synastry() {
   const [error, setError] = useState<string>('');
   const [personNames, setPersonNames] = useState<{ p1: string; p2: string }>({ p1: '', p2: '' });
   const [selectedAspectData, setSelectedAspectData] = useState<AspectData | null>(null);
+  const [selectedAspectKey, setSelectedAspectKey] = useState<string | null>(null);
+  const selectedAspectKeyRef = useRef<string | null>(null);
   const [aspectAnalysis, setAspectAnalysis] = useState<string | null>(null);
   const [aspectLoading, setAspectLoading] = useState(false);
+  // Своя ячейка на каждую карточку аспекта (ключ — planet1_planet2_aspect), плюс
+  // номер поколения на повторный клик по той же карточке — карточки кликаются
+  // параллельно и независимо, ничего не отменяем (см. Dashboard.tsx).
+  const [aspectLiveStreams, setAspectLiveStreams] = useState<Record<string, { phase: StreamPhase; text: string }>>({});
+  const aspectGenerationRef = useRef<Record<string, number>>({});
   const [isNavigating, setIsNavigating] = useState(false);
   const [analysisMode, setAnalysisMode] = useState<string>(() => {
     return localStorage.getItem('synastryAnalysisMode') || 'simple';
@@ -175,7 +184,10 @@ function Synastry() {
   };
 
   const handleAspectClick = async (aspect: AspectData) => {
+    const aspectKey = `${aspect.planet1}_${aspect.planet2}_${aspect.aspect}`;
     setSelectedAspectData(aspect);
+    setSelectedAspectKey(aspectKey);
+    selectedAspectKeyRef.current = aspectKey;
     setAspectLoading(true);
 
     const storageKey = `aspectAnalysis_${aspect.planet1}_${aspect.planet2}_${aspect.aspect}`;
@@ -188,23 +200,78 @@ function Synastry() {
 
     setAspectAnalysis(null);
 
-    try {
-      const result = await astrologyAPI.getSynastryAspectAnalysis({
-        planet1: aspect.planet1,
-        planet2: aspect.planet2,
-        aspect_name: aspect.aspect,
-        aspect_name_ru: aspect.aspect_ru || aspect.aspect,
-        orb: aspect.orb,
-        language: i18n.language
-      });
+    const aspectPayload = {
+      planet1: aspect.planet1 ?? '',
+      planet2: aspect.planet2 ?? '',
+      aspect_name: aspect.aspect ?? '',
+      aspect_name_ru: aspect.aspect_ru || aspect.aspect,
+      orb: aspect.orb,
+      language: i18n.language
+    };
 
-      localStorage.setItem(storageKey, result.analysis);
-      setAspectAnalysis(result.analysis);
-    } catch (err) {
-      console.error('Aspect analysis error:', err);
-    } finally {
-      setAspectLoading(false);
-    }
+    const myGeneration = (aspectGenerationRef.current[aspectKey] ?? 0) + 1;
+    aspectGenerationRef.current[aspectKey] = myGeneration;
+    const isCurrentGeneration = () => aspectGenerationRef.current[aspectKey] === myGeneration;
+    const isStillOpen = () => isCurrentGeneration() && selectedAspectKeyRef.current === aspectKey;
+    const clearLive = () => {
+      if (!isCurrentGeneration()) return;
+      setAspectLiveStreams(prev => {
+        if (!(aspectKey in prev)) return prev;
+        const next = { ...prev };
+        delete next[aspectKey];
+        return next;
+      });
+    };
+
+    let accumulated = '';
+    await streamSynastryAspectAnalysis(
+      // mode не берём из analysisMode: как и в нестрим-версии выше — здесь он не был
+      // прокинут, дефолт 'simple' сохраняем, чтобы не менять поведение попутно.
+      { ...aspectPayload, mode: 'simple' },
+      {
+        onStage: (stage) => {
+          if (!isCurrentGeneration()) return;
+          setAspectLiveStreams(prev => {
+            const cur = prev[aspectKey];
+            if (cur?.phase === 'typing') return prev;
+            return { ...prev, [aspectKey]: { phase: stage === 'generating' ? 'generating' : 'searching', text: cur?.text ?? '' } };
+          });
+        },
+        onDelta: (text) => {
+          accumulated += text;
+          if (!isCurrentGeneration()) return;
+          setAspectLiveStreams(prev => ({ ...prev, [aspectKey]: { phase: 'typing', text: accumulated } }));
+        },
+        onFinal: (result) => {
+          localStorage.setItem(storageKey, result.analysis);
+          clearLive();
+          if (isStillOpen()) {
+            setAspectAnalysis(result.analysis);
+            setAspectLoading(false);
+          }
+        },
+        onError: async (detail) => {
+          if (!accumulated) {
+            try {
+              const result = await astrologyAPI.getSynastryAspectAnalysis(aspectPayload);
+              localStorage.setItem(storageKey, result.analysis);
+              if (isStillOpen()) setAspectAnalysis(result.analysis);
+            } catch (err) {
+              if (isStillOpen()) console.error('Aspect analysis error:', err);
+            } finally {
+              clearLive();
+              if (isStillOpen()) setAspectLoading(false);
+            }
+            return;
+          }
+          clearLive();
+          if (isStillOpen()) {
+            console.error('Aspect analysis error:', detail);
+            setAspectLoading(false);
+          }
+        },
+      }
+    );
   };
 
   const prepareSynastryDataForAnalysis = useCallback((synastryData: SynastryResponse | null, personNames: { p1: string; p2: string }): SynastryDataForAnalysis | null => {
@@ -509,8 +576,14 @@ function Synastry() {
       <AspectAnalysisModal
         aspect={selectedAspectData}
         analysis={aspectAnalysis}
+        displayedText={(selectedAspectKey && aspectLiveStreams[selectedAspectKey]?.text) || ''}
+        phase={(selectedAspectKey && aspectLiveStreams[selectedAspectKey]?.phase) || 'idle'}
         isOpen={!!selectedAspectData}
-        onClose={() => setSelectedAspectData(null)}
+        onClose={() => {
+          setSelectedAspectData(null);
+          setSelectedAspectKey(null);
+          selectedAspectKeyRef.current = null;
+        }}
         loading={aspectLoading}
       />
     </div>

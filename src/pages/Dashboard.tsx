@@ -11,8 +11,11 @@ import {
   streamProgressionsAnalysis,
   streamProgressedSynastryAnalysis,
   streamTransitsAnalysis,
+  streamPlanetAnalysis,
+  streamSynastryAspectAnalysis,
+  streamChatAnalysis,
 } from '../services/streamApi';
-import { useStreamedText } from '../hooks/useStreamedText';
+import { useStreamedText, type StreamPhase } from '../hooks/useStreamedText';
 import i18n from '../i18n';
 import Header from '../components/Header';
 import ProcessingMessage from '../components/ProcessingMessage';
@@ -206,6 +209,9 @@ const Dashboard = () => {
   const [pendingChatCharts, setPendingChatCharts] = useState<Set<number>>(new Set());
   const savedChartIdRef = useRef<string | number | null>(null);
   const chatLoading = savedChartId != null && pendingChatCharts.has(Number(savedChartId));
+  const chatFinishRef = useRef<((answer: string) => void) | null>(null);
+  const chatRelevantChunksRef = useRef<unknown[]>([]);
+  const chatStream = useStreamedText((answer) => chatFinishRef.current?.(answer));
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [historyCharts, setHistoryCharts] = useState<HistoryChart[]>([]);
@@ -229,13 +235,27 @@ const Dashboard = () => {
     });
   };
   const [selectedPlanet, setSelectedPlanet] = useState<ChartPlanet | null>(null);
+  const [selectedPlanetKey, setSelectedPlanetKey] = useState<string | null>(null);
+  const selectedPlanetKeyRef = useRef<string | null>(null);
   const [planetAnalysis, setPlanetAnalysis] = useState<string | null>(null);
   const [planetAnalysisLoading, setPlanetAnalysisLoading] = useState(false);
   const [planetAnalysisError, setPlanetAnalysisError] = useState<string>('');
+  // Каждая карточка планеты пишет в свою ячейку по ключу (имя планеты) — карточки
+  // кликаются параллельно и независимо, как и до стрима, поэтому один общий
+  // буфер/ref на всех вызывал перепутывание текста между планетами.
+  const [planetLiveStreams, setPlanetLiveStreams] = useState<Record<string, { phase: StreamPhase; text: string }>>({});
+  // Если ту же карточку открыли повторно, пока её первый стрим ещё не долетел —
+  // у второго вызова номер поколения выше, и колбэки первого перестают писать
+  // в live-ячейку/состояние (сами запросы при этом не отменяются).
+  const planetGenerationRef = useRef<Record<string, number>>({});
   const [selectedAspect, setSelectedAspect] = useState<AspectData | null>(null);
+  const [selectedAspectKey, setSelectedAspectKey] = useState<string | null>(null);
+  const selectedAspectKeyRef = useRef<string | null>(null);
   const [aspectAnalysis, setAspectAnalysis] = useState<string | null>(null);
   const [aspectLoading, setAspectLoading] = useState(false);
   const [aspectError, setAspectError] = useState<string>('');
+  const [aspectLiveStreams, setAspectLiveStreams] = useState<Record<string, { phase: StreamPhase; text: string }>>({});
+  const aspectGenerationRef = useRef<Record<string, number>>({});
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null);
@@ -1002,19 +1022,29 @@ const Dashboard = () => {
     setChatInput('');
 
     setPendingChatCharts(prev => new Set(prev).add(chartIdAtSend));
-    try {
-      const response = await astrologyAPI.chatAnalysis({
-        question: questionText,
-        chart_data: chartDataForAnalysis,
-        summary: fullAnalysis,
-        chat_history: currentHistory,
-        language: i18n.language || 'ru'
-      });
 
+    const chatPayload = {
+      question: questionText,
+      chart_data: chartDataForAnalysis as unknown as Record<string, unknown>,
+      summary: fullAnalysis,
+      chat_history: currentHistory,
+      language: i18n.language || 'ru'
+    };
+
+    const finishPending = () => {
+      setPendingChatCharts(prev => {
+        const next = new Set(prev);
+        next.delete(chartIdAtSend);
+        return next;
+      });
+    };
+
+    chatStream.reset();
+    chatFinishRef.current = (answer: string) => {
       const botMessage = {
         role: 'assistant' as const,
-        content: (response as { data?: { answer?: string; relevant_chunks?: unknown[] } })?.data?.answer || t('dashboard.chat.noAnswer'),
-        relevant_chunks: (response as { data?: { relevant_chunks?: unknown[] } })?.data?.relevant_chunks || []
+        content: answer || t('dashboard.chat.noAnswer'),
+        relevant_chunks: chatRelevantChunksRef.current
       };
       chartsApi.appendChatMessages(chartIdAtSend, userId, [botMessage]).catch(err => {
         console.error('Failed to save chat message:', err);
@@ -1022,21 +1052,57 @@ const Dashboard = () => {
       if (Number(savedChartIdRef.current) === chartIdAtSend) {
         setChatHistory(prev => [...prev, botMessage]);
       }
-    } catch (error) {
-      if (Number(savedChartIdRef.current) === chartIdAtSend) {
-        setChatHistory(prev => [...prev, {
-          role: 'assistant' as const,
-          content: t('dashboard.chat.errorWithDetails', { error: (error as Error).message })
-        }]);
+      finishPending();
+    };
+
+    await streamChatAnalysis(
+      chatPayload,
+      {
+        onStage: chatStream.handleStage,
+        onDelta: chatStream.handleDelta,
+        onFinal: (result) => {
+          chatRelevantChunksRef.current = result.relevant_chunks || [];
+          chatStream.handleFinal(result.answer);
+        },
+        onError: async (detail) => {
+          if (!chatStream.hasDelta()) {
+            try {
+              const response = await astrologyAPI.chatAnalysis(chatPayload);
+              const botMessage = {
+                role: 'assistant' as const,
+                content: (response as { data?: { answer?: string; relevant_chunks?: unknown[] } })?.data?.answer || t('dashboard.chat.noAnswer'),
+                relevant_chunks: (response as { data?: { relevant_chunks?: unknown[] } })?.data?.relevant_chunks || []
+              };
+              chartsApi.appendChatMessages(chartIdAtSend, userId, [botMessage]).catch(err => {
+                console.error('Failed to save chat message:', err);
+              });
+              if (Number(savedChartIdRef.current) === chartIdAtSend) {
+                setChatHistory(prev => [...prev, botMessage]);
+              }
+            } catch (error) {
+              if (Number(savedChartIdRef.current) === chartIdAtSend) {
+                setChatHistory(prev => [...prev, {
+                  role: 'assistant' as const,
+                  content: t('dashboard.chat.errorWithDetails', { error: (error as Error).message })
+                }]);
+              }
+            } finally {
+              finishPending();
+            }
+            return;
+          }
+          chatStream.handleError();
+          if (Number(savedChartIdRef.current) === chartIdAtSend) {
+            setChatHistory(prev => [...prev, {
+              role: 'assistant' as const,
+              content: t('dashboard.chat.errorWithDetails', { error: detail })
+            }]);
+          }
+          finishPending();
+        },
       }
-    } finally {
-      setPendingChatCharts(prev => {
-        const next = new Set(prev);
-        next.delete(chartIdAtSend);
-        return next;
-      });
-    }
-  }, [chatInput, chatLoading, chartDataForAnalysis, fullAnalysis, savedChartId, chatHistory, user, t]);
+    );
+  }, [chatInput, chatLoading, chartDataForAnalysis, fullAnalysis, savedChartId, chatHistory, user, t, chatStream]);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -1303,8 +1369,14 @@ const Dashboard = () => {
   };
 
   const handlePlanetClick = async (planetData: ChartPlanet) => {
+    // Ключ карточки — сырое (непереведённое) имя планеты. Каждый клик работает
+    // только со своей ячейкой planetLiveStreams[planetKey] — параллельные клики
+    // по другим планетам друг друга не задевают, ничего не отменяем.
+    const planetKey = planetData.name ?? '';
     const planetName = t('planets.names.' + planetData.name);
     setSelectedPlanet({ ...planetData, name: planetName });
+    setSelectedPlanetKey(planetKey);
+    selectedPlanetKeyRef.current = planetKey;
     setPlanetAnalysis(null);
     setPlanetAnalysisError('');
     setPlanetAnalysisLoading(true);
@@ -1323,28 +1395,28 @@ const Dashboard = () => {
       return;
     }
 
-    try {
-      const result = await astrologyAPI.getPlanetAnalysis({
-        planet: planetData.name,
-        sign: planetData.sign,
-        degree: planetData.degree,
-        house: planetData.house,
-        house_sign: planetData.house_sign,
-        aspects: planetData.aspects,
-        is_retrograde: planetData.is_retrograde,
-        language: i18n.language
-      }, analysisMode);
+    const planetPayload = {
+      planet: planetData.name ?? '',
+      sign: planetData.sign,
+      degree: planetData.degree,
+      house: planetData.house,
+      house_sign: planetData.house_sign,
+      aspects: planetData.aspects,
+      is_retrograde: planetData.is_retrograde,
+      language: i18n.language
+    };
 
+    const persistPlanetAnalysis = (analysis: string) => {
       if (storageKey) {
-        localStorage.setItem(storageKey, result.analysis);
+        localStorage.setItem(storageKey, analysis);
       }
       if (chartId) {
-        chartsApi.savePlanetAnalysis(chartId, planetData.name ?? '', result.analysis)
+        chartsApi.savePlanetAnalysis(chartId, planetData.name ?? '', analysis)
           .catch(err => console.error('DB save error:', err));
       }
+    };
 
-      setPlanetAnalysis(result.analysis);
-    } catch (err) {
+    const reportPlanetError = (err: unknown) => {
       const errorDetail = (err as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
       if (typeof errorDetail === 'string') {
         setPlanetAnalysisError(errorDetail);
@@ -1355,19 +1427,89 @@ const Dashboard = () => {
       } else {
         setPlanetAnalysisError('Failed to load planet analysis');
       }
-    } finally {
-      setPlanetAnalysisLoading(false);
-    }
+    };
+
+    // Поколение этого конкретного вызова для planetKey — если карточку закрыли
+    // и открыли снова до ответа, у нового вызова поколение выше, и колбэки
+    // старого перестают писать в live-ячейку/видимое состояние.
+    const myGeneration = (planetGenerationRef.current[planetKey] ?? 0) + 1;
+    planetGenerationRef.current[planetKey] = myGeneration;
+    const isCurrentGeneration = () => planetGenerationRef.current[planetKey] === myGeneration;
+    const isStillOpen = () => isCurrentGeneration() && selectedPlanetKeyRef.current === planetKey;
+    const clearLive = () => {
+      if (!isCurrentGeneration()) return;
+      setPlanetLiveStreams(prev => {
+        if (!(planetKey in prev)) return prev;
+        const next = { ...prev };
+        delete next[planetKey];
+        return next;
+      });
+    };
+
+    let accumulated = '';
+    await streamPlanetAnalysis(
+      { ...planetPayload, mode: analysisMode },
+      {
+        onStage: (stage) => {
+          if (!isCurrentGeneration()) return;
+          setPlanetLiveStreams(prev => {
+            const cur = prev[planetKey];
+            if (cur?.phase === 'typing') return prev;
+            return { ...prev, [planetKey]: { phase: stage === 'generating' ? 'generating' : 'searching', text: cur?.text ?? '' } };
+          });
+        },
+        onDelta: (text) => {
+          accumulated += text;
+          if (!isCurrentGeneration()) return;
+          setPlanetLiveStreams(prev => ({ ...prev, [planetKey]: { phase: 'typing', text: accumulated } }));
+        },
+        onFinal: (result) => {
+          persistPlanetAnalysis(result.analysis);
+          clearLive();
+          if (isStillOpen()) {
+            setPlanetAnalysis(result.analysis);
+            setPlanetAnalysisLoading(false);
+          }
+        },
+        onError: async (detail) => {
+          if (!accumulated) {
+            try {
+              const result = await astrologyAPI.getPlanetAnalysis(planetPayload, analysisMode);
+              persistPlanetAnalysis(result.analysis);
+              if (isStillOpen()) setPlanetAnalysis(result.analysis);
+            } catch (err) {
+              if (isStillOpen()) reportPlanetError(err);
+            } finally {
+              clearLive();
+              if (isStillOpen()) setPlanetAnalysisLoading(false);
+            }
+            return;
+          }
+          clearLive();
+          if (isStillOpen()) {
+            setPlanetAnalysisError(detail || 'Failed to load planet analysis');
+            setPlanetAnalysisLoading(false);
+          }
+        },
+      }
+    );
   };
 
   const handleClosePlanetAnalysis = () => {
     setSelectedPlanet(null);
+    setSelectedPlanetKey(null);
+    selectedPlanetKeyRef.current = null;
     setPlanetAnalysis(null);
     setPlanetAnalysisError('');
   };
 
   const handleAspectClick = async (aspect: AspectData) => {
+    // Ключ карточки аспекта — как в storageKey. Так же, как и с планетами: своя
+    // ячейка в aspectLiveStreams на каждый клик, ничего не отменяем.
+    const aspectKey = `${aspect.planet1}_${aspect.planet2}_${aspect.aspect}`;
     setSelectedAspect(aspect);
+    setSelectedAspectKey(aspectKey);
+    selectedAspectKeyRef.current = aspectKey;
     setAspectLoading(true);
     setAspectError('');
 
@@ -1381,19 +1523,16 @@ const Dashboard = () => {
 
     setAspectAnalysis(null);
 
-    try {
-      const result = await astrologyAPI.getSynastryAspectAnalysis({
-        planet1: aspect.planet1,
-        planet2: aspect.planet2,
-        aspect_name: aspect.aspect,
-        aspect_name_ru: aspect.aspect_ru || aspect.aspect,
-        orb: aspect.orb,
-        language: i18n.language
-      }, analysisMode);
+    const aspectPayload = {
+      planet1: aspect.planet1 ?? '',
+      planet2: aspect.planet2 ?? '',
+      aspect_name: aspect.aspect ?? '',
+      aspect_name_ru: aspect.aspect_ru || aspect.aspect,
+      orb: aspect.orb,
+      language: i18n.language
+    };
 
-      localStorage.setItem(storageKey, result.analysis);
-      setAspectAnalysis(result.analysis);
-    } catch (err) {
+    const reportAspectError = (err: unknown) => {
       const errorDetail = (err as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
       if (typeof errorDetail === 'string') {
         setAspectError(errorDetail);
@@ -1402,9 +1541,69 @@ const Dashboard = () => {
       } else {
         setAspectError(t('analysis.error'));
       }
-    } finally {
-      setAspectLoading(false);
-    }
+    };
+
+    const myGeneration = (aspectGenerationRef.current[aspectKey] ?? 0) + 1;
+    aspectGenerationRef.current[aspectKey] = myGeneration;
+    const isCurrentGeneration = () => aspectGenerationRef.current[aspectKey] === myGeneration;
+    const isStillOpen = () => isCurrentGeneration() && selectedAspectKeyRef.current === aspectKey;
+    const clearLive = () => {
+      if (!isCurrentGeneration()) return;
+      setAspectLiveStreams(prev => {
+        if (!(aspectKey in prev)) return prev;
+        const next = { ...prev };
+        delete next[aspectKey];
+        return next;
+      });
+    };
+
+    let accumulated = '';
+    await streamSynastryAspectAnalysis(
+      { ...aspectPayload, mode: analysisMode },
+      {
+        onStage: (stage) => {
+          if (!isCurrentGeneration()) return;
+          setAspectLiveStreams(prev => {
+            const cur = prev[aspectKey];
+            if (cur?.phase === 'typing') return prev;
+            return { ...prev, [aspectKey]: { phase: stage === 'generating' ? 'generating' : 'searching', text: cur?.text ?? '' } };
+          });
+        },
+        onDelta: (text) => {
+          accumulated += text;
+          if (!isCurrentGeneration()) return;
+          setAspectLiveStreams(prev => ({ ...prev, [aspectKey]: { phase: 'typing', text: accumulated } }));
+        },
+        onFinal: (result) => {
+          localStorage.setItem(storageKey, result.analysis);
+          clearLive();
+          if (isStillOpen()) {
+            setAspectAnalysis(result.analysis);
+            setAspectLoading(false);
+          }
+        },
+        onError: async (detail) => {
+          if (!accumulated) {
+            try {
+              const result = await astrologyAPI.getSynastryAspectAnalysis(aspectPayload, analysisMode);
+              localStorage.setItem(storageKey, result.analysis);
+              if (isStillOpen()) setAspectAnalysis(result.analysis);
+            } catch (err) {
+              if (isStillOpen()) reportAspectError(err);
+            } finally {
+              clearLive();
+              if (isStillOpen()) setAspectLoading(false);
+            }
+            return;
+          }
+          clearLive();
+          if (isStillOpen()) {
+            setAspectError(detail || t('analysis.error'));
+            setAspectLoading(false);
+          }
+        },
+      }
+    );
   };
 
   useEffect(() => {
@@ -2075,6 +2274,17 @@ const Dashboard = () => {
                                             </div>
                                           ))
                                         )}
+                                        {chatLoading && chatStream.phase === 'typing' && (
+                                          <div style={{ marginBottom: '15px', padding: '10px', borderRadius: '8px', background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
+                                            <strong style={{ color: '#2196F3', marginRight: '10px' }}>
+                                              {t('dashboard.chat.assistant')}
+                                            </strong>
+                                            <div className="chat-message-content">
+                                              <MarkdownContent content={chatStream.displayedText} />
+                                              <span className="typing-cursor" aria-hidden="true">▍</span>
+                                            </div>
+                                          </div>
+                                        )}
                                       </div>
                                     </div>
                                     {isNearLimit(chatHistory) && (
@@ -2128,8 +2338,14 @@ const Dashboard = () => {
                         <AspectAnalysisModal
                           aspect={selectedAspect}
                           analysis={aspectAnalysis}
+                          displayedText={(selectedAspectKey && aspectLiveStreams[selectedAspectKey]?.text) || ''}
+                          phase={(selectedAspectKey && aspectLiveStreams[selectedAspectKey]?.phase) || 'idle'}
                           isOpen={!!selectedAspect}
-                          onClose={() => setSelectedAspect(null)}
+                          onClose={() => {
+                            setSelectedAspect(null);
+                            setSelectedAspectKey(null);
+                            selectedAspectKeyRef.current = null;
+                          }}
                           loading={aspectLoading}
                           error={aspectError}
                         />
@@ -2137,6 +2353,8 @@ const Dashboard = () => {
                         <PlanetAnalysisModal
                           planet={selectedPlanet ?? undefined}
                           analysis={planetAnalysis}
+                          displayedText={(selectedPlanetKey && planetLiveStreams[selectedPlanetKey]?.text) || ''}
+                          phase={(selectedPlanetKey && planetLiveStreams[selectedPlanetKey]?.phase) || 'idle'}
                           isOpen={!!selectedPlanet}
                           onClose={handleClosePlanetAnalysis}
                           loading={planetAnalysisLoading}

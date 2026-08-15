@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import ProcessingMessage from './ProcessingMessage';
 import MarkdownContent from './MarkdownContent';
+import type { StreamPhase } from '../hooks/useStreamedText';
 
 interface AspectData {
   planet1?: string;
@@ -14,13 +15,15 @@ interface AspectData {
 interface AspectAnalysisModalProps {
   aspect: AspectData | null;
   analysis: string | null;
+  displayedText?: string;
+  phase?: StreamPhase;
   isOpen: boolean;
   onClose: () => void;
   loading?: boolean;
   error?: string | null;
 }
 
-const AspectAnalysisModal = ({ aspect, analysis, isOpen, onClose, loading, error }: AspectAnalysisModalProps) => {
+const AspectAnalysisModal = ({ aspect, analysis, displayedText = '', phase = 'idle', isOpen, onClose, loading, error }: AspectAnalysisModalProps) => {
   const { t, i18n } = useTranslation();
 
   if (!isOpen) return null;
@@ -129,8 +132,10 @@ const AspectAnalysisModal = ({ aspect, analysis, isOpen, onClose, loading, error
           </div>
         )}
 
-        {loading && (
-          <ProcessingMessage />
+        {loading && phase !== 'typing' && (
+          <ProcessingMessage
+            title={phase === 'generating' ? t('dashboard.fullAnalysis.generating') : phase === 'searching' ? t('dashboard.fullAnalysis.searching') : undefined}
+          />
         )}
 
         {error && (
@@ -142,6 +147,15 @@ const AspectAnalysisModal = ({ aspect, analysis, isOpen, onClose, loading, error
             marginBottom: '16px'
           }}>
             {error}
+          </div>
+        )}
+
+        {phase === 'typing' && !analysis && (
+          <div className="markdown-content" style={{
+            marginTop: '12px'
+          }}>
+            <MarkdownContent content={displayedText} />
+            <span className="typing-cursor" aria-hidden="true">▍</span>
           </div>
         )}
 

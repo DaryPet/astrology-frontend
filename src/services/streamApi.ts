@@ -12,6 +12,9 @@ const STREAM_URLS = {
   progressions: '/api/analysis/progressions',
   transits: '/api/analysis/transits',
   progressedSynastry: '/api/analysis/progressed-synastry',
+  planet: '/api/analysis/planet',
+  synastryAspect: '/api/synastry/aspect',
+  chat: '/api/analysis/chat',
 } as const;
 
 
@@ -138,6 +141,86 @@ export function streamProgressedSynastryAnalysis(
   signal?: AbortSignal,
 ): Promise<void> {
   return streamAnalysis(STREAM_URLS.progressedSynastry, { ...payload, stream: true }, callbacks, signal);
+}
+
+export interface PlanetAnalysisPayload {
+  planet: string;
+  sign?: string;
+  degree?: number;
+  house?: number;
+  house_sign?: string;
+  is_retrograde?: boolean;
+  aspects?: unknown;
+  language: string;
+  chart_data?: Record<string, unknown>;
+  mode: string;
+}
+
+export interface PlanetAnalysisStreamFinal {
+  planet: string;
+  sign?: string;
+  house?: number;
+  is_retrograde?: boolean;
+  analysis: string;
+  relevant_chunks?: unknown[];
+}
+
+export function streamPlanetAnalysis(
+  payload: PlanetAnalysisPayload,
+  callbacks: StreamCallbacks<PlanetAnalysisStreamFinal>,
+  signal?: AbortSignal,
+): Promise<void> {
+  return streamAnalysis(STREAM_URLS.planet, { ...payload, stream: true }, callbacks, signal);
+}
+
+export interface SynastryAspectPayload {
+  planet1: string;
+  planet2: string;
+  aspect_name: string;
+  aspect_name_ru?: string;
+  orb?: number;
+  language: string;
+  mode: string;
+}
+
+export interface SynastryAspectStreamFinal {
+  planet1: string;
+  planet2: string;
+  aspect: string;
+  aspect_ru?: string;
+  orb?: number;
+  analysis: string;
+  relevant_chunks?: unknown[];
+}
+
+export function streamSynastryAspectAnalysis(
+  payload: SynastryAspectPayload,
+  callbacks: StreamCallbacks<SynastryAspectStreamFinal>,
+  signal?: AbortSignal,
+): Promise<void> {
+  return streamAnalysis(STREAM_URLS.synastryAspect, { ...payload, stream: true }, callbacks, signal);
+}
+
+export interface ChatAnalysisPayload {
+  question: string;
+  chart_data?: Record<string, unknown>;
+  summary?: string;
+  chat_history?: unknown[];
+  language: string;
+  relationship_context?: string;
+}
+
+export interface ChatStreamFinal {
+  answer: string;
+  relevant_chunks?: unknown[];
+}
+
+export function streamChatAnalysis(
+  payload: ChatAnalysisPayload,
+  callbacks: StreamCallbacks<ChatStreamFinal>,
+  signal?: AbortSignal,
+): Promise<void> {
+  return streamAnalysis(STREAM_URLS.chat, { ...payload, stream: true }, callbacks, signal);
 }
 
 async function streamAnalysis<TFinal>(
