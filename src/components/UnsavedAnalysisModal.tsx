@@ -7,6 +7,9 @@ interface UnsavedAnalysisModalProps {
   onCancel: () => void;
   onLeave: () => void;
   saving?: boolean;
+  title?: string;
+  message?: string;
+  showSave?: boolean;
 }
 
 const UnsavedAnalysisModal: React.FC<UnsavedAnalysisModalProps> = ({
@@ -14,7 +17,10 @@ const UnsavedAnalysisModal: React.FC<UnsavedAnalysisModalProps> = ({
   onSave,
   onCancel,
   onLeave,
-  saving = false
+  saving = false,
+  title,
+  message,
+  showSave = true
 }) => {
   const { t } = useTranslation();
 
@@ -32,25 +38,27 @@ const UnsavedAnalysisModal: React.FC<UnsavedAnalysisModalProps> = ({
         border: '1px solid var(--border)'
       }}>
         <h3 style={{ margin: '0 0 12px 0', color: 'var(--text-primary)' }}>
-          ⚠️ {t('unsavedModal.title')}
+          ⚠️ {title ?? t('unsavedModal.title')}
         </h3>
         <p style={{ margin: '0 0 24px 0', color: 'var(--text-secondary)', lineHeight: '1.6' }}>
-          {t('unsavedModal.message')}
+          {message ?? t('unsavedModal.message')}
         </p>
         <div style={{ display: 'flex', gap: '12px' }}>
-          <button
-            onClick={onSave}
-            disabled={saving}
-            style={{
-              flex: 1, padding: '12px',
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              color: 'white', border: 'none', borderRadius: '10px',
-              fontSize: '14px', fontWeight: '600', cursor: saving ? 'default' : 'pointer',
-              opacity: saving ? 0.8 : 1
-            }}
-          >
-            {saving ? '...' : t('unsavedModal.save')}
-          </button>
+          {showSave && (
+            <button
+              onClick={onSave}
+              disabled={saving}
+              style={{
+                flex: 1, padding: '12px',
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                color: 'white', border: 'none', borderRadius: '10px',
+                fontSize: '14px', fontWeight: '600', cursor: saving ? 'default' : 'pointer',
+                opacity: saving ? 0.8 : 1
+              }}
+            >
+              {saving ? '...' : t('unsavedModal.save')}
+            </button>
+          )}
           <button
             onClick={onCancel}
             disabled={saving}
@@ -61,7 +69,7 @@ const UnsavedAnalysisModal: React.FC<UnsavedAnalysisModalProps> = ({
               fontSize: '14px', cursor: saving ? 'default' : 'pointer'
             }}
           >
-            {t('unsavedModal.cancel')}
+            {showSave ? t('unsavedModal.cancel') : t('unsavedModal.wait')}
           </button>
           <button
             onClick={onLeave}

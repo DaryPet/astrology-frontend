@@ -1777,7 +1777,7 @@ const Dashboard = () => {
     }
   }, [user, loadHistoryCharts]);
 
-  const hasUnsavedAnalysis = !!fullAnalysis && !savedChartId;
+  const hasUnsavedAnalysis = (analysisLoading || !!fullAnalysis) && !savedChartId;
 
   const clearUnsavedAnalysis = useCallback(() => {
     localStorage.removeItem('chartDataForAnalysis');
@@ -1950,10 +1950,12 @@ const Dashboard = () => {
                     onChange={(val) => {
                       setAnalysisMode(val);
                       localStorage.setItem('dashboardAnalysisMode', val);
+                      localStorage.removeItem('pendingAnalysisResult');
                       pendingModeRef.current = val;
                       setFullAnalysis(null);
                       setShowFullAnalysis(true);
                     }}
+                    disabled={analysisLoading}
                   />
                   <button
                     type="button"
@@ -2018,10 +2020,12 @@ const Dashboard = () => {
                         } else if (val === 'advanced' && advancedAnalysis) {
                           setFullAnalysis(advancedAnalysis);
                         } else {
+                          localStorage.removeItem('pendingAnalysisResult');
                           pendingModeRef.current = val;
                           setFullAnalysis(null);
                         }
                       }}
+                      disabled={analysisLoading}
                     />
                   </div>
 
@@ -2416,6 +2420,9 @@ const Dashboard = () => {
 
       <UnsavedAnalysisModal
         isOpen={showUnsavedModal}
+        showSave={!!fullAnalysis}
+        title={analysisLoading && !fullAnalysis ? t('unsavedModal.processingTitle') : undefined}
+        message={analysisLoading && !fullAnalysis ? t('unsavedModal.processingMessage') : undefined}
         onSave={() => {
           setShowUnsavedModal(false);
           handleSaveChartWithAnalysis();

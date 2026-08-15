@@ -563,7 +563,10 @@
     "message": "You have an unsaved analysis. If you leave now, it will be lost. Save it before navigating away?",
     "save": "Save Analysis",
     "cancel": "Cancel",
-    "leave": "Leave Without Saving"
+    "leave": "Leave Without Saving",
+    "processingTitle": "Analysis in progress",
+    "processingMessage": "Your analysis is still being generated. If you leave this page now, it will be interrupted and lost.",
+    "wait": "Wait"
   },
   "relationshipTypes": {
     "title": "Relationship Types",
