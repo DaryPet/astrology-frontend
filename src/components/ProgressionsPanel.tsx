@@ -66,7 +66,7 @@ const ProgressionsPanel: React.FC<ProgressionsPanelProps> = ({ data, analysis, d
         </div>
       )}
 
-      {/* AI-анализ: стоит ровно на месте спиннера — до таблицы планет и списков аспектов. */}
+      {/* AI analysis: sits right where the spinner is — above the planet table and aspect lists. */}
       {(analysis || phase === 'typing') && (
         <div style={{ marginTop: '24px', lineHeight: '2', fontSize: '16px' }}>
           <h4 style={{ color: 'var(--text-primary)' }}>

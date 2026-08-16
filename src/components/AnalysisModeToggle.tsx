@@ -3,9 +3,10 @@ import { useTranslation } from 'react-i18next';
 interface AnalysisModeToggleProps {
   value: string;
   onChange: (value: string) => void;
+  disabled?: boolean;
 }
 
-const AnalysisModeToggle = ({ value, onChange }: AnalysisModeToggleProps) => {
+const AnalysisModeToggle = ({ value, onChange, disabled = false }: AnalysisModeToggleProps) => {
   const { t } = useTranslation();
 
   return (
@@ -20,13 +21,15 @@ const AnalysisModeToggle = ({ value, onChange }: AnalysisModeToggleProps) => {
       <button
         type="button"
         onClick={() => onChange('simple')}
+        disabled={disabled}
         style={{
           padding: '8px 16px',
           border: 'none',
           borderRadius: '6px',
           background: value === 'simple' ? 'var(--accent)' : 'transparent',
           color: value === 'simple' ? '#fff' : 'var(--text-secondary)',
-          cursor: 'pointer',
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          opacity: disabled ? 0.6 : 1,
           fontSize: '14px',
           fontWeight: '500',
           transition: 'all 0.2s'
@@ -37,13 +40,15 @@ const AnalysisModeToggle = ({ value, onChange }: AnalysisModeToggleProps) => {
       <button
         type="button"
         onClick={() => onChange('advanced')}
+        disabled={disabled}
         style={{
           padding: '8px 16px',
           border: 'none',
           borderRadius: '6px',
           background: value === 'advanced' ? 'var(--accent)' : 'transparent',
           color: value === 'advanced' ? '#fff' : 'var(--text-secondary)',
-          cursor: 'pointer',
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          opacity: disabled ? 0.6 : 1,
           fontSize: '14px',
           fontWeight: '500',
           transition: 'all 0.2s'

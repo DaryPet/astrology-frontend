@@ -40,6 +40,8 @@ import DailyForecastPanel from '../components/DailyForecastPanel';
 import type { ProgressionsData, TransitsData, ProgressedSynastryData } from '../services/api';
 import type { Location } from '../components/LocationInput';
 import { isNearLimit, isAtLimit, MAX_MESSAGES, type ChatMessage } from '../services/chatStorage';
+import { isInFlight, markInFlight, clearInFlight, waitForClear } from '../utils/inFlightRegistry';
+import { appendStreamText, getStreamText, clearStreamText } from '../utils/streamTextRegistry';
 
 const MAX_TRANSITS_ANALYSIS_PER_DAY = 20;
 
@@ -195,6 +197,12 @@ const Dashboard = () => {
   const pendingModeRef = useRef<string | null>(null);
   const isLoadingRef = useRef(false);
   const isTransitsLoadingRef = useRef(false);
+  // Set by the transits_pending reconnect effect below, once it has restored
+  // transitsDate/transitsLocation from localStorage and is waiting for that
+  // state to actually land before calling runTransitsAnalysis (its closure
+  // needs the fresh values to rebuild the same registryKey — see the effect
+  // for why calling it immediately would race a stale closure).
+  const transitsReconnectRef = useRef<{ day: string; mode: string; location: Location | null } | null>(null);
   const [savedChartId, setSavedChartId] = useState<string | number | null>(() => {
 
 
@@ -248,6 +256,10 @@ const Dashboard = () => {
   // у второго вызова номер поколения выше, и колбэки первого перестают писать
   // в live-ячейку/состояние (сами запросы при этом не отменяются).
   const planetGenerationRef = useRef<Record<string, number>>({});
+  // While a request for this planet is already in flight, a repeat click on it
+  // won't start a new one (unlike the generation counter above, this blocks
+  // instead of superseding).
+  const planetInFlightRef = useRef<Record<string, boolean>>({});
   const [selectedAspect, setSelectedAspect] = useState<AspectData | null>(null);
   const [selectedAspectKey, setSelectedAspectKey] = useState<string | null>(null);
   const selectedAspectKeyRef = useRef<string | null>(null);
@@ -256,6 +268,9 @@ const Dashboard = () => {
   const [aspectError, setAspectError] = useState<string>('');
   const [aspectLiveStreams, setAspectLiveStreams] = useState<Record<string, { phase: StreamPhase; text: string }>>({});
   const aspectGenerationRef = useRef<Record<string, number>>({});
+  // While a request for this aspect is already in flight, a repeat click on it
+  // won't start a new one (same as planetInFlightRef for planets).
+  const aspectInFlightRef = useRef<Record<string, boolean>>({});
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null);
@@ -263,10 +278,20 @@ const Dashboard = () => {
   const [analysisTab, setAnalysisTab] = useState<AnalysisTabId>('natal');
   const [progressionsData, setProgressionsData] = useState<ProgressionsData | null>(null);
   const [progressionsAnalysis, setProgressionsAnalysis] = useState<string | null>(null);
+  // Natal progressions only — kept per mode (like simpleAnalysis/advancedAnalysis
+  // for the natal chart) so switching modes shows the already-fetched text
+  // instantly instead of clearing and regenerating. Progressed synastry is out
+  // of scope here and keeps its single shared progressionsAnalysis behavior.
+  const [progressionsSimpleAnalysis, setProgressionsSimpleAnalysis] = useState<string | null>(null);
+  const [progressionsAdvancedAnalysis, setProgressionsAdvancedAnalysis] = useState<string | null>(null);
   const [progressionsLoading, setProgressionsLoading] = useState(false);
   const [progressionsError, setProgressionsError] = useState<string>('');
   const [progressedSynastryData, setProgressedSynastryData] = useState<ProgressedSynastryData | null>(null);
   const [progressedSynastryAnalysis, setProgressedSynastryAnalysis] = useState<string | null>(null);
+  // Same per-mode client cache as progressionsSimpleAnalysis/progressionsAdvancedAnalysis
+  // above, just for progressed synastry.
+  const [progressedSynastrySimpleAnalysis, setProgressedSynastrySimpleAnalysis] = useState<string | null>(null);
+  const [progressedSynastryAdvancedAnalysis, setProgressedSynastryAdvancedAnalysis] = useState<string | null>(null);
   const progressionsFinishRef = useRef<((analysis: string) => void) | null>(null);
   const progressionsStream = useStreamedText((analysis) => progressionsFinishRef.current?.(analysis));
   const [transitsDate, setTransitsDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
@@ -430,6 +455,10 @@ const Dashboard = () => {
 
   const runAxiosAnalysis = useCallback(async (mode: string) => {
     if (!chartDataForAnalysis) return;
+    // Same captured-chart-id reasoning as runFullAnalysisStream above — this
+    // fallback can complete after the component that started it unmounted.
+    const targetChartId = savedChartId;
+    const registryKey = targetChartId ? `full:${targetChartId}:${mode}` : null;
     try {
       const { analysis } = await getFullAnalysis(chartDataForAnalysis, mode, i18n.language);
       console.log('analysis received:', analysis?.substring(0, 50));
@@ -438,12 +467,11 @@ const Dashboard = () => {
       if (mode === 'simple') setSimpleAnalysis(analysis);
       else setAdvancedAnalysis(analysis);
 
-      const currentChartId = parseInt(localStorage.getItem('savedChartId') || '0', 10) || null;
-      if (currentChartId) {
-        localStorage.setItem(`savedFullAnalysis_${currentChartId}_${mode}`, analysis);
+      if (targetChartId) {
+        localStorage.setItem(`savedFullAnalysis_${targetChartId}_${mode}`, analysis);
         const isSynastry = chartDataForAnalysis?.type === 'synastry';
         const type = isSynastry ? `synastry_${mode}` : `full_${mode}`;
-        chartsApi.saveInterpretation(currentChartId, type, analysis).catch(() => {});
+        chartsApi.saveInterpretation(Number(targetChartId), type, analysis).catch(() => {});
       }
     } catch (err) {
       const errorDetail = (err as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
@@ -457,11 +485,22 @@ const Dashboard = () => {
     } finally {
       setAnalysisLoading(false);
       isLoadingRef.current = false;
+      if (registryKey) clearStreamText(registryKey);
+      if (registryKey) clearInFlight(registryKey);
     }
-  }, [chartDataForAnalysis, t]);
+  }, [chartDataForAnalysis, t, savedChartId]);
 
   const runFullAnalysisStream = useCallback(async (mode: string) => {
     if (!chartDataForAnalysis) return;
+
+    // Only meaningful for saved charts — see inFlightRegistry.ts. A new,
+    // unsaved chart aborts on leave (see the unmount cleanup effect below)
+    // and doesn't need this. Captured from this render's savedChartId, not
+    // re-read from localStorage at completion time below, so a background
+    // request started for THIS chart can't end up writing its result onto
+    // whatever chart happens to be saved by the time it finishes.
+    const targetChartId = savedChartId;
+    const registryKey = targetChartId ? `full:${targetChartId}:${mode}` : null;
 
     verifiedTextRef.current = '';
     finalTextRef.current = null;
@@ -476,18 +515,13 @@ const Dashboard = () => {
 
     const isSynastry = chartDataForAnalysis.type === 'synastry';
 
+    // Cosmetic reveal only — gated behind the typewriter effect visually
+    // catching up (see the useEffect on displayedText/finalReceived below).
+    // Persistence lives in onFinal instead, see the comment there.
     finishStreamRef.current = (analysis: string) => {
       setFullAnalysis(analysis);
       if (mode === 'simple') setSimpleAnalysis(analysis);
       else setAdvancedAnalysis(analysis);
-
-      const currentChartId = parseInt(localStorage.getItem('savedChartId') || '0', 10) || null;
-      if (currentChartId) {
-        localStorage.setItem(`savedFullAnalysis_${currentChartId}_${mode}`, analysis);
-        const type = isSynastry ? `synastry_${mode}` : `full_${mode}`;
-        chartsApi.saveInterpretation(currentChartId, type, analysis).catch(() => {});
-      }
-
       setAnalysisLoading(false);
       isLoadingRef.current = false;
     };
@@ -500,11 +534,30 @@ const Dashboard = () => {
         });
       },
       onDelta: (text: string) => {
+        // Kept for a remounted instance to replay — see loadFullAnalysis's
+        // isInFlight branch above and streamTextRegistry.ts.
+        if (registryKey) appendStreamText(registryKey, text);
         streamDeltaReceivedRef.current = true;
         verifiedTextRef.current += text;
         setStreamPhase(prev => (prev === 'searching' || prev === 'generating') ? 'typing' : prev);
       },
       onFinal: (result: { analysis: string }) => {
+        // Save + clear the in-flight marker the instant the real result is
+        // known — do NOT wait for finishStreamRef, which only fires once the
+        // typewriter effect visually catches up via a setInterval inside a
+        // useEffect. That timer stalls whenever the tab is backgrounded (the
+        // browser throttles/freezes it) or the component has unmounted, so
+        // waiting for it here would leave registryKey stuck "in flight"
+        // until the next visit times out with a false error despite the
+        // backend having succeeded (see inFlightRegistry.ts).
+        if (targetChartId) {
+          localStorage.setItem(`savedFullAnalysis_${targetChartId}_${mode}`, result.analysis);
+          const type = isSynastry ? `synastry_${mode}` : `full_${mode}`;
+          chartsApi.saveInterpretation(Number(targetChartId), type, result.analysis).catch(() => {});
+        }
+        if (registryKey) clearStreamText(registryKey);
+        if (registryKey) clearInFlight(registryKey);
+
         verifiedTextRef.current = result.analysis;
         finalTextRef.current = result.analysis;
         setFinalReceived(true);
@@ -521,6 +574,8 @@ const Dashboard = () => {
         setAnalysisError(detail || t('dashboard.errors.analysisError'));
         setAnalysisLoading(false);
         isLoadingRef.current = false;
+        if (registryKey) clearStreamText(registryKey);
+        if (registryKey) clearInFlight(registryKey);
       },
     };
 
@@ -548,11 +603,108 @@ const Dashboard = () => {
       birth_place: chartDataForAnalysis.meta?.birth_place || null,
     };
     await streamFullAnalysis(payload, callbacks, abortCtrl.signal);
-  }, [chartDataForAnalysis, runAxiosAnalysis, t]);
+  }, [chartDataForAnalysis, runAxiosAnalysis, t, savedChartId]);
 
   const loadFullAnalysis = useCallback(async (mode = analysisMode) => {
     if (!chartDataForAnalysis) return;
     if (isLoadingRef.current) return;
+
+    // Only meaningful for saved charts — see inFlightRegistry.ts. Blocks a
+    // fresh mount from re-starting a generation that's still running in the
+    // background from a previous visit to this same chart.
+    const registryKey = savedChartId ? `full:${savedChartId}:${mode}` : null;
+    if (registryKey && isInFlight(registryKey)) {
+      // Blocked because a background generation from a previous visit to
+      // this chart is still running. simpleAnalysis/advancedAnalysis on THIS
+      // mount were only hydrated once at chart-load time, so they can't have
+      // picked up a result that was still being generated back then.
+      //
+      // Reconnect the typewriter to that background generation instead of
+      // sitting on a bare spinner: replay whatever text it has already sent
+      // (streamTextRegistry.ts, kept in sync by runFullAnalysisStream's
+      // onDelta) and keep polling for more while it's still running — same
+      // pattern as loadProgressions/loadTransitsData. Do NOT re-run
+      // loadFullAnalysis itself once it clears: the clear could be from a
+      // failure just as easily as a success, and blindly retrying would
+      // silently fire another real generation on every failure instead of
+      // surfacing it.
+      setAnalysisLoading(true);
+      setAnalysisError('');
+      verifiedTextRef.current = '';
+      finalTextRef.current = null;
+      setFinalReceived(false);
+      setDisplayedText('');
+      setStreamPhase('searching');
+
+      let seenLength = 0;
+      const replay = () => {
+        const current = getStreamText(registryKey);
+        if (current.length > seenLength) {
+          verifiedTextRef.current = current;
+          seenLength = current.length;
+          setStreamPhase(prev => (prev === 'searching' || prev === 'generating') ? 'typing' : prev);
+        }
+      };
+      replay();
+      const replayInterval = window.setInterval(replay, 400);
+
+      finishStreamRef.current = (analysis: string) => {
+        setFullAnalysis(analysis);
+        if (mode === 'simple') setSimpleAnalysis(analysis);
+        else setAdvancedAnalysis(analysis);
+        setAnalysisLoading(false);
+        isLoadingRef.current = false;
+      };
+
+      waitForClear(registryKey, async () => {
+        window.clearInterval(replayInterval);
+        replay();
+        try {
+          const chart = await chartsApi.getChart(Number(savedChartId));
+          const isSynastryChart = chart.chart_data?.type === 'synastry';
+          const type = isSynastryChart ? `synastry_${mode}` : `full_${mode}`;
+          const interp = chart.chart_interpretations?.find(i => i.type === type);
+          if (interp?.interpretation) {
+            verifiedTextRef.current = interp.interpretation;
+            finalTextRef.current = interp.interpretation;
+            setFinalReceived(true);
+            setStreamPhase(prev => prev === 'done' ? prev : 'typing');
+          } else {
+            // The background attempt cleared without saving anything (it
+            // failed) — surface that instead of silently starting another
+            // real generation.
+            setStreamPhase('error');
+            setDisplayedText('');
+            verifiedTextRef.current = '';
+            setAnalysisLoading(false);
+            setAnalysisError(t('dashboard.errors.analysisError'));
+          }
+        } catch {
+          setStreamPhase('error');
+          setDisplayedText('');
+          verifiedTextRef.current = '';
+          setAnalysisLoading(false);
+          setAnalysisError(t('dashboard.errors.analysisError'));
+        }
+      }, {
+        // Full analysis generation can run several minutes — the old 80s
+        // default timed out long before it finished, showing a false error
+        // while the backend was still working. ~12.5 minutes covers
+        // realistic generation time.
+        intervalMs: 5000,
+        maxAttempts: 150,
+        onTimeout: () => {
+          window.clearInterval(replayInterval);
+          setStreamPhase('error');
+          setDisplayedText('');
+          verifiedTextRef.current = '';
+          setAnalysisLoading(false);
+          setAnalysisError(t('dashboard.errors.analysisError'));
+        },
+      });
+      return;
+    }
+
     isLoadingRef.current = true;
     // setFullAnalysis(null);
     setAnalysisLoading(true);
@@ -567,8 +719,9 @@ const Dashboard = () => {
       return;
     }
 
+    if (registryKey) markInFlight(registryKey);
     await runFullAnalysisStream(mode);
-  }, [chartDataForAnalysis, analysisMode, simpleAnalysis, advancedAnalysis, runFullAnalysisStream]);
+  }, [chartDataForAnalysis, analysisMode, simpleAnalysis, advancedAnalysis, runFullAnalysisStream, savedChartId]);
 
   useEffect(() => {
     if (streamPhase !== 'searching' && streamPhase !== 'generating' && streamPhase !== 'typing') {
@@ -597,7 +750,15 @@ const Dashboard = () => {
 
   useEffect(() => {
     return () => {
-      streamAbortRef.current?.abort();
+      // Only abort for a new, unsaved chart — leaving loses nothing there
+      // that can't be regenerated (see the unsaved-analysis warning modal).
+      // For a saved chart, let it finish in the background: the in-flight
+      // registry above (see runFullAnalysisStream/loadFullAnalysis) stops a
+      // fresh mount from duplicating it if the user comes back before it's
+      // done, and the result still gets saved when it completes.
+      if (!savedChartIdRef.current) {
+        streamAbortRef.current?.abort();
+      }
     };
   }, []);
 
@@ -610,9 +771,13 @@ const Dashboard = () => {
     setAnalysisTab('natal');
     setProgressionsData(null);
     setProgressionsAnalysis(null);
+    setProgressionsSimpleAnalysis(null);
+    setProgressionsAdvancedAnalysis(null);
     setProgressionsError('');
     setProgressedSynastryData(null);
     setProgressedSynastryAnalysis(null);
+    setProgressedSynastrySimpleAnalysis(null);
+    setProgressedSynastryAdvancedAnalysis(null);
     setTransitsDate(new Date().toISOString().slice(0, 10));
     setTransitsLocation(null);
     setTransitsData(null);
@@ -647,6 +812,90 @@ const Dashboard = () => {
     if (!chartDataForAnalysis || !savedChartId) return;
 
     const isSynastry = chartDataForAnalysis.type === 'synastry';
+    // Survives a Dashboard remount (leaving this chart and coming back) —
+    // unlike a plain useRef, so a background request that's still running
+    // after the component unmounted won't get duplicated on return.
+    const registryKey = `${isSynastry ? 'progressed-synastry' : 'progressions'}:${savedChartId}:${mode}`;
+    if (isInFlight(registryKey)) {
+      // Blocked because a background request from a previous visit to this
+      // chart is still running — it belongs to an unmounted instance, but it
+      // has been writing every chunk it received into streamTextRegistry.ts
+      // (see the live onDelta below) the whole time. Reconnect the
+      // typewriter to that buffer right away — replay whatever's already
+      // there, then keep polling it for new text — instead of sitting on a
+      // bare spinner until the whole response is done: by spec, returning to
+      // this chart mid-generation should show the printer picking up where
+      // it left off, exactly like the Network tab already shows.
+      setProgressionsLoading(true);
+      setProgressionsError('');
+      progressionsStream.reset();
+      let seenLength = 0;
+      const replay = () => {
+        const current = getStreamText(registryKey);
+        if (current.length > seenLength) {
+          progressionsStream.handleDelta(current.slice(seenLength));
+          seenLength = current.length;
+        }
+      };
+      replay();
+      const replayInterval = window.setInterval(replay, 400);
+
+      progressionsFinishRef.current = (analysis: string) => {
+        if (isSynastry) {
+          setProgressedSynastryAnalysis(analysis);
+          if (mode === 'simple') setProgressedSynastrySimpleAnalysis(analysis);
+          else setProgressedSynastryAdvancedAnalysis(analysis);
+        } else {
+          setProgressionsAnalysis(analysis);
+          if (mode === 'simple') setProgressionsSimpleAnalysis(analysis);
+          else setProgressionsAdvancedAnalysis(analysis);
+        }
+        setProgressionsLoading(false);
+      };
+
+      // Do NOT re-run loadProgressions itself once this clears — the clear
+      // could be from a failure just as easily as a success, and blindly
+      // retrying the whole function would silently fire another real
+      // generation on every failure instead of surfacing it.
+      waitForClear(registryKey, async () => {
+        window.clearInterval(replayInterval);
+        replay(); // catch any text that landed between the last tick and clearing
+        try {
+          const cached = isSynastry
+            ? await chartsApi.getProgressedSynastryAnalysis(Number(savedChartId), mode, new Date().toISOString().slice(0, 7))
+            : await chartsApi.getProgressionsAnalysis(Number(savedChartId), mode, new Date().toISOString().slice(0, 7));
+          if (cached) {
+            progressionsStream.handleFinal(cached);
+          } else {
+            // The background attempt cleared without saving anything (it
+            // failed) — surface that instead of silently starting another
+            // real generation.
+            progressionsStream.handleError();
+            setProgressionsLoading(false);
+            setProgressionsError(t('dashboard.progressions.error'));
+          }
+        } catch {
+          progressionsStream.handleError();
+          setProgressionsLoading(false);
+          setProgressionsError(t('dashboard.progressions.error'));
+        }
+      }, {
+        // Progressions/progressed-synastry generation genuinely runs several
+        // minutes (see the Network tab) — the old 80s default timed out long
+        // before it, showing a false error while the backend was still
+        // working. ~12.5 minutes covers realistic generation time.
+        intervalMs: 5000,
+        maxAttempts: 150,
+        onTimeout: () => {
+          window.clearInterval(replayInterval);
+          progressionsStream.handleError();
+          setProgressionsLoading(false);
+          setProgressionsError(t('dashboard.progressions.error'));
+        },
+      });
+      return;
+    }
+    markInFlight(registryKey);
 
     setProgressionsLoading(true);
     setProgressionsError('');
@@ -657,6 +906,7 @@ const Dashboard = () => {
         if (!chart1?.birth_date || !chart2?.birth_date) {
           setProgressionsError(t('dashboard.progressions.noBirthData'));
           setProgressionsLoading(false);
+          clearInFlight(registryKey);
           return;
         }
 
@@ -677,18 +927,37 @@ const Dashboard = () => {
         });
         setProgressedSynastryData(data);
 
+        // Already fetched this mode client-side — switch instantly, no DB
+        // round-trip, no regeneration.
+        if (mode === 'simple' && progressedSynastrySimpleAnalysis) {
+          setProgressedSynastryAnalysis(progressedSynastrySimpleAnalysis);
+          setProgressionsLoading(false);
+          clearInFlight(registryKey);
+          return;
+        }
+        if (mode === 'advanced' && progressedSynastryAdvancedAnalysis) {
+          setProgressedSynastryAnalysis(progressedSynastryAdvancedAnalysis);
+          setProgressionsLoading(false);
+          clearInFlight(registryKey);
+          return;
+        }
+
         const cached = await chartsApi.getProgressedSynastryAnalysis(Number(savedChartId), mode, data.period);
         if (cached) {
           setProgressedSynastryAnalysis(cached);
+          if (mode === 'simple') setProgressedSynastrySimpleAnalysis(cached);
+          else setProgressedSynastryAdvancedAnalysis(cached);
           setProgressionsLoading(false);
+          clearInFlight(registryKey);
           return;
         }
         progressionsStream.reset();
+        // Only the cosmetic reveal — see the non-synastry branch below for
+        // why persistence isn't done here.
         progressionsFinishRef.current = (analysis: string) => {
           setProgressedSynastryAnalysis(analysis);
-          chartsApi.saveProgressedSynastryAnalysis(Number(savedChartId), mode, data.period, analysis).catch(err => {
-            console.error('Failed to save progressed synastry analysis:', err);
-          });
+          if (mode === 'simple') setProgressedSynastrySimpleAnalysis(analysis);
+          else setProgressedSynastryAdvancedAnalysis(analysis);
           setProgressionsLoading(false);
         };
 
@@ -696,8 +965,24 @@ const Dashboard = () => {
           { progressed_synastry_data: data as unknown as Record<string, unknown>, language: i18n.language || 'ru', mode },
           {
             onStage: progressionsStream.handleStage,
-            onDelta: progressionsStream.handleDelta,
-            onFinal: (result) => progressionsStream.handleFinal(result.analysis),
+            onDelta: (text) => {
+              // Kept for a remounted instance to replay — see the isInFlight
+              // branch above and streamTextRegistry.ts.
+              appendStreamText(registryKey, text);
+              progressionsStream.handleDelta(text);
+            },
+            onFinal: (result) => {
+              // See the non-synastry branch's onFinal below — same reasoning:
+              // persist and clear the in-flight marker immediately, not gated
+              // behind the typewriter catch-up which stalls whenever the tab
+              // is backgrounded or the component has unmounted.
+              chartsApi.saveProgressedSynastryAnalysis(Number(savedChartId), mode, data.period, result.analysis).catch(err => {
+                console.error('Failed to save progressed synastry analysis:', err);
+              });
+              clearStreamText(registryKey);
+              clearInFlight(registryKey);
+              progressionsStream.handleFinal(result.analysis);
+            },
             onError: async (detail) => {
               if (!progressionsStream.hasDelta()) {
                 try {
@@ -706,6 +991,8 @@ const Dashboard = () => {
                     language: i18n.language || 'ru'
                   }, mode);
                   setProgressedSynastryAnalysis(result.analysis);
+                  if (mode === 'simple') setProgressedSynastrySimpleAnalysis(result.analysis);
+                  else setProgressedSynastryAdvancedAnalysis(result.analysis);
                   chartsApi.saveProgressedSynastryAnalysis(Number(savedChartId), mode, data.period, result.analysis).catch(err => {
                     console.error('Failed to save progressed synastry analysis:', err);
                   });
@@ -714,12 +1001,16 @@ const Dashboard = () => {
                   setProgressionsError(typeof errorDetail === 'string' ? errorDetail : t('dashboard.progressions.error'));
                 } finally {
                   setProgressionsLoading(false);
+                  clearStreamText(registryKey);
+                  clearInFlight(registryKey);
                 }
                 return;
               }
               progressionsStream.handleError();
               setProgressionsError(detail || t('dashboard.progressions.error'));
               setProgressionsLoading(false);
+              clearStreamText(registryKey);
+              clearInFlight(registryKey);
             },
           }
         );
@@ -730,6 +1021,22 @@ const Dashboard = () => {
       if (!meta?.birth_date) {
         setProgressionsError(t('dashboard.progressions.noBirthData'));
         setProgressionsLoading(false);
+        clearInFlight(registryKey);
+        return;
+      }
+
+      // Already fetched this mode client-side — switch instantly, no request,
+      // no regeneration (mirrors simpleAnalysis/advancedAnalysis for natal).
+      if (mode === 'simple' && progressionsSimpleAnalysis) {
+        setProgressionsAnalysis(progressionsSimpleAnalysis);
+        setProgressionsLoading(false);
+        clearInFlight(registryKey);
+        return;
+      }
+      if (mode === 'advanced' && progressionsAdvancedAnalysis) {
+        setProgressionsAnalysis(progressionsAdvancedAnalysis);
+        setProgressionsLoading(false);
+        clearInFlight(registryKey);
         return;
       }
 
@@ -747,16 +1054,21 @@ const Dashboard = () => {
       const cached = await chartsApi.getProgressionsAnalysis(Number(savedChartId), mode, period);
       if (cached) {
         setProgressionsAnalysis(cached);
+        if (mode === 'simple') setProgressionsSimpleAnalysis(cached);
+        else setProgressionsAdvancedAnalysis(cached);
         setProgressionsLoading(false);
+        clearInFlight(registryKey);
         return;
       }
 
       progressionsStream.reset();
+      // Only the cosmetic reveal (show the text, drop the spinner) — kept
+      // gated behind the typewriter effect catching up. Persistence lives in
+      // onFinal below instead, see the comment there.
       progressionsFinishRef.current = (analysis: string) => {
         setProgressionsAnalysis(analysis);
-        chartsApi.saveProgressionsAnalysis(Number(savedChartId), mode, period, analysis).catch(err => {
-          console.error('Failed to save progressions analysis:', err);
-        });
+        if (mode === 'simple') setProgressionsSimpleAnalysis(analysis);
+        else setProgressionsAdvancedAnalysis(analysis);
         setProgressionsLoading(false);
       };
 
@@ -764,8 +1076,31 @@ const Dashboard = () => {
         { natal_chart: chartDataForAnalysis as unknown as Record<string, unknown>, progression_data: data as unknown as Record<string, unknown>, language: i18n.language || 'ru', mode },
         {
           onStage: progressionsStream.handleStage,
-          onDelta: progressionsStream.handleDelta,
-          onFinal: (result) => progressionsStream.handleFinal(result.analysis),
+          onDelta: (text) => {
+            // Kept for a remounted instance to replay — see the isInFlight
+            // branch above and streamTextRegistry.ts.
+            appendStreamText(registryKey, text);
+            progressionsStream.handleDelta(text);
+          },
+          onFinal: (result) => {
+            // Save + clear the in-flight marker the instant the real result is
+            // known — do NOT wait for progressionsFinishRef, which only fires
+            // once the typewriter effect visually catches up. That catch-up
+            // runs off a setInterval inside a useEffect, which stalls
+            // whenever the tab is backgrounded (throttled/frozen by the
+            // browser) or the component has unmounted — so if that happens
+            // while the stream is still running, doing this there would
+            // leave registryKey stuck "in flight" until the next visit times
+            // out 80s later with a false "Не вдалося розрахувати прогресії"
+            // error, even though the backend finished successfully (see
+            // inFlightRegistry.ts).
+            chartsApi.saveProgressionsAnalysis(Number(savedChartId), mode, period, result.analysis).catch(err => {
+              console.error('Failed to save progressions analysis:', err);
+            });
+            clearStreamText(registryKey);
+            clearInFlight(registryKey);
+            progressionsStream.handleFinal(result.analysis);
+          },
           onError: async (detail) => {
             if (!progressionsStream.hasDelta()) {
               try {
@@ -775,6 +1110,8 @@ const Dashboard = () => {
                   language: i18n.language || 'ru'
                 }, mode);
                 setProgressionsAnalysis(result.analysis);
+                if (mode === 'simple') setProgressionsSimpleAnalysis(result.analysis);
+                else setProgressionsAdvancedAnalysis(result.analysis);
                 chartsApi.saveProgressionsAnalysis(Number(savedChartId), mode, period, result.analysis).catch(err => {
                   console.error('Failed to save progressions analysis:', err);
                 });
@@ -783,12 +1120,16 @@ const Dashboard = () => {
                 setProgressionsError(typeof errorDetail === 'string' ? errorDetail : t('dashboard.progressions.error'));
               } finally {
                 setProgressionsLoading(false);
+                clearStreamText(registryKey);
+                clearInFlight(registryKey);
               }
               return;
             }
             progressionsStream.handleError();
             setProgressionsError(detail || t('dashboard.progressions.error'));
             setProgressionsLoading(false);
+            clearStreamText(registryKey);
+            clearInFlight(registryKey);
           },
         }
       );
@@ -796,8 +1137,9 @@ const Dashboard = () => {
       const errorDetail = (err as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
       setProgressionsError(typeof errorDetail === 'string' ? errorDetail : t('dashboard.progressions.error'));
       setProgressionsLoading(false);
+      clearInFlight(registryKey);
     }
-  }, [chartDataForAnalysis, savedChartId, analysisMode, t, progressionsStream]);
+  }, [chartDataForAnalysis, savedChartId, analysisMode, t, progressionsStream, progressionsSimpleAnalysis, progressionsAdvancedAnalysis, progressedSynastrySimpleAnalysis, progressedSynastryAdvancedAnalysis]);
 
 
   const loadTransitsData = useCallback(async (date?: string, opts?: { keepAnalysis?: boolean }) => {
@@ -861,6 +1203,79 @@ const Dashboard = () => {
     const locKey = transitsLocation ? `${transitsLocation.lat},${transitsLocation.lon}` : 'natal';
     const cacheKey = `transits_analysis|${savedChartId}|${day}|${mode}|${i18n.language}|${locKey}`;
 
+    // Survives a Dashboard remount (leaving this chart and coming back) —
+    // see inFlightRegistry.ts. isTransitsLoadingRef alone only protects
+    // within the current mount and also guards mutual exclusion with
+    // loadTransitsData above.
+    const registryKey = `transits:${savedChartId}:${day}:${locKey}:${mode}`;
+    // Lets a fresh mount (chart reload, or just returning to the Транзити
+    // tab) discover that a background run is still going WITHOUT the user
+    // having to re-enter the same city/date and click "Дати аналіз" again —
+    // see the pendingKey-driven reconnect effect below. isInFlight(registryKey)
+    // alone only says THAT something is running, not what params to rebuild
+    // it with, since transitsLocation/transitsDate don't survive a remount.
+    const pendingKey = `transits_pending|${savedChartId}`;
+    if (isInFlight(registryKey)) {
+      // Same reasoning as loadProgressions above — reconnect the typewriter
+      // to the still-running background stream by replaying
+      // streamTextRegistry.ts instead of sitting on a bare spinner, then
+      // wait for the background request to clear and pick up the saved
+      // result. Do NOT re-run runTransitsAnalysis itself once it clears: the
+      // clear could be from a failure just as easily as a success, and
+      // blindly retrying would silently fire another real generation on
+      // every failure instead of surfacing it.
+      setTransitsLoading(true);
+      setTransitsError('');
+      transitsStream.reset();
+      let seenLength = 0;
+      const replay = () => {
+        const current = getStreamText(registryKey);
+        if (current.length > seenLength) {
+          transitsStream.handleDelta(current.slice(seenLength));
+          seenLength = current.length;
+        }
+      };
+      replay();
+      const replayInterval = window.setInterval(replay, 400);
+
+      transitsFinishRef.current = (analysis: string) => {
+        setTransitsAnalysis(analysis);
+        setTransitsReady(true);
+        setTransitsLoading(false);
+      };
+
+      waitForClear(registryKey, () => {
+        window.clearInterval(replayInterval);
+        replay();
+        localStorage.removeItem(pendingKey);
+        const result = localStorage.getItem(cacheKey);
+        if (result) {
+          transitsStream.handleFinal(result);
+        } else {
+          transitsStream.handleError();
+          setTransitsLoading(false);
+          setTransitsError(t('dashboard.transits.error'));
+        }
+      }, {
+        // Transits generation can run several minutes — the old 80s default
+        // timed out long before it finished, showing a false error while the
+        // backend was still working. ~12.5 minutes covers realistic
+        // generation time.
+        intervalMs: 5000,
+        maxAttempts: 150,
+        onTimeout: () => {
+          window.clearInterval(replayInterval);
+          localStorage.removeItem(pendingKey);
+          transitsStream.handleError();
+          setTransitsLoading(false);
+          setTransitsError(t('dashboard.transits.error'));
+        },
+      });
+      return;
+    }
+    markInFlight(registryKey);
+    localStorage.setItem(pendingKey, JSON.stringify({ day, mode, location: transitsLocation, registryKey }));
+
     setTransitsLoading(true);
     setTransitsError('');
     isTransitsLoadingRef.current = true;
@@ -890,6 +1305,8 @@ const Dashboard = () => {
         setTransitsReady(true);
         setTransitsLoading(false);
         isTransitsLoadingRef.current = false;
+        localStorage.removeItem(pendingKey);
+        clearInFlight(registryKey);
         return;
       }
 
@@ -900,25 +1317,36 @@ const Dashboard = () => {
         setTransitsError(t('dashboard.transits.limitReached', { limit: MAX_TRANSITS_ANALYSIS_PER_DAY }));
         setTransitsLoading(false);
         isTransitsLoadingRef.current = false;
+        localStorage.removeItem(pendingKey);
+        clearInFlight(registryKey);
         return;
       }
 
-      const applyTransitsResult = (analysis: string) => {
-        setTransitsAnalysis(analysis);
-        setTransitsReady(true);
+      const locationName = transitsLocation?.display_name || meta.birth_place || null;
 
+      // Writes the result somewhere durable (localStorage cache + daily
+      // counter) — must not wait for the typewriter effect to catch up, see
+      // onFinal below.
+      const persistTransitsResult = (analysis: string) => {
         localStorage.setItem(cacheKey, analysis);
         localStorage.setItem(`transits_last_key|${savedChartId}`, cacheKey);
-        const locationName = transitsLocation?.display_name || meta.birth_place || null;
         if (locationName) localStorage.setItem(`transits_location_name|${savedChartId}`, locationName);
-        setTransitsDisplayLocation(locationName);
         localStorage.setItem(limitKey, String(usedToday + 1));
         refreshTransitsRemaining();
       };
 
+      // Cosmetic reveal only — gated behind the typewriter effect visually
+      // catching up (via transitsFinishRef below), so it's a no-op once the
+      // component has unmounted, which is fine: nobody's watching.
+      const revealTransitsResult = (analysis: string) => {
+        setTransitsAnalysis(analysis);
+        setTransitsReady(true);
+        setTransitsDisplayLocation(locationName);
+      };
+
       transitsStream.reset();
       transitsFinishRef.current = (analysis: string) => {
-        applyTransitsResult(analysis);
+        revealTransitsResult(analysis);
         setTransitsLoading(false);
         isTransitsLoadingRef.current = false;
       };
@@ -937,8 +1365,27 @@ const Dashboard = () => {
         },
         {
           onStage: transitsStream.handleStage,
-          onDelta: transitsStream.handleDelta,
-          onFinal: (result) => transitsStream.handleFinal(result.analysis),
+          onDelta: (text) => {
+            // Kept for a remounted instance to replay — see the isInFlight
+            // branch above and streamTextRegistry.ts.
+            appendStreamText(registryKey, text);
+            transitsStream.handleDelta(text);
+          },
+          onFinal: (result) => {
+            // Persist + clear the in-flight marker immediately — the
+            // typewriter catch-up that drives transitsFinishRef runs off a
+            // setInterval inside a useEffect that stalls whenever the tab is
+            // backgrounded or the component has unmounted. Waiting for it
+            // here would mean a request that finishes while the tab isn't
+            // focused never gets saved or unblocked, and the next visit
+            // times out with a false error despite the backend having
+            // succeeded (see inFlightRegistry.ts).
+            persistTransitsResult(result.analysis);
+            clearStreamText(registryKey);
+            localStorage.removeItem(pendingKey);
+            clearInFlight(registryKey);
+            transitsStream.handleFinal(result.analysis);
+          },
           onError: async (detail) => {
             if (!transitsStream.hasDelta()) {
               try {
@@ -952,13 +1399,17 @@ const Dashboard = () => {
                     transit_place: transitsLocation.display_name,
                   }),
                 }, mode);
-                applyTransitsResult(result.analysis);
+                persistTransitsResult(result.analysis);
+                revealTransitsResult(result.analysis);
               } catch (err) {
                 const errorDetail = (err as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
                 setTransitsError(typeof errorDetail === 'string' ? errorDetail : t('dashboard.transits.error'));
               } finally {
                 setTransitsLoading(false);
                 isTransitsLoadingRef.current = false;
+                clearStreamText(registryKey);
+                localStorage.removeItem(pendingKey);
+                clearInFlight(registryKey);
               }
               return;
             }
@@ -966,6 +1417,9 @@ const Dashboard = () => {
             setTransitsError(detail || t('dashboard.transits.error'));
             setTransitsLoading(false);
             isTransitsLoadingRef.current = false;
+            clearStreamText(registryKey);
+            localStorage.removeItem(pendingKey);
+            clearInFlight(registryKey);
           },
         }
       );
@@ -975,6 +1429,8 @@ const Dashboard = () => {
       setTransitsError(typeof errorDetail === 'string' ? errorDetail : t('dashboard.transits.error'));
       setTransitsLoading(false);
       isTransitsLoadingRef.current = false;
+      localStorage.removeItem(pendingKey);
+      clearInFlight(registryKey);
     }
   }, [chartDataForAnalysis, savedChartId, analysisMode, transitsDate, transitsLocation, transitsData, t, refreshTransitsRemaining, transitsStream]);
 
@@ -1004,6 +1460,49 @@ const Dashboard = () => {
     loadTransitsData(transitsDate);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [transitsLocation]);
+
+  // Returning to the Транзити tab while a background analysis from a
+  // previous visit is still running (see the pendingKey writes in
+  // runTransitsAnalysis) restores the params it was started with — city and
+  // date don't survive a remount on their own — so the effect below can
+  // rebuild the exact same registryKey and reconnect (spinner + typewriter)
+  // instead of showing a blank, seemingly idle form.
+  useEffect(() => {
+    if (analysisTab !== 'transits') return;
+    if (!savedChartId) return;
+    const pendingKey = `transits_pending|${savedChartId}`;
+    const raw = localStorage.getItem(pendingKey);
+    if (!raw) return;
+    try {
+      const pending = JSON.parse(raw) as { day: string; mode: string; location: Location | null; registryKey: string };
+      if (!isInFlight(pending.registryKey)) {
+        // Stale marker left over from a crash/interrupted cleanup — nothing
+        // to reconnect to.
+        localStorage.removeItem(pendingKey);
+        return;
+      }
+      transitsReconnectRef.current = { day: pending.day, mode: pending.mode, location: pending.location };
+      setTransitsDate(pending.day);
+      setTransitsLocation(pending.location);
+    } catch {
+      localStorage.removeItem(pendingKey);
+    }
+  }, [analysisTab, savedChartId]);
+
+  // Fires once transitsDate/transitsLocation actually reflect what the
+  // effect above just restored (state updates land on the NEXT render, so
+  // calling runTransitsAnalysis directly from that effect would close over
+  // the stale pre-restore values and rebuild the wrong registryKey). Until
+  // then this is a no-op on every render.
+  useEffect(() => {
+    const pending = transitsReconnectRef.current;
+    if (!pending) return;
+    const locationMatches = JSON.stringify(transitsLocation) === JSON.stringify(pending.location);
+    if (transitsDate !== pending.day || !locationMatches) return;
+    transitsReconnectRef.current = null;
+    runTransitsAnalysis(pending.day, pending.mode);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [transitsLocation, transitsDate]);
 
   const sendChatMessage = useCallback(async () => {
     if (chatLoading) return;
@@ -1377,13 +1876,51 @@ const Dashboard = () => {
     setSelectedPlanet({ ...planetData, name: planetName });
     setSelectedPlanetKey(planetKey);
     selectedPlanetKeyRef.current = planetKey;
+
+    const chartId = typeof savedChartId === 'number' ? savedChartId : (savedChartId ? parseInt(String(savedChartId), 10) : null);
+    // Survives a Dashboard remount (leaving this chart and coming back) —
+    // see inFlightRegistry.ts. planetInFlightRef alone only protects within
+    // the current mount.
+    const registryKey = `planet:${chartId}:${planetKey}`;
+
+    // A repeat click on this same planet while its request is already in
+    // flight (within this same mount) doesn't start a new one — it just
+    // reopens the card on the current progress.
+    if (planetInFlightRef.current[planetKey]) return;
+
+    const storageKey = chartId ? `planetAnalysis_${chartId}_${planetData.name}_${analysisMode}` : null;
+
+    if (isInFlight(registryKey)) {
+      // Blocked because a background request from a previous visit to this
+      // chart is still running — poll until it clears, then check the cache
+      // ONCE. Do NOT re-run handlePlanetClick itself: the clear could be
+      // from a failure just as easily as a success, and blindly retrying
+      // would silently fire another real generation on every failure
+      // instead of surfacing it.
+      setPlanetAnalysis(null);
+      setPlanetAnalysisError('');
+      setPlanetAnalysisLoading(true);
+      waitForClear(registryKey, () => {
+        const result = storageKey ? localStorage.getItem(storageKey) : null;
+        if (result) {
+          setPlanetAnalysis(result);
+        } else {
+          setPlanetAnalysisError('Failed to load planet analysis');
+        }
+        setPlanetAnalysisLoading(false);
+      }, {
+        onTimeout: () => {
+          setPlanetAnalysisLoading(false);
+          setPlanetAnalysisError('Failed to load planet analysis');
+        },
+      });
+      return;
+    }
+
     setPlanetAnalysis(null);
     setPlanetAnalysisError('');
     setPlanetAnalysisLoading(true);
 
-    const chartId = typeof savedChartId === 'number' ? savedChartId : (savedChartId ? parseInt(String(savedChartId), 10) : null);
-
-    const storageKey = chartId ? `planetAnalysis_${chartId}_${planetData.name}_${analysisMode}` : null;
     const savedAnalysis = storageKey ? localStorage.getItem(storageKey) : null;
     if (savedAnalysis) {
       setPlanetAnalysis(savedAnalysis);
@@ -1394,6 +1931,9 @@ const Dashboard = () => {
       }
       return;
     }
+
+    planetInFlightRef.current[planetKey] = true;
+    markInFlight(registryKey);
 
     const planetPayload = {
       planet: planetData.name ?? '',
@@ -1466,6 +2006,8 @@ const Dashboard = () => {
         onFinal: (result) => {
           persistPlanetAnalysis(result.analysis);
           clearLive();
+          planetInFlightRef.current[planetKey] = false;
+          clearInFlight(registryKey);
           if (isStillOpen()) {
             setPlanetAnalysis(result.analysis);
             setPlanetAnalysisLoading(false);
@@ -1481,11 +2023,15 @@ const Dashboard = () => {
               if (isStillOpen()) reportPlanetError(err);
             } finally {
               clearLive();
+              planetInFlightRef.current[planetKey] = false;
+              clearInFlight(registryKey);
               if (isStillOpen()) setPlanetAnalysisLoading(false);
             }
             return;
           }
           clearLive();
+          planetInFlightRef.current[planetKey] = false;
+          clearInFlight(registryKey);
           if (isStillOpen()) {
             setPlanetAnalysisError(detail || 'Failed to load planet analysis');
             setPlanetAnalysisLoading(false);
@@ -1510,10 +2056,49 @@ const Dashboard = () => {
     setSelectedAspect(aspect);
     setSelectedAspectKey(aspectKey);
     selectedAspectKeyRef.current = aspectKey;
+
+    // Survives a Dashboard remount (leaving this chart and coming back) —
+    // see inFlightRegistry.ts. aspectInFlightRef alone only protects within
+    // the current mount.
+    const registryKey = `aspect:${savedChartId}:${aspectKey}`;
+
+    // A repeat click on this same aspect while its request is already in
+    // flight (within this same mount) doesn't start a new one — it just
+    // reopens the card on the current progress.
+    if (aspectInFlightRef.current[aspectKey]) return;
+
+    const storageKey = `aspectAnalysis_${aspect.planet1}_${aspect.planet2}_${aspect.aspect}_${analysisMode}`;
+
+    if (isInFlight(registryKey)) {
+      // Blocked because a background request from a previous visit to this
+      // chart is still running — poll until it clears, then check the cache
+      // ONCE. Do NOT re-run handleAspectClick itself: the clear could be
+      // from a failure just as easily as a success, and blindly retrying
+      // would silently fire another real generation on every failure
+      // instead of surfacing it.
+      setAspectAnalysis(null);
+      setAspectError('');
+      setAspectLoading(true);
+      waitForClear(registryKey, () => {
+        const result = localStorage.getItem(storageKey);
+        if (result) {
+          setAspectAnalysis(result);
+        } else {
+          setAspectError(t('analysis.error'));
+        }
+        setAspectLoading(false);
+      }, {
+        onTimeout: () => {
+          setAspectLoading(false);
+          setAspectError(t('analysis.error'));
+        },
+      });
+      return;
+    }
+
     setAspectLoading(true);
     setAspectError('');
 
-    const storageKey = `aspectAnalysis_${aspect.planet1}_${aspect.planet2}_${aspect.aspect}_${analysisMode}`;
     const savedAnalysis = localStorage.getItem(storageKey);
     if (savedAnalysis) {
       setAspectAnalysis(savedAnalysis);
@@ -1521,6 +2106,8 @@ const Dashboard = () => {
       return;
     }
 
+    aspectInFlightRef.current[aspectKey] = true;
+    markInFlight(registryKey);
     setAspectAnalysis(null);
 
     const aspectPayload = {
@@ -1577,6 +2164,8 @@ const Dashboard = () => {
         onFinal: (result) => {
           localStorage.setItem(storageKey, result.analysis);
           clearLive();
+          aspectInFlightRef.current[aspectKey] = false;
+          clearInFlight(registryKey);
           if (isStillOpen()) {
             setAspectAnalysis(result.analysis);
             setAspectLoading(false);
@@ -1592,11 +2181,15 @@ const Dashboard = () => {
               if (isStillOpen()) reportAspectError(err);
             } finally {
               clearLive();
+              aspectInFlightRef.current[aspectKey] = false;
+              clearInFlight(registryKey);
               if (isStillOpen()) setAspectLoading(false);
             }
             return;
           }
           clearLive();
+          aspectInFlightRef.current[aspectKey] = false;
+          clearInFlight(registryKey);
           if (isStillOpen()) {
             setAspectError(detail || t('analysis.error'));
             setAspectLoading(false);
@@ -1777,7 +2370,7 @@ const Dashboard = () => {
     }
   }, [user, loadHistoryCharts]);
 
-  const hasUnsavedAnalysis = !!fullAnalysis && !savedChartId;
+  const hasUnsavedAnalysis = (analysisLoading || !!fullAnalysis) && !savedChartId;
 
   const clearUnsavedAnalysis = useCallback(() => {
     localStorage.removeItem('chartDataForAnalysis');
@@ -1950,10 +2543,12 @@ const Dashboard = () => {
                     onChange={(val) => {
                       setAnalysisMode(val);
                       localStorage.setItem('dashboardAnalysisMode', val);
+                      localStorage.removeItem('pendingAnalysisResult');
                       pendingModeRef.current = val;
                       setFullAnalysis(null);
                       setShowFullAnalysis(true);
                     }}
+                    disabled={analysisLoading}
                   />
                   <button
                     type="button"
@@ -2018,10 +2613,12 @@ const Dashboard = () => {
                         } else if (val === 'advanced' && advancedAnalysis) {
                           setFullAnalysis(advancedAnalysis);
                         } else {
+                          localStorage.removeItem('pendingAnalysisResult');
                           pendingModeRef.current = val;
                           setFullAnalysis(null);
                         }
                       }}
+                      disabled={analysisLoading || progressionsLoading}
                     />
                   </div>
 
@@ -2416,6 +3013,9 @@ const Dashboard = () => {
 
       <UnsavedAnalysisModal
         isOpen={showUnsavedModal}
+        showSave={!!fullAnalysis}
+        title={analysisLoading && !fullAnalysis ? t('unsavedModal.processingTitle') : undefined}
+        message={analysisLoading && !fullAnalysis ? t('unsavedModal.processingMessage') : undefined}
         onSave={() => {
           setShowUnsavedModal(false);
           handleSaveChartWithAnalysis();

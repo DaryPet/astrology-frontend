@@ -106,7 +106,7 @@ const ProgressedSynastryPanel: React.FC<ProgressedSynastryPanelProps> = ({ data,
         </div>
       )}
 
-      {/* AI-анализ: стоит ровно на месте спиннера — до карточек партнёров и таблиц планет. */}
+      {/* AI analysis: sits right where the spinner is — above the partner cards and planet tables. */}
       {(analysis || phase === 'typing') && (
         <div style={{ marginTop: '24px', lineHeight: '2', fontSize: '16px' }}>
           <h4 style={{ color: 'var(--text-primary)' }}>
