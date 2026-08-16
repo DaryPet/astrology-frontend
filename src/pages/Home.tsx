@@ -14,7 +14,8 @@ import PlanetAnalysisModal from '../components/PlanetAnalysisModal';
 import AstroChartComponent from '../components/AstroChartComponent';
 import ProcessingMessage from '../components/ProcessingMessage';
 import AnalysisModeToggle from '../components/AnalysisModeToggle';
-import DailyForecastPanel from '../components/DailyForecastPanel';
+// v1.2: daily forecast temporarily hidden from the natal chart, do not delete
+// import DailyForecastPanel from '../components/DailyForecastPanel';
 
 interface FormData {
   name: string;
@@ -126,16 +127,17 @@ function Home() {
   const [planetAnalysis, setPlanetAnalysis] = useState<string | null>(null);
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [analysisError, setAnalysisError] = useState<string>('');
-  // Своя ячейка на каждую карточку планеты (ключ — имя планеты), плюс номер
-  // поколения на случай повторного клика по той же карточке до ответа —
-  // карточки кликаются параллельно и независимо, ничего не отменяем.
+  // Its own cell per planet card (keyed by planet name), plus a generation
+  // number for a repeat click on the same card before the response arrives —
+  // cards are clicked in parallel and independently, nothing gets cancelled.
   const [planetLiveStreams, setPlanetLiveStreams] = useState<Record<string, { phase: StreamPhase; text: string }>>({});
   const planetGenerationRef = useRef<Record<string, number>>({});
   const [analysisMode, setAnalysisMode] = useState<string>(() => {
     return localStorage.getItem('analysisMode') || 'simple';
   });
   const [isNavigating, setIsNavigating] = useState(false);
-  const [showDailyForecast, setShowDailyForecast] = useState(false);
+  // v1.2: daily forecast temporarily hidden from the natal chart, do not delete
+  // const [showDailyForecast, setShowDailyForecast] = useState(false);
 
   useEffect(() => {
     const savedChartData = localStorage.getItem('savedChartData');
@@ -168,7 +170,7 @@ function Home() {
           timezone = detectedTimezone;
         }
       } catch {
-        // Fallback на UTC
+        // Fallback to UTC
       }
     }
 
@@ -411,9 +413,10 @@ function Home() {
     }, 0);
   };
 
-  const handleDailyForecastClick = () => {
-    setShowDailyForecast(true);
-  };
+  // v1.2: daily forecast temporarily hidden from the natal chart, do not delete
+  // const handleDailyForecastClick = () => {
+  //   setShowDailyForecast(true);
+  // };
 
   const handleNewCalculation = () => {
     localStorage.removeItem('savedChartData');
@@ -428,7 +431,8 @@ function Home() {
       }
     });
     setChartData(null);
-    setShowDailyForecast(false);
+    // v1.2: daily forecast temporarily hidden from the natal chart, do not delete
+    // setShowDailyForecast(false);
     setFormData({
       name: '',
       birth_date: '',
@@ -673,6 +677,7 @@ function Home() {
                 {isNavigating ? <ProcessingMessage /> : t('home.getFullAnalysis')}
               </button>
 
+              {/* v1.2: daily forecast temporarily hidden from the natal chart, do not delete
               <button
                 type="button"
                 onClick={handleDailyForecastClick}
@@ -690,6 +695,7 @@ function Home() {
               >
                 {t('home.dailyForecast')}
               </button>
+              */}
             </div>
 
             <button
@@ -745,6 +751,7 @@ function Home() {
             />
           </div>
 
+          {/* v1.2: daily forecast temporarily hidden from the natal chart, do not delete
           {showDailyForecast && (
             <div style={{ marginTop: '30px' }}>
               <h3 style={{ marginBottom: '20px', color: 'var(--text-primary)' }}>
@@ -753,6 +760,7 @@ function Home() {
               <DailyForecastPanel natalChart={chartData} />
             </div>
           )}
+          */}
         </div>
       )}
     </div>
