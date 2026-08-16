@@ -36,7 +36,8 @@ import ProgressionsPanel from '../components/ProgressionsPanel';
 import ProgressedSynastryPanel from '../components/ProgressedSynastryPanel';
 import AnalysisTabs, { AnalysisTabId } from '../components/AnalysisTabs';
 import TransitsPanel from '../components/TransitsPanel';
-import DailyForecastPanel from '../components/DailyForecastPanel';
+// v1.2: daily forecast temporarily hidden from the natal chart, do not delete
+// import DailyForecastPanel from '../components/DailyForecastPanel';
 import type { ProgressionsData, TransitsData, ProgressedSynastryData } from '../services/api';
 import type { Location } from '../components/LocationInput';
 import { isNearLimit, isAtLimit, MAX_MESSAGES, type ChatMessage } from '../services/chatStorage';
@@ -176,9 +177,9 @@ const Dashboard = () => {
   const [advancedAnalysis, setAdvancedAnalysis] = useState<string | null>(null);
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [analysisError, setAnalysisError] = useState<string>('');
-  // Стриминг полного анализа — натал и синастрия (см.
+  // Streaming for the full analysis — natal and synastry (see
   // plans/streaming-analysis-frontend.md, plans/streaming-analysis-frontend-phase2.md).
-  // Прогрессий/транзитов не касается — у них своя машинка, см. useStreamedText.
+  // Doesn't touch progressions/transits — they have their own machinery, see useStreamedText.
   const [streamPhase, setStreamPhase] = useState<'idle' | 'searching' | 'generating' | 'typing' | 'done' | 'error'>('idle');
   const [displayedText, setDisplayedText] = useState('');
   const verifiedTextRef = useRef('');
@@ -248,13 +249,13 @@ const Dashboard = () => {
   const [planetAnalysis, setPlanetAnalysis] = useState<string | null>(null);
   const [planetAnalysisLoading, setPlanetAnalysisLoading] = useState(false);
   const [planetAnalysisError, setPlanetAnalysisError] = useState<string>('');
-  // Каждая карточка планеты пишет в свою ячейку по ключу (имя планеты) — карточки
-  // кликаются параллельно и независимо, как и до стрима, поэтому один общий
-  // буфер/ref на всех вызывал перепутывание текста между планетами.
+  // Each planet card writes into its own cell keyed by planet name — cards
+  // are clicked in parallel and independently, same as before streaming, so
+  // one shared buffer/ref for all of them caused text to mix up between planets.
   const [planetLiveStreams, setPlanetLiveStreams] = useState<Record<string, { phase: StreamPhase; text: string }>>({});
-  // Если ту же карточку открыли повторно, пока её первый стрим ещё не долетел —
-  // у второго вызова номер поколения выше, и колбэки первого перестают писать
-  // в live-ячейку/состояние (сами запросы при этом не отменяются).
+  // If the same card is reopened before its first stream has finished landing —
+  // the second call gets a higher generation number, and the first call's
+  // callbacks stop writing to the live cell/state (the requests themselves aren't cancelled).
   const planetGenerationRef = useRef<Record<string, number>>({});
   // While a request for this planet is already in flight, a repeat click on it
   // won't start a new one (unlike the generation counter above, this blocks
@@ -400,7 +401,7 @@ const Dashboard = () => {
         setSavedChartId(chart.id);
         savedChartIdRef.current = chart.id;
 
-        // Load chat history from database (с предварительной очисткой — без утечки между картами)
+        // Load chat history from database (clearing it first — no leakage between charts)
         setChatHistory([]);
         loadChatForChart(chart.id).catch(err => {
           console.error('Failed to load chat history:', err);
@@ -1868,9 +1869,9 @@ const Dashboard = () => {
   };
 
   const handlePlanetClick = async (planetData: ChartPlanet) => {
-    // Ключ карточки — сырое (непереведённое) имя планеты. Каждый клик работает
-    // только со своей ячейкой planetLiveStreams[planetKey] — параллельные клики
-    // по другим планетам друг друга не задевают, ничего не отменяем.
+    // Card key is the raw (untranslated) planet name. Each click only works
+    // with its own planetLiveStreams[planetKey] cell — parallel clicks on
+    // other planets don't interfere with each other, nothing gets cancelled.
     const planetKey = planetData.name ?? '';
     const planetName = t('planets.names.' + planetData.name);
     setSelectedPlanet({ ...planetData, name: planetName });
@@ -1969,9 +1970,10 @@ const Dashboard = () => {
       }
     };
 
-    // Поколение этого конкретного вызова для planetKey — если карточку закрыли
-    // и открыли снова до ответа, у нового вызова поколение выше, и колбэки
-    // старого перестают писать в live-ячейку/видимое состояние.
+    // Generation number for this specific call for planetKey — if the card was
+    // closed and reopened before the response came back, the new call gets a
+    // higher generation, and the old call's callbacks stop writing to the
+    // live cell/visible state.
     const myGeneration = (planetGenerationRef.current[planetKey] ?? 0) + 1;
     planetGenerationRef.current[planetKey] = myGeneration;
     const isCurrentGeneration = () => planetGenerationRef.current[planetKey] === myGeneration;
@@ -2050,8 +2052,8 @@ const Dashboard = () => {
   };
 
   const handleAspectClick = async (aspect: AspectData) => {
-    // Ключ карточки аспекта — как в storageKey. Так же, как и с планетами: своя
-    // ячейка в aspectLiveStreams на каждый клик, ничего не отменяем.
+    // Aspect card key — same as in storageKey. Same idea as with planets: its
+    // own cell in aspectLiveStreams per click, nothing gets cancelled.
     const aspectKey = `${aspect.planet1}_${aspect.planet2}_${aspect.aspect}`;
     setSelectedAspect(aspect);
     setSelectedAspectKey(aspectKey);
@@ -2214,7 +2216,7 @@ const Dashboard = () => {
         setSavedChartId(chart.id);
         savedChartIdRef.current = chart.id;
         setChatInput('');
-        // Чат: очистка + загрузка истории выбранной карты из БД
+        // Chat: clear + load the selected chart's history from the DB
         setChatHistory([]);
         loadChatForChart(chart.id).catch(err => {
           console.error('Failed to load chat history:', err);
@@ -2741,7 +2743,9 @@ const Dashboard = () => {
                       firstTabLabel={chartDataForAnalysis?.type === 'synastry' ? t('dashboard.tabs.synastryMain') : undefined}
                       showProgressions={!!(savedChartId && fullAnalysis)}
                       showTransits={!!(savedChartId && fullAnalysis && chartDataForAnalysis?.type !== 'synastry')}
-                      showDailyForecast={!!(savedChartId && fullAnalysis && chartDataForAnalysis?.type !== 'synastry')}
+                      // v1.2: daily forecast temporarily hidden from the natal chart, do not delete
+                      // showDailyForecast={!!(savedChartId && fullAnalysis && chartDataForAnalysis?.type !== 'synastry')}
+                      showDailyForecast={false}
                       onChange={(tab) => {
                         setAnalysisTab(tab);
                         setShowProgressions(tab === 'progressions');
@@ -2807,11 +2811,13 @@ const Dashboard = () => {
                     </div>
                   )}
 
+                  {/* v1.2: daily forecast temporarily hidden from the natal chart, do not delete
                   {analysisTab === 'dailyForecast' && !showPlanetTable && savedChartId && (
                     <div id="daily-forecast-section">
                       <DailyForecastPanel natalChart={chartDataForAnalysis} />
                     </div>
                   )}
+                  */}
 
                   {!showPlanetTable && analysisTab === 'natal' && (
                     <>
