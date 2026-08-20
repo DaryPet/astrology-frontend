@@ -327,9 +327,9 @@ const Dashboard = () => {
   const [pendingChatCharts, setPendingChatCharts] = useState<Set<number>>(new Set());
   const savedChartIdRef = useRef<string | number | null>(null);
   const chatLoading = savedChartId != null && pendingChatCharts.has(Number(savedChartId));
-  const chatFinishRef = useRef<((answer: string) => void) | null>(null);
-  const chatRelevantChunksRef = useRef<unknown[]>([]);
-  const chatStream = useStreamedText((answer) => chatFinishRef.current?.(answer));
+  // Cosmetic only (typewriter catch-up) — persistence happens synchronously
+  // in sendChatMessage's onFinal instead, see the comment there.
+  const chatStream = useStreamedText(() => {});
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [historyCharts, setHistoryCharts] = useState<HistoryChart[]>([]);
@@ -467,6 +467,73 @@ const Dashboard = () => {
     } catch (err) {
       console.error('Failed to load chat history:', err);
     }
+
+    // A question sent before a Dashboard remount (navigating away and back —
+    // Dashboard remounts on every navigation via key={location.key} in
+    // App.tsx) may still be answering in the background: sendChatMessage's
+    // fetch isn't aborted on unmount, it just lost the component instance
+    // that was going to display it (see inFlightRegistry.ts /
+    // streamTextRegistry.ts, same pattern as loadFullAnalysis above).
+    // Reconnect instead of leaving the chat panel looking dead.
+    const numericChartId = Number(chartId);
+    const registryKey = `chat:${numericChartId}`;
+    if (!isInFlight(registryKey)) return;
+
+    setPendingChatCharts(prev => new Set(prev).add(numericChartId));
+    chatStream.reset();
+
+    let seenLength = 0;
+    const replay = () => {
+      // Stop touching the (single, shared) chatStream once the user has
+      // navigated to a different chart — otherwise this chart's replayed
+      // text would bleed into whatever chart is now on screen.
+      if (Number(savedChartIdRef.current) !== numericChartId) return;
+      const current = getStreamText(registryKey);
+      if (current.length > seenLength) {
+        chatStream.handleDelta(current.slice(seenLength));
+        seenLength = current.length;
+      }
+    };
+    replay();
+    const replayInterval = window.setInterval(replay, 400);
+
+    waitForClear(registryKey, async () => {
+      window.clearInterval(replayInterval);
+      try {
+        const dbMessages = await chartsApi.getChatMessages(numericChartId);
+        if (Number(savedChartIdRef.current) === numericChartId) {
+          setChatHistory(dbMessages as ChatMessage[]);
+        }
+      } catch (err) {
+        console.error('Failed to reload chat history:', err);
+      } finally {
+        setPendingChatCharts(prev => {
+          const next = new Set(prev);
+          next.delete(numericChartId);
+          return next;
+        });
+      }
+    }, {
+      // Chat answers normally take seconds, not minutes — 5 minutes is a
+      // generous ceiling so a real answer never gets cut off, while still
+      // giving up instead of spinning forever if something went wrong.
+      intervalMs: 5000,
+      maxAttempts: 60,
+      onTimeout: () => {
+        window.clearInterval(replayInterval);
+        setPendingChatCharts(prev => {
+          const next = new Set(prev);
+          next.delete(numericChartId);
+          return next;
+        });
+        if (Number(savedChartIdRef.current) === numericChartId) {
+          setChatHistory(prev => [...prev, {
+            role: 'assistant' as const,
+            content: t('dashboard.chat.timeout'),
+          }]);
+        }
+      },
+    });
   };
 
   useEffect(() => {
@@ -1943,6 +2010,7 @@ const Dashboard = () => {
 
     const chartIdAtSend = Number(savedChartId);
     const userId = user.id;
+    const registryKey = `chat:${chartIdAtSend}`;
 
     const questionText = chatInput.trim();
     const currentHistory = [...chatHistory];
@@ -1964,6 +2032,8 @@ const Dashboard = () => {
     };
 
     const finishPending = () => {
+      clearStreamText(registryKey);
+      clearInFlight(registryKey);
       setPendingChatCharts(prev => {
         const next = new Set(prev);
         next.delete(chartIdAtSend);
@@ -1971,30 +2041,47 @@ const Dashboard = () => {
       });
     };
 
+    // Defensive: a buffer left over from an earlier request that never
+    // reached finishPending() (see the onFinal comment below) must not
+    // bleed into this new question's deltas.
+    clearStreamText(registryKey);
+    markInFlight(registryKey);
     chatStream.reset();
-    chatFinishRef.current = (answer: string) => {
-      const botMessage = {
-        role: 'assistant' as const,
-        content: answer || t('dashboard.chat.noAnswer'),
-        relevant_chunks: chatRelevantChunksRef.current
-      };
-      chartsApi.appendChatMessages(chartIdAtSend, userId, [botMessage]).catch(err => {
-        console.error('Failed to save chat message:', err);
-      });
-      if (Number(savedChartIdRef.current) === chartIdAtSend) {
-        setChatHistory(prev => [...prev, botMessage]);
-      }
-      finishPending();
-    };
 
     await streamChatAnalysis(
       chatPayload,
       {
         onStage: chatStream.handleStage,
-        onDelta: chatStream.handleDelta,
+        onDelta: (text: string) => {
+          // Kept for a remounted instance to replay — see loadChatForChart's
+          // isInFlight branch above and streamTextRegistry.ts.
+          appendStreamText(registryKey, text);
+          chatStream.handleDelta(text);
+        },
         onFinal: (result) => {
-          chatRelevantChunksRef.current = result.relevant_chunks || [];
+          // Cosmetic only — keeps the on-screen typewriter animating to the
+          // end. Do NOT hang persistence off chatStream's onDone: that only
+          // fires once the typewriter visually catches up via a setInterval
+          // inside a useEffect, and that effect is cancelled the instant
+          // this component unmounts (leaving the chart before the answer
+          // finished typing) — it never runs again, so the answer never
+          // got saved and finishPending() never cleared the registry.
+          // Save + clear the instant the real result is known instead,
+          // same as runFullAnalysisStream's onFinal above.
           chatStream.handleFinal(result.answer);
+
+          const botMessage = {
+            role: 'assistant' as const,
+            content: result.answer || t('dashboard.chat.noAnswer'),
+            relevant_chunks: result.relevant_chunks || []
+          };
+          chartsApi.appendChatMessages(chartIdAtSend, userId, [botMessage]).catch(err => {
+            console.error('Failed to save chat message:', err);
+          });
+          if (Number(savedChartIdRef.current) === chartIdAtSend) {
+            setChatHistory(prev => [...prev, botMessage]);
+          }
+          finishPending();
         },
         onError: async (detail) => {
           if (!chatStream.hasDelta()) {
