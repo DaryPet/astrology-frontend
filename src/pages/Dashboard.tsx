@@ -44,7 +44,7 @@ import { isNearLimit, isAtLimit, MAX_MESSAGES, type ChatMessage } from '../servi
 import { isInFlight, markInFlight, clearInFlight, waitForClear } from '../utils/inFlightRegistry';
 import { appendStreamText, getStreamText, clearStreamText } from '../utils/streamTextRegistry';
 
-const MAX_TRANSITS_ANALYSIS_PER_DAY = 20;
+const MAX_TRANSITS_ANALYSIS_PER_DAY = 5;
 // Cap on how many completed transits analyses per chart we keep browsable
 // in the history list (plans/transits-analysis-history-list.md) — each
 // entry's full text lives under its own localStorage key, so an unbounded
@@ -1313,6 +1313,14 @@ const Dashboard = () => {
     if (!chartDataForAnalysis || !savedChartId) return;
     if (chartDataForAnalysis.type === 'synastry') return;
     if (isTransitsLoadingRef.current) return;
+    // transitsGenerationLocked is already correct from the very first render
+    // (lazy init from transits_pending, see readInitialTransitsState) — long
+    // before runTransitsAnalysis's reconnect branch gets a chance to run and
+    // set isTransitsLoadingRef. Without this, the transitsLocation effect
+    // right below can fire loadTransitsData in that gap, and its own
+    // setTransitsLoading(false) clobbers the reconnect's spinner before it
+    // even starts. See plans/transits-stale-data-and-loading-flag-bugs.md.
+    if (transitsGenerationLocked) return;
 
     const meta = chartDataForAnalysis.meta;
     if (!meta?.birth_date) {
@@ -1359,7 +1367,7 @@ const Dashboard = () => {
       setTransitsLoading(false);
       isTransitsLoadingRef.current = false;
     }
-  }, [chartDataForAnalysis, savedChartId, transitsDate, transitsLocation, t]);
+  }, [chartDataForAnalysis, savedChartId, transitsDate, transitsLocation, transitsGenerationLocked, t]);
 
   const runTransitsAnalysis = useCallback(async (date?: string, mode = analysisMode) => {
     if (!chartDataForAnalysis || !savedChartId) return;
@@ -1421,9 +1429,25 @@ const Dashboard = () => {
       // this empty when locked) — make sure the live slot reflects "still
       // generating" (spinner) rather than a stale previous result, and stop
       // browsing any history entry so the reconnect is actually visible.
+      // transitsViewingCacheKey also has to go — it still names whatever
+      // WAS the live entry before this job started, and clicking that now-
+      // historical row compares its cacheKey against this stale value in
+      // handleSelectTransitsHistoryEntry, silently treating it as "already
+      // viewing this" and refusing to open it.
       setTransitsAnalysis(null);
       setTransitsReady(false);
       setHistoryViewOverride(null);
+      setTransitsViewingCacheKey(null);
+      // Without this, loadTransitsData (fired e.g. by the transitsLocation
+      // effect right below this same reconnect restoring transitsLocation
+      // on a fresh mount) sees the ref still false and isn't blocked — it
+      // runs to completion (fast, no LLM) and its own setTransitsLoading(false)
+      // clobbers this reconnect's spinner state, even though the real
+      // generation is still running in the background. transitsGenerationLocked
+      // then stays true (only cleared below on actual completion) while
+      // transitsLoading goes stuck false — panel shows neither spinner nor
+      // text. See plans/transits-stale-data-and-loading-flag-bugs.md (bug 2).
+      isTransitsLoadingRef.current = true;
       transitsStream.reset();
       let seenLength = 0;
       const replay = () => {
@@ -1442,6 +1466,7 @@ const Dashboard = () => {
         setTransitsDisplayLocation(transitsLocation?.display_name || meta.birth_place || null);
         setTransitsReady(true);
         setTransitsLoading(false);
+        isTransitsLoadingRef.current = false;
         setTransitsViewingCacheKey(cacheKey);
         // The instance that actually owns the request wrote the history
         // entry via its own persistTransitsResult — pick it up here too.
@@ -1459,6 +1484,7 @@ const Dashboard = () => {
         } else {
           transitsStream.handleError();
           setTransitsLoading(false);
+          isTransitsLoadingRef.current = false;
           setTransitsError(t('dashboard.transits.error'));
         }
       }, {
@@ -1474,6 +1500,7 @@ const Dashboard = () => {
           localStorage.removeItem(pendingKey);
           transitsStream.handleError();
           setTransitsLoading(false);
+          isTransitsLoadingRef.current = false;
           setTransitsError(t('dashboard.transits.error'));
         },
       });
@@ -1488,10 +1515,15 @@ const Dashboard = () => {
     // A genuinely new generation is starting — clear the live slot so the
     // spinner/typewriter show instead of whatever was there before. Nothing
     // is lost: the previous result (if any) is already in transitsHistory.
-    // Also stop browsing any history entry, so this is actually visible.
+    // Also stop browsing any history entry, so this is actually visible, and
+    // forget which cacheKey used to be "live" — otherwise it keeps naming
+    // the now-historical entry and clicking that row in the list silently
+    // no-ops (handleSelectTransitsHistoryEntry mistakes it for "already
+    // viewing this").
     setTransitsAnalysis(null);
     setTransitsReady(false);
     setHistoryViewOverride(null);
+    setTransitsViewingCacheKey(null);
     isTransitsLoadingRef.current = true;
 
     try {
