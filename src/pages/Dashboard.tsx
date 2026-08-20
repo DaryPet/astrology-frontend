@@ -58,6 +58,13 @@ interface TransitsHistoryEntry {
   mode: string;
   lang: string;
   createdAt: number;
+  // Key under which the raw planetary positions (TransitsData) for this
+  // entry's day+location are stored — separate from cacheKey because
+  // positions don't depend on mode/lang, so same-day regenerations in a
+  // different mode share one copy instead of duplicating it. Optional:
+  // entries written before this field existed simply won't have a table
+  // to show when browsed (handled gracefully, not an error).
+  dataKey?: string;
 }
 
 interface ChartPlanet {
@@ -246,7 +253,14 @@ function appendTransitsHistory(chartId: string | number, entry: TransitsHistoryE
   history.sort((a, b) => a.createdAt - b.createdAt);
   while (history.length > MAX_TRANSITS_HISTORY) {
     const evicted = history.shift();
-    if (evicted) localStorage.removeItem(evicted.cacheKey);
+    if (!evicted) continue;
+    localStorage.removeItem(evicted.cacheKey);
+    // dataKey is shared across entries with the same day+location but a
+    // different mode/lang (positions don't depend on those) — only delete
+    // it if nothing still in the list needs it.
+    if (evicted.dataKey && !history.some(e => e.dataKey === evicted.dataKey)) {
+      localStorage.removeItem(evicted.dataKey);
+    }
   }
   localStorage.setItem(historyKey, JSON.stringify(history));
   return history;
@@ -1448,6 +1462,36 @@ const Dashboard = () => {
       // transitsLoading goes stuck false — panel shows neither spinner nor
       // text. See plans/transits-stale-data-and-loading-flag-bugs.md (bug 2).
       isTransitsLoadingRef.current = true;
+
+      // This branch used to only reconnect the TEXT stream — the planet
+      // positions table was never (re)calculated here, so any request that
+      // landed in this branch (isInFlight was already true for this exact
+      // registryKey, e.g. a background run from earlier in the same tab)
+      // permanently showed an empty table below the text. Same reuse-or-
+      // calculate check as the fresh branch below: skip if already correct.
+      if (transitsDataKey !== `${day}|${locKey}`) {
+        try {
+          const positions = await astrologyAPI.calculateTransits({
+            birth_date: meta.birth_date,
+            birth_place: meta.birth_place,
+            latitude: meta.latitude,
+            longitude: meta.longitude,
+            timezone: meta.timezone,
+            target_date: `${day}T12:00:00Z`,
+            house_system: (chartDataForAnalysis.houses_meta as { house_system?: string } | undefined)?.house_system || 'Placidus',
+            natal_chart: chartDataForAnalysis,
+            transit_latitude: transitsLocation?.lat,
+            transit_longitude: transitsLocation?.lon,
+            transit_place: transitsLocation?.display_name,
+          });
+          setTransitsData(positions);
+          setTransitsDataKey(`${day}|${locKey}`);
+        } catch {
+          // Non-fatal — the text reconnect below still works even if this
+          // fails; the table just stays empty, same as before this fix.
+        }
+      }
+
       transitsStream.reset();
       let seenLength = 0;
       const replay = () => {
@@ -1575,6 +1619,10 @@ const Dashboard = () => {
       }
 
       const locationName = transitsLocation?.display_name || meta.birth_place || null;
+      // Doesn't depend on mode/lang — a same-day regeneration in a different
+      // mode reuses this instead of writing a duplicate copy of the same
+      // planetary positions.
+      const dataKey = `transits_positions|${savedChartId}|${day}|${locKey}`;
 
       // Writes the result somewhere durable (localStorage cache + daily
       // counter) — must not wait for the typewriter effect to catch up, see
@@ -1587,6 +1635,11 @@ const Dashboard = () => {
         if (locationName) localStorage.setItem(`transits_location_name|${savedChartId}`, locationName);
         localStorage.setItem(limitKey, String(usedToday + 1));
         refreshTransitsRemaining();
+        // Raw planetary positions for this day+location — lets a browsed
+        // history entry show its own matching table/lunar-phase cards
+        // instead of always whatever's currently in transitsData. See
+        // the "а записывать в локал сторедж вместе с анализом?" fix.
+        localStorage.setItem(dataKey, JSON.stringify(data));
         // Add to the browsable history list (plans/transits-analysis-history-list.md)
         // — caps + evicts the oldest entry (and its full text) past
         // MAX_TRANSITS_HISTORY.
@@ -1597,6 +1650,7 @@ const Dashboard = () => {
           mode,
           lang: i18n.language || 'ru',
           createdAt: Date.now(),
+          dataKey,
         });
         setTransitsHistory(updatedHistory);
       };
@@ -1772,6 +1826,26 @@ const Dashboard = () => {
   const transitsPanelLoading = transitsViewingHistoryEntry ? false : transitsLoading;
   const transitsPanelPhase: StreamPhase = transitsViewingHistoryEntry ? 'done' : transitsStream.phase;
   const transitsPanelDisplayedText = transitsViewingHistoryEntry ? (transitsPanelAnalysis ?? '') : transitsStream.displayedText;
+  // The planet table / lunar phase cards below the text — same live-vs-
+  // browsing split as the analysis text above, but for the raw positions
+  // (transits_positions|... written by persistTransitsResult, see the
+  // "а записывать в локал сторедж вместе с анализом?" fix). Entries saved
+  // before this existed just won't have a table when browsed — data stays
+  // null, TransitsPanel already renders nothing for that case.
+  let transitsPanelData = transitsData;
+  if (transitsViewingHistoryEntry) {
+    transitsPanelData = null;
+    if (transitsViewingHistoryEntry.dataKey) {
+      const raw = localStorage.getItem(transitsViewingHistoryEntry.dataKey);
+      if (raw) {
+        try {
+          transitsPanelData = JSON.parse(raw);
+        } catch {
+          // stale/corrupt — leave as null, same as "never saved"
+        }
+      }
+    }
+  }
 
   useEffect(() => {
     if (!showProgressions) return;
@@ -3124,7 +3198,7 @@ const Dashboard = () => {
                   {analysisTab === 'transits' && !showPlanetTable && savedChartId && (
                     <div id="transits-section">
                       <TransitsPanel
-                        data={transitsData}
+                        data={transitsPanelData}
                         analysis={transitsPanelAnalysis}
                         transitsReady={transitsPanelReady}
                         displayedText={transitsPanelDisplayedText}

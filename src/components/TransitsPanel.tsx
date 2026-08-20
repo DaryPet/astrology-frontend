@@ -18,6 +18,7 @@ export interface TransitsHistoryEntry {
   mode: string;
   lang: string;
   createdAt: number;
+  dataKey?: string;
 }
 
 interface TransitsPanelProps {
