@@ -45,6 +45,20 @@ import { isInFlight, markInFlight, clearInFlight, waitForClear } from '../utils/
 import { appendStreamText, getStreamText, clearStreamText } from '../utils/streamTextRegistry';
 
 const MAX_TRANSITS_ANALYSIS_PER_DAY = 20;
+// Cap on how many completed transits analyses per chart we keep browsable
+// in the history list (plans/transits-analysis-history-list.md) — each
+// entry's full text lives under its own localStorage key, so an unbounded
+// list would grow storage without limit at a 20/day cap.
+const MAX_TRANSITS_HISTORY = 15;
+
+interface TransitsHistoryEntry {
+  cacheKey: string;
+  day: string;
+  locationName: string | null;
+  mode: string;
+  lang: string;
+  createdAt: number;
+}
 
 interface ChartPlanet {
   full_degree?: number;
@@ -156,6 +170,87 @@ interface PlanetData {
   [key: string]: unknown;
 }
 
+// Reads what to show for this chart's transits form BEFORE any React state
+// exists — used both as a useState lazy initializer (so the very first
+// render already has the right date/location/lock, no post-mount flash of
+// defaults) and from restoreTransitsFromCache (chart switch without a full
+// remount). See plans/transits-date-location-persistence.md.
+//
+// Two sources, checked in order:
+// 1. transits_pending|{chartId} + isInFlight — a background analysis for
+//    this chart is still actually running (isInFlight survives a Dashboard
+//    remount, see utils/inFlightRegistry.ts) -> restore ITS params, locked.
+// 2. transits_last_date/transits_last_location|{chartId} — the most
+//    recently completed analysis for this chart -> restore its params,
+//    unlocked.
+function readInitialTransitsState(
+  chartId: string | number | null
+): { day: string; location: Location | null; locked: boolean } | null {
+  if (chartId === null || chartId === '') return null;
+  const numericId = typeof chartId === 'number' ? chartId : parseInt(chartId, 10);
+  if (isNaN(numericId)) return null;
+
+  const pendingRaw = localStorage.getItem(`transits_pending|${numericId}`);
+  if (pendingRaw) {
+    try {
+      const pending = JSON.parse(pendingRaw) as {
+        day: string; mode: string; location: Location | null; registryKey: string;
+      };
+      if (isInFlight(pending.registryKey)) {
+        return { day: pending.day, location: pending.location, locked: true };
+      }
+    } catch {
+      // Stale/corrupt marker — fall through to the last-completed-analysis check.
+    }
+  }
+
+  const lastDate = localStorage.getItem(`transits_last_date|${numericId}`);
+  if (lastDate) {
+    const lastLocationRaw = localStorage.getItem(`transits_last_location|${numericId}`);
+    let location: Location | null = null;
+    if (lastLocationRaw) {
+      try {
+        location = JSON.parse(lastLocationRaw);
+      } catch {
+        // noop — treat as "use birth location"
+      }
+    }
+    return { day: lastDate, location, locked: false };
+  }
+
+  return null;
+}
+
+// Reads the browsable history of completed transits analyses for a chart —
+// see plans/transits-analysis-history-list.md. The full text of each entry
+// still lives under its own `entry.cacheKey`; this is just the index.
+function readTransitsHistory(chartId: string | number): TransitsHistoryEntry[] {
+  try {
+    const raw = localStorage.getItem(`transits_history|${chartId}`);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+// Adds/refreshes one entry in that index and evicts the oldest ones (index
+// entry + its full-text cacheKey) past MAX_TRANSITS_HISTORY. Called once per
+// completed generation, right where transits_last_key/transits_last_date
+// already get written.
+function appendTransitsHistory(chartId: string | number, entry: TransitsHistoryEntry): TransitsHistoryEntry[] {
+  const historyKey = `transits_history|${chartId}`;
+  const history = readTransitsHistory(chartId).filter(e => e.cacheKey !== entry.cacheKey);
+  history.push(entry);
+  history.sort((a, b) => a.createdAt - b.createdAt);
+  while (history.length > MAX_TRANSITS_HISTORY) {
+    const evicted = history.shift();
+    if (evicted) localStorage.removeItem(evicted.cacheKey);
+  }
+  localStorage.setItem(historyKey, JSON.stringify(history));
+  return history;
+}
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -295,14 +390,53 @@ const Dashboard = () => {
   const [progressedSynastryAdvancedAnalysis, setProgressedSynastryAdvancedAnalysis] = useState<string | null>(null);
   const progressionsFinishRef = useRef<((analysis: string) => void) | null>(null);
   const progressionsStream = useStreamedText((analysis) => progressionsFinishRef.current?.(analysis));
-  const [transitsDate, setTransitsDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
-  const [transitsLocation, setTransitsLocation] = useState<Location | null>(null);
+  // Computed once, synchronously, from the chart id already in the URL —
+  // see readInitialTransitsState. This is what makes the very first render
+  // already show the right date/location/lock instead of flashing today's
+  // date + an enabled button for one tick before an effect catches up.
+  const [initialTransitsState] = useState(() => readInitialTransitsState(chartIdFromUrl));
+  const [transitsDate, setTransitsDate] = useState<string>(
+    () => initialTransitsState?.day ?? new Date().toISOString().slice(0, 10)
+  );
+  const [transitsLocation, setTransitsLocation] = useState<Location | null>(
+    () => initialTransitsState?.location ?? null
+  );
   const [transitsDisplayLocation, setTransitsDisplayLocation] = useState<string | null>(null);
+  // Frozen date the currently-shown analysis text was actually computed
+  // for — separate from transitsDate, which the picker can move forward
+  // without re-running anything (mirrors transitsDisplayLocation).
+  const [transitsAnalysisDate, setTransitsAnalysisDate] = useState<string | null>(null);
   const [transitsData, setTransitsData] = useState<TransitsData | null>(null);
+  // What day+location transitsData actually represents ("{day}|{locKey}") —
+  // see plans/transits-stale-data-and-loading-flag-bugs.md (bug 1).
+  const [transitsDataKey, setTransitsDataKey] = useState<string | null>(null);
   const [transitsAnalysis, setTransitsAnalysis] = useState<string | null>(null);
-  const [transitsLoading, setTransitsLoading] = useState(false);
+  const [transitsLoading, setTransitsLoading] = useState<boolean>(() => initialTransitsState?.locked ?? false);
   const [transitsError, setTransitsError] = useState<string>('');
   const [transitsReady, setTransitsReady] = useState(false);
+  // Persistent "is a transits generation for THIS chart running somewhere in
+  // the background" flag — independent of the currently-picked date/location
+  // in the form, so the "Дать анализ" button stays disabled even if the user
+  // moves the date picker away from the in-flight job's date. See
+  // plans/transits-date-location-persistence.md.
+  const [transitsGenerationLocked, setTransitsGenerationLocked] = useState<boolean>(
+    () => initialTransitsState?.locked ?? false
+  );
+  // Browsable list of previously completed transits analyses for this chart
+  // (plans/transits-analysis-history-list.md). transitsViewingCacheKey marks
+  // which history entry's cacheKey corresponds to the LIVE slot below
+  // (transitsAnalysis et al) — used only to de-duplicate that entry out of
+  // the plain history list (it gets its own pinned "current" row instead).
+  const [transitsHistory, setTransitsHistory] = useState<TransitsHistoryEntry[]>([]);
+  const [transitsViewingCacheKey, setTransitsViewingCacheKey] = useState<string | null>(null);
+  // What the panel actually displays: null = the live slot (transitsAnalysis/
+  // transitsAnalysisDate/... — spinner while generating, streaming while
+  // typing, full text once done, exactly as before). Non-null = a specific
+  // past history entry's static text, browsed via the list — clicking a
+  // history row only ever sets this, it never touches the live slot, so the
+  // live generation keeps progressing untouched underneath and "Текущий" in
+  // the list always leads back to it.
+  const [historyViewOverride, setHistoryViewOverride] = useState<string | null>(null);
   const transitsFinishRef = useRef<((analysis: string) => void) | null>(null);
   const transitsStream = useStreamedText((analysis) => transitsFinishRef.current?.(analysis));
   const [transitsRemaining, setTransitsRemaining] = useState<number>(MAX_TRANSITS_ANALYSIS_PER_DAY);
@@ -782,9 +916,16 @@ const Dashboard = () => {
     setTransitsDate(new Date().toISOString().slice(0, 10));
     setTransitsLocation(null);
     setTransitsData(null);
+    setTransitsDataKey(null);
     setTransitsAnalysis(null);
+    setTransitsAnalysisDate(null);
     setTransitsError('');
     setTransitsReady(false);
+    setTransitsLoading(false);
+    setTransitsGenerationLocked(false);
+    setTransitsHistory([]);
+    setTransitsViewingCacheKey(null);
+    setHistoryViewOverride(null);
   }, []);
 
   const refreshTransitsRemaining = useCallback(() => {
@@ -798,6 +939,28 @@ const Dashboard = () => {
   }, [refreshTransitsRemaining]);
 
   const restoreTransitsFromCache = (chartId: string | number) => {
+    // Re-derive date/location/lock for this specific chart (resetProgressions,
+    // called right before this, wiped them to defaults) — same source of
+    // truth as the mount-time lazy init, so a chart switch without a full
+    // remount lands on the same result. See readInitialTransitsState.
+    const restored = readInitialTransitsState(chartId);
+    if (restored) {
+      setTransitsDate(restored.day);
+      setTransitsLocation(restored.location);
+      setTransitsGenerationLocked(restored.locked);
+      setTransitsLoading(restored.locked);
+    }
+
+    setTransitsHistory(readTransitsHistory(chartId));
+
+    // If a DIFFERENT (or the same) generation is currently locked/in-flight
+    // for this chart, do NOT show the last-completed text here — it would
+    // be the previous result, not the one that matches the just-restored
+    // date. Leave the live slot empty so the spinner (loading is already
+    // true from `restored.locked` above) and the reconnect effect below
+    // take over instead. See plans/transits-analysis-history-list.md.
+    if (restored?.locked) return;
+
     const lastKey = localStorage.getItem(`transits_last_key|${chartId}`);
     if (!lastKey) return;
     const cached = localStorage.getItem(lastKey);
@@ -805,7 +968,10 @@ const Dashboard = () => {
       setTransitsAnalysis(cached);
       const locationName = localStorage.getItem(`transits_location_name|${chartId}`);
       setTransitsDisplayLocation(locationName);
+      const lastDate = localStorage.getItem(`transits_last_date|${chartId}`);
+      setTransitsAnalysisDate(lastDate);
       setTransitsReady(true);
+      setTransitsViewingCacheKey(lastKey);
     }
   };
 
@@ -1155,6 +1321,7 @@ const Dashboard = () => {
     }
 
     const day = date || transitsDate || new Date().toISOString().slice(0, 10);
+    const locKey = transitsLocation ? `${transitsLocation.lat},${transitsLocation.lon}` : 'natal';
 
     setTransitsLoading(true);
     setTransitsError('');
@@ -1175,6 +1342,11 @@ const Dashboard = () => {
         transit_place: transitsLocation?.display_name,
       });
       setTransitsData(data);
+      // Tags what day+location this actually represents — runTransitsAnalysis
+      // below only reuses transitsData when this matches, instead of trusting
+      // "not null" (which could be stale from an earlier date). See
+      // plans/transits-stale-data-and-loading-flag-bugs.md.
+      setTransitsDataKey(`${day}|${locKey}`);
 
       if (!opts?.keepAnalysis) {
         setTransitsAnalysis(null);
@@ -1216,6 +1388,22 @@ const Dashboard = () => {
     // alone only says THAT something is running, not what params to rebuild
     // it with, since transitsLocation/transitsDate don't survive a remount.
     const pendingKey = `transits_pending|${savedChartId}`;
+    const releaseTransitsLock = () => {
+      localStorage.removeItem(pendingKey);
+      clearInFlight(registryKey);
+      setTransitsGenerationLocked(false);
+    };
+
+    if (transitsGenerationLocked && !isInFlight(registryKey)) {
+      // A transits job for THIS chart is already running in the background
+      // under different params (date/location/mode) — refuse to start a
+      // second, parallel stream: it would overwrite the single pendingKey
+      // slot and race two results into the same state. See
+      // plans/transits-date-location-persistence.md.
+      setTransitsError(t('dashboard.transits.generationInProgress'));
+      return;
+    }
+
     if (isInFlight(registryKey)) {
       // Same reasoning as loadProgressions above — reconnect the typewriter
       // to the still-running background stream by replaying
@@ -1226,7 +1414,16 @@ const Dashboard = () => {
       // blindly retrying would silently fire another real generation on
       // every failure instead of surfacing it.
       setTransitsLoading(true);
+      setTransitsGenerationLocked(true);
       setTransitsError('');
+      // Reconnecting to a job whose date/location may differ from whatever
+      // was shown before (e.g. restoreTransitsFromCache intentionally left
+      // this empty when locked) — make sure the live slot reflects "still
+      // generating" (spinner) rather than a stale previous result, and stop
+      // browsing any history entry so the reconnect is actually visible.
+      setTransitsAnalysis(null);
+      setTransitsReady(false);
+      setHistoryViewOverride(null);
       transitsStream.reset();
       let seenLength = 0;
       const replay = () => {
@@ -1241,13 +1438,20 @@ const Dashboard = () => {
 
       transitsFinishRef.current = (analysis: string) => {
         setTransitsAnalysis(analysis);
+        setTransitsAnalysisDate(day);
+        setTransitsDisplayLocation(transitsLocation?.display_name || meta.birth_place || null);
         setTransitsReady(true);
         setTransitsLoading(false);
+        setTransitsViewingCacheKey(cacheKey);
+        // The instance that actually owns the request wrote the history
+        // entry via its own persistTransitsResult — pick it up here too.
+        if (savedChartId) setTransitsHistory(readTransitsHistory(savedChartId));
       };
 
       waitForClear(registryKey, () => {
         window.clearInterval(replayInterval);
         replay();
+        setTransitsGenerationLocked(false);
         localStorage.removeItem(pendingKey);
         const result = localStorage.getItem(cacheKey);
         if (result) {
@@ -1266,6 +1470,7 @@ const Dashboard = () => {
         maxAttempts: 150,
         onTimeout: () => {
           window.clearInterval(replayInterval);
+          setTransitsGenerationLocked(false);
           localStorage.removeItem(pendingKey);
           transitsStream.handleError();
           setTransitsLoading(false);
@@ -1278,11 +1483,23 @@ const Dashboard = () => {
     localStorage.setItem(pendingKey, JSON.stringify({ day, mode, location: transitsLocation, registryKey }));
 
     setTransitsLoading(true);
+    setTransitsGenerationLocked(true);
     setTransitsError('');
+    // A genuinely new generation is starting — clear the live slot so the
+    // spinner/typewriter show instead of whatever was there before. Nothing
+    // is lost: the previous result (if any) is already in transitsHistory.
+    // Also stop browsing any history entry, so this is actually visible.
+    setTransitsAnalysis(null);
+    setTransitsReady(false);
+    setHistoryViewOverride(null);
     isTransitsLoadingRef.current = true;
 
     try {
-      let data = transitsData;
+      // Only reuse transitsData if it's actually tagged for THIS day+location
+      // — being merely non-null isn't enough, it could be stale from an
+      // earlier date if loadTransitsData's own recalculation for the current
+      // pick hasn't landed yet. See plans/transits-stale-data-and-loading-flag-bugs.md.
+      let data = transitsDataKey === `${day}|${locKey}` ? transitsData : null;
       if (!data) {
         data = await astrologyAPI.calculateTransits({
           birth_date: meta.birth_date,
@@ -1298,16 +1515,19 @@ const Dashboard = () => {
           transit_place: transitsLocation?.display_name,
         });
         setTransitsData(data);
+        setTransitsDataKey(`${day}|${locKey}`);
       }
 
       const cached = localStorage.getItem(cacheKey);
       if (cached) {
         setTransitsAnalysis(cached);
+        setTransitsAnalysisDate(day);
         setTransitsReady(true);
         setTransitsLoading(false);
         isTransitsLoadingRef.current = false;
-        localStorage.removeItem(pendingKey);
-        clearInFlight(registryKey);
+        setTransitsViewingCacheKey(cacheKey);
+        setHistoryViewOverride(null);
+        releaseTransitsLock();
         return;
       }
 
@@ -1318,8 +1538,7 @@ const Dashboard = () => {
         setTransitsError(t('dashboard.transits.limitReached', { limit: MAX_TRANSITS_ANALYSIS_PER_DAY }));
         setTransitsLoading(false);
         isTransitsLoadingRef.current = false;
-        localStorage.removeItem(pendingKey);
-        clearInFlight(registryKey);
+        releaseTransitsLock();
         return;
       }
 
@@ -1331,9 +1550,23 @@ const Dashboard = () => {
       const persistTransitsResult = (analysis: string) => {
         localStorage.setItem(cacheKey, analysis);
         localStorage.setItem(`transits_last_key|${savedChartId}`, cacheKey);
+        localStorage.setItem(`transits_last_date|${savedChartId}`, day);
+        localStorage.setItem(`transits_last_location|${savedChartId}`, JSON.stringify(transitsLocation));
         if (locationName) localStorage.setItem(`transits_location_name|${savedChartId}`, locationName);
         localStorage.setItem(limitKey, String(usedToday + 1));
         refreshTransitsRemaining();
+        // Add to the browsable history list (plans/transits-analysis-history-list.md)
+        // — caps + evicts the oldest entry (and its full text) past
+        // MAX_TRANSITS_HISTORY.
+        const updatedHistory = appendTransitsHistory(savedChartId as string | number, {
+          cacheKey,
+          day,
+          locationName,
+          mode,
+          lang: i18n.language || 'ru',
+          createdAt: Date.now(),
+        });
+        setTransitsHistory(updatedHistory);
       };
 
       // Cosmetic reveal only — gated behind the typewriter effect visually
@@ -1341,8 +1574,10 @@ const Dashboard = () => {
       // component has unmounted, which is fine: nobody's watching.
       const revealTransitsResult = (analysis: string) => {
         setTransitsAnalysis(analysis);
+        setTransitsAnalysisDate(day);
         setTransitsReady(true);
         setTransitsDisplayLocation(locationName);
+        setTransitsViewingCacheKey(cacheKey);
       };
 
       transitsStream.reset();
@@ -1383,8 +1618,7 @@ const Dashboard = () => {
             // succeeded (see inFlightRegistry.ts).
             persistTransitsResult(result.analysis);
             clearStreamText(registryKey);
-            localStorage.removeItem(pendingKey);
-            clearInFlight(registryKey);
+            releaseTransitsLock();
             transitsStream.handleFinal(result.analysis);
           },
           onError: async (detail) => {
@@ -1409,8 +1643,7 @@ const Dashboard = () => {
                 setTransitsLoading(false);
                 isTransitsLoadingRef.current = false;
                 clearStreamText(registryKey);
-                localStorage.removeItem(pendingKey);
-                clearInFlight(registryKey);
+                releaseTransitsLock();
               }
               return;
             }
@@ -1419,8 +1652,7 @@ const Dashboard = () => {
             setTransitsLoading(false);
             isTransitsLoadingRef.current = false;
             clearStreamText(registryKey);
-            localStorage.removeItem(pendingKey);
-            clearInFlight(registryKey);
+            releaseTransitsLock();
           },
         }
       );
@@ -1430,15 +1662,84 @@ const Dashboard = () => {
       setTransitsError(typeof errorDetail === 'string' ? errorDetail : t('dashboard.transits.error'));
       setTransitsLoading(false);
       isTransitsLoadingRef.current = false;
-      localStorage.removeItem(pendingKey);
-      clearInFlight(registryKey);
+      releaseTransitsLock();
     }
-  }, [chartDataForAnalysis, savedChartId, analysisMode, transitsDate, transitsLocation, transitsData, t, refreshTransitsRemaining, transitsStream]);
+  }, [chartDataForAnalysis, savedChartId, analysisMode, transitsDate, transitsLocation, transitsData, transitsDataKey, transitsGenerationLocked, t, refreshTransitsRemaining, transitsStream]);
 
   const handleTransitsDateChange = useCallback((date: string) => {
     setTransitsDate(date);
+    // Moving the date picker implicitly means "show me what's live for
+    // this pick" — stop browsing whatever history entry was open.
+    setHistoryViewOverride(null);
     loadTransitsData(date);
   }, [loadTransitsData]);
+
+  // Selects what the panel displays: a specific past entry from the list
+  // (by cacheKey), or null to go back to the live slot ("Текущий" row).
+  // Never touches transitsAnalysis/transitsReady/etc — the live generation
+  // (if any) keeps progressing untouched underneath, so it's always there
+  // to come back to. See plans/transits-analysis-history-list.md.
+  const handleSelectTransitsHistoryEntry = useCallback((entry: TransitsHistoryEntry) => {
+    if (entry.cacheKey === transitsViewingCacheKey) {
+      // This entry IS the live one — just point back at it instead of
+      // pinning to a frozen copy of the same text.
+      setHistoryViewOverride(null);
+      return;
+    }
+    setHistoryViewOverride(entry.cacheKey);
+  }, [transitsViewingCacheKey]);
+
+  // "Текущий" — the pinned row in the history list that always leads back
+  // to the live slot. Derived fresh on every render (not stored state): the
+  // date/location picker can be moved around while a DIFFERENT job is
+  // locked/generating (the guard in runTransitsAnalysis only blocks
+  // starting a second stream, it doesn't freeze the picker), so reading the
+  // in-flight job's own day/location straight out of transits_pending is
+  // the only way this can't drift from what's actually running.
+  const transitsCurrentEntry = (() => {
+    if (transitsGenerationLocked) {
+      if (!savedChartId) return null;
+      try {
+        const raw = localStorage.getItem(`transits_pending|${savedChartId}`);
+        if (!raw) return null;
+        const pending = JSON.parse(raw) as { day: string; location: Location | null };
+        return { day: pending.day, locationName: pending.location?.display_name ?? null, status: 'locked' as const };
+      } catch {
+        return null;
+      }
+    }
+    if (transitsReady && transitsAnalysis) {
+      return {
+        day: transitsAnalysisDate ?? transitsDate,
+        locationName: transitsDisplayLocation ?? null,
+        status: 'ready' as const,
+      };
+    }
+    return null;
+  })();
+
+  // Same entry, once it completes, also lands in transitsHistory (written by
+  // persistTransitsResult) — filter it out of the plain list since it's
+  // already shown as the pinned row above.
+  const transitsHistoryForList = transitsHistory.filter(e => !(
+    transitsCurrentEntry && e.day === transitsCurrentEntry.day && e.locationName === transitsCurrentEntry.locationName
+  ));
+
+  // What the panel actually renders: the live slot (untouched, exactly as
+  // before) unless the user clicked a specific past entry in the list.
+  const transitsViewingHistoryEntry = historyViewOverride
+    ? transitsHistory.find(e => e.cacheKey === historyViewOverride) ?? null
+    : null;
+  const transitsViewingHistoryText = transitsViewingHistoryEntry
+    ? localStorage.getItem(transitsViewingHistoryEntry.cacheKey)
+    : null;
+  const transitsPanelAnalysis = transitsViewingHistoryEntry ? transitsViewingHistoryText : transitsAnalysis;
+  const transitsPanelAnalysisDate = transitsViewingHistoryEntry ? transitsViewingHistoryEntry.day : transitsAnalysisDate;
+  const transitsPanelAnalysisLocation = transitsViewingHistoryEntry ? transitsViewingHistoryEntry.locationName : transitsDisplayLocation;
+  const transitsPanelReady = transitsViewingHistoryEntry ? true : transitsReady;
+  const transitsPanelLoading = transitsViewingHistoryEntry ? false : transitsLoading;
+  const transitsPanelPhase: StreamPhase = transitsViewingHistoryEntry ? 'done' : transitsStream.phase;
+  const transitsPanelDisplayedText = transitsViewingHistoryEntry ? (transitsPanelAnalysis ?? '') : transitsStream.displayedText;
 
   useEffect(() => {
     if (!showProgressions) return;
@@ -2792,21 +3093,28 @@ const Dashboard = () => {
                     <div id="transits-section">
                       <TransitsPanel
                         data={transitsData}
-                        analysis={transitsAnalysis}
-                        transitsReady={transitsReady}
-                        displayedText={transitsStream.displayedText}
-                        phase={transitsStream.phase}
-                        loading={transitsLoading}
+                        analysis={transitsPanelAnalysis}
+                        transitsReady={transitsPanelReady}
+                        displayedText={transitsPanelDisplayedText}
+                        phase={transitsPanelPhase}
+                        loading={transitsPanelLoading}
                         error={transitsError}
                         selectedDate={transitsDate}
                         onDateChange={handleTransitsDateChange}
                         onLocationChange={setTransitsLocation}
                         transitsLocation={transitsLocation}
                         birthPlace={chartDataForAnalysis?.meta?.birth_place}
-                        analysisLocation={transitsDisplayLocation}
-                        onRunAnalysis={() => runTransitsAnalysis()}
+                        analysisLocation={transitsPanelAnalysisLocation}
+                        analysisDate={transitsPanelAnalysisDate}
+                        onRunAnalysis={() => { setHistoryViewOverride(null); runTransitsAnalysis(); }}
                         transitsRemaining={transitsRemaining}
                         transitsLimit={MAX_TRANSITS_ANALYSIS_PER_DAY}
+                        generationLocked={transitsGenerationLocked}
+                        history={transitsHistoryForList}
+                        viewingCacheKey={historyViewOverride}
+                        onSelectHistoryEntry={handleSelectTransitsHistoryEntry}
+                        currentEntry={transitsCurrentEntry}
+                        onSelectCurrent={() => setHistoryViewOverride(null)}
                       />
                     </div>
                   )}

@@ -8,6 +8,18 @@ import type { Location } from './LocationInput';
 import type { StreamPhase } from '../hooks/useStreamedText';
 import { pickLocalized } from '../i18n/localizedField';
 
+// Mirrors TransitsHistoryEntry in Dashboard.tsx — kept local (structural
+// typing) since this is a presentational component, see
+// plans/transits-analysis-history-list.md.
+export interface TransitsHistoryEntry {
+  cacheKey: string;
+  day: string;
+  locationName: string | null;
+  mode: string;
+  lang: string;
+  createdAt: number;
+}
+
 interface TransitsPanelProps {
   data: TransitsData | null;
   analysis: string | null;
@@ -21,10 +33,21 @@ interface TransitsPanelProps {
   onLocationChange?: (location: Location | null) => void;
   transitsLocation?: Location | null;
   analysisLocation?: string | null;
+  analysisDate?: string | null;
   birthPlace?: string;
   onRunAnalysis?: () => void;
   transitsRemaining?: number;
   transitsLimit?: number;
+  generationLocked?: boolean;
+  history?: TransitsHistoryEntry[];
+  viewingCacheKey?: string | null;
+  onSelectHistoryEntry?: (entry: TransitsHistoryEntry) => void;
+  // Pinned "Текущий" row — the live slot (whatever's currently generating
+  // or was last completed for the picked date), always present in the list
+  // so it's never lost while browsing older entries. null = nothing live
+  // yet (fresh chart, never run).
+  currentEntry?: { day: string; locationName: string | null; status: 'locked' | 'ready' } | null;
+  onSelectCurrent?: () => void;
 }
 
 // Порядок вывода: Луна и быстрые первыми (день), потом медленные (фон)
@@ -35,8 +58,9 @@ const PLANET_ORDER = [
 ];
 
 const TransitsPanel: React.FC<TransitsPanelProps> = ({
-  data, analysis, transitsReady, displayedText = '', phase = 'idle', loading, error, selectedDate, onDateChange, onLocationChange, transitsLocation, birthPlace, analysisLocation,
-  onRunAnalysis, transitsRemaining, transitsLimit
+  data, analysis, transitsReady, displayedText = '', phase = 'idle', loading, error, selectedDate, onDateChange, onLocationChange, transitsLocation, birthPlace, analysisLocation, analysisDate,
+  onRunAnalysis, transitsRemaining, transitsLimit, generationLocked, history = [], viewingCacheKey, onSelectHistoryEntry,
+  currentEntry, onSelectCurrent
 }) => {
   const { t, i18n } = useTranslation();
 
@@ -173,16 +197,16 @@ const TransitsPanel: React.FC<TransitsPanelProps> = ({
         <button
           type="button"
           onClick={() => onRunAnalysis?.()}
-          disabled={loading || transitsRemaining === 0}
+          disabled={loading || generationLocked || transitsRemaining === 0}
           style={{
             padding: '10px 18px',
             border: 'none',
             borderRadius: '8px',
-            background: (loading || transitsRemaining === 0) ? 'var(--bg-secondary)' : 'var(--accent, #8b5cf6)',
-            color: (loading || transitsRemaining === 0) ? 'var(--text-secondary)' : '#fff',
+            background: (loading || generationLocked || transitsRemaining === 0) ? 'var(--bg-secondary)' : 'var(--accent, #8b5cf6)',
+            color: (loading || generationLocked || transitsRemaining === 0) ? 'var(--text-secondary)' : '#fff',
             fontSize: '14px',
             fontWeight: 600,
-            cursor: (loading || transitsRemaining === 0) ? 'not-allowed' : 'pointer',
+            cursor: (loading || generationLocked || transitsRemaining === 0) ? 'not-allowed' : 'pointer',
           }}
         >
           {t('dashboard.transits.giveAnalysis')}
@@ -194,9 +218,13 @@ const TransitsPanel: React.FC<TransitsPanelProps> = ({
         )}
       </div>
 
-      {/* Локация транзитов: если есть готовый анализ — показываем место расчёта, иначе текущий выбор */}
+      {/* На что рассчитан показанный анализ: если он уже готов (или ещё
+          стримится) — дата/место заморожены на момент запуска, иначе —
+          текущий выбор в форме выше. */}
       <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '12px' }}>
-        📍 {t('dashboard.transits.locationLabel')}:{' '}
+        📅 {t('dashboard.transits.calculatedFor')}: {(analysis && analysisDate) ? analysisDate : selectedDate}
+        {' · '}
+        📍{' '}
         {analysis && analysisLocation
           ? analysisLocation
           : transitsLocation
@@ -205,6 +233,77 @@ const TransitsPanel: React.FC<TransitsPanelProps> = ({
               ? birthPlace
               : t('dashboard.transits.birthLocation')}
       </div>
+
+      {/* Список готовых анализов этой карты — клик подставляет текст из
+          localStorage без похода в сеть и не трогает форму выбора даты/
+          места и уж тем более фоновую генерацию, если она сейчас идёт.
+          Не дропдаун — обычные кликабельные строки. "Текущий" — закреплённая
+          первая строка, ведущая обратно к живому слоту (спиннер/стриминг/
+          готовый текст — что сейчас реально происходит для выбранной даты),
+          даже пока просматривается какая-то из более старых записей. */}
+      {(currentEntry || history.length > 0) && (
+        <div style={{ marginBottom: '16px' }}>
+          <h4 style={{ color: 'var(--text-primary)', fontSize: '14px', marginBottom: '8px' }}>
+            {t('dashboard.transits.historyTitle')}
+          </h4>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {currentEntry && (
+              <button
+                type="button"
+                onClick={() => onSelectCurrent?.()}
+                style={{
+                  textAlign: 'left',
+                  padding: '8px 12px',
+                  border: `1px solid ${!viewingCacheKey ? 'var(--accent, #8b5cf6)' : 'var(--border)'}`,
+                  borderRadius: '8px',
+                  background: !viewingCacheKey ? 'var(--bg-secondary)' : 'none',
+                  color: 'var(--text-primary)',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                {t('dashboard.transits.currentLabel')} — {currentEntry.day}
+                {currentEntry.locationName ? ` · ${currentEntry.locationName}` : ''}
+                {currentEntry.status === 'locked' && (
+                  <span style={{ marginLeft: '8px', color: 'var(--accent, #8b5cf6)' }}>
+                    ⏳ {t('dashboard.transits.inProgress')}
+                  </span>
+                )}
+                {!viewingCacheKey && currentEntry.status === 'ready' && (
+                  <span style={{ marginLeft: '8px', color: 'var(--accent, #8b5cf6)' }}>✓</span>
+                )}
+              </button>
+            )}
+            {history.slice().reverse().map((entry) => {
+              const isActive = entry.cacheKey === viewingCacheKey;
+              return (
+                <button
+                  key={entry.cacheKey}
+                  type="button"
+                  onClick={() => onSelectHistoryEntry?.(entry)}
+                  style={{
+                    textAlign: 'left',
+                    padding: '8px 12px',
+                    border: `1px solid ${isActive ? 'var(--accent, #8b5cf6)' : 'var(--border)'}`,
+                    borderRadius: '8px',
+                    background: isActive ? 'var(--bg-secondary)' : 'none',
+                    color: 'var(--text-primary)',
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {entry.day}
+                  {entry.locationName ? ` · ${entry.locationName}` : ''}
+                  {isActive && (
+                    <span style={{ marginLeft: '8px', color: 'var(--accent, #8b5cf6)' }}>✓</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {loading && phase !== 'typing' && !analysis && (
         <div style={{ marginTop: '20px' }}>
