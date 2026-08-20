@@ -327,6 +327,14 @@ const Dashboard = () => {
   const [pendingChatCharts, setPendingChatCharts] = useState<Set<number>>(new Set());
   const savedChartIdRef = useRef<string | number | null>(null);
   const chatLoading = savedChartId != null && pendingChatCharts.has(Number(savedChartId));
+  // Same reentrancy guard as isLoadingRef/isTransitsLoadingRef/
+  // planetInFlightRef/aspectInFlightRef above — a ref (not state) so the
+  // check is synchronous. Without it, loadChatForChart entered twice for
+  // the same chart while its resume is still running (React.StrictMode
+  // double-invokes effects in dev; the same could happen from any other
+  // double call) starts two independent replay loops into the single
+  // shared chatStream, interleaving two copies of the same text.
+  const chatResumeInFlightRef = useRef<Record<string, boolean>>({});
   // Cosmetic only (typewriter catch-up) — persistence happens synchronously
   // in sendChatMessage's onFinal instead, see the comment there.
   const chatStream = useStreamedText(() => {});
@@ -478,6 +486,8 @@ const Dashboard = () => {
     const numericChartId = Number(chartId);
     const registryKey = `chat:${numericChartId}`;
     if (!isInFlight(registryKey)) return;
+    if (chatResumeInFlightRef.current[registryKey]) return;
+    chatResumeInFlightRef.current[registryKey] = true;
 
     setPendingChatCharts(prev => new Set(prev).add(numericChartId));
     chatStream.reset();
@@ -499,6 +509,7 @@ const Dashboard = () => {
 
     waitForClear(registryKey, async () => {
       window.clearInterval(replayInterval);
+      delete chatResumeInFlightRef.current[registryKey];
       try {
         const dbMessages = await chartsApi.getChatMessages(numericChartId);
         if (Number(savedChartIdRef.current) === numericChartId) {
@@ -521,6 +532,7 @@ const Dashboard = () => {
       maxAttempts: 60,
       onTimeout: () => {
         window.clearInterval(replayInterval);
+        delete chatResumeInFlightRef.current[registryKey];
         setPendingChatCharts(prev => {
           const next = new Set(prev);
           next.delete(numericChartId);
