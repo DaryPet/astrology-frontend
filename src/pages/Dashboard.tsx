@@ -942,11 +942,15 @@ const Dashboard = () => {
     setHistoryViewOverride(null);
   }, []);
 
-  const refreshTransitsRemaining = useCallback(() => {
-    const today = new Date().toISOString().slice(0, 10);
-    const usedToday = parseInt(localStorage.getItem(`transits_limit|${today}`) || '0', 10);
-    setTransitsRemaining(Math.max(0, MAX_TRANSITS_ANALYSIS_PER_DAY - usedToday));
-  }, []);
+  const refreshTransitsRemaining = useCallback(async () => {
+    if (!user?.id) return;
+    try {
+      const usedToday = await chartsApi.getTransitsUsageToday(user.id);
+      setTransitsRemaining(Math.max(0, MAX_TRANSITS_ANALYSIS_PER_DAY - usedToday));
+    } catch (err) {
+      console.error('Failed to load transits usage:', err);
+    }
+  }, [user?.id]);
 
   useEffect(() => {
     refreshTransitsRemaining();
@@ -1525,6 +1529,11 @@ const Dashboard = () => {
         const result = localStorage.getItem(cacheKey);
         if (result) {
           transitsStream.handleFinal(result);
+          // The instance that actually owned the request already recorded
+          // usage in Supabase (persistTransitsResult) — this instance just
+          // needs to re-ask for the current count so its own "Залишилось
+          // X з Y" isn't stuck at whatever it showed before reconnecting.
+          refreshTransitsRemaining();
         } else {
           transitsStream.handleError();
           setTransitsLoading(false);
@@ -1607,9 +1616,18 @@ const Dashboard = () => {
         return;
       }
 
-      const today = new Date().toISOString().slice(0, 10);
-      const limitKey = `transits_limit|${today}`;
-      const usedToday = parseInt(localStorage.getItem(limitKey) || '0', 10);
+      if (!user?.id) {
+        setTransitsError(t('dashboard.transits.error'));
+        setTransitsLoading(false);
+        isTransitsLoadingRef.current = false;
+        releaseTransitsLock();
+        return;
+      }
+      // Real count of today's rows in Supabase, not a localStorage counter —
+      // see plans/transits-daily-limit-server-side.md. Still a client-side
+      // check (not enforced on the backend before the LLM call), but no
+      // longer editable via DevTools the way the old localStorage value was.
+      const usedToday = await chartsApi.getTransitsUsageToday(user.id);
       if (usedToday >= MAX_TRANSITS_ANALYSIS_PER_DAY) {
         setTransitsError(t('dashboard.transits.limitReached', { limit: MAX_TRANSITS_ANALYSIS_PER_DAY }));
         setTransitsLoading(false);
@@ -1626,15 +1644,22 @@ const Dashboard = () => {
 
       // Writes the result somewhere durable (localStorage cache + daily
       // counter) — must not wait for the typewriter effect to catch up, see
-      // onFinal below.
-      const persistTransitsResult = (analysis: string) => {
+      // onFinal below. Async now (was fire-and-forget): refreshTransitsRemaining
+      // re-queries the Supabase COUNT right after, so the insert must actually
+      // land first — firing both in parallel raced the SELECT ahead of the
+      // INSERT and kept showing the stale "5 of 5" until a reload re-read it.
+      const persistTransitsResult = async (analysis: string) => {
         localStorage.setItem(cacheKey, analysis);
         localStorage.setItem(`transits_last_key|${savedChartId}`, cacheKey);
         localStorage.setItem(`transits_last_date|${savedChartId}`, day);
         localStorage.setItem(`transits_last_location|${savedChartId}`, JSON.stringify(transitsLocation));
         if (locationName) localStorage.setItem(`transits_location_name|${savedChartId}`, locationName);
-        localStorage.setItem(limitKey, String(usedToday + 1));
-        refreshTransitsRemaining();
+        try {
+          await chartsApi.recordTransitsUsage(user.id, savedChartId);
+        } catch (err) {
+          console.error('Failed to record transits usage:', err);
+        }
+        await refreshTransitsRemaining();
         // Raw planetary positions for this day+location — lets a browsed
         // history entry show its own matching table/lunar-phase cards
         // instead of always whatever's currently in transitsData. See
@@ -1750,7 +1775,7 @@ const Dashboard = () => {
       isTransitsLoadingRef.current = false;
       releaseTransitsLock();
     }
-  }, [chartDataForAnalysis, savedChartId, analysisMode, transitsDate, transitsLocation, transitsData, transitsDataKey, transitsGenerationLocked, t, refreshTransitsRemaining, transitsStream]);
+  }, [chartDataForAnalysis, savedChartId, analysisMode, transitsDate, transitsLocation, transitsData, transitsDataKey, transitsGenerationLocked, user?.id, t, refreshTransitsRemaining, transitsStream]);
 
   const handleTransitsDateChange = useCallback((date: string) => {
     setTransitsDate(date);

@@ -96,6 +96,32 @@ export const chartsApi = {
     return count >= CHARTS_LIMIT;
   },
 
+  /**
+   * Дневной лимит AI-анализов транзитов — считаем реальные строки в
+   * Supabase (тот же приём, что getChartsCount), а не localStorage-счётчик,
+   * который правится в DevTools. Одна строка = один успешно завершённый
+   * анализ; см. openspec/changes/../transits-usage-log-table.sql.
+   * Not a hard server-side limit — see plans/transits-daily-limit-server-side.md.
+   */
+  async getTransitsUsageToday(userId: string): Promise<number> {
+    const todayStart = new Date();
+    todayStart.setUTCHours(0, 0, 0, 0);
+    const { count, error } = await supabase
+      .from('transits_usage_log')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .gte('created_at', todayStart.toISOString());
+    if (error) throw error;
+    return count || 0;
+  },
+
+  async recordTransitsUsage(userId: string, chartId: string | number) {
+    const { error } = await supabase
+      .from('transits_usage_log')
+      .insert({ user_id: userId, chart_id: chartId });
+    if (error) throw error;
+  },
+
   async checkChartByName(userId: string, name: string) {
     const { data, error } = await supabase
       .from('natal_charts')
