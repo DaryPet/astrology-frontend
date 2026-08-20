@@ -255,6 +255,10 @@
       "locationPlaceholder": "Select transit location...",
       "useBirthLocation": "Use birth location",
       "locationLabel": "Location",
+      "calculatedFor": "Calculated for",
+      "historyTitle": "Ready analyses",
+      "currentLabel": "Current",
+      "inProgress": "generating…",
       "birthLocation": "Birth place (natal chart)",
       "subtitle": "Real planetary positions for the chosen day, overlaid on your natal chart. Defaults to today; any past or future day can be selected.",
       "moonOfDay": "Moon of the Day",
@@ -269,7 +273,8 @@
       "giveAnalysis": "Get analysis",
       "remaining": "{{count}} of {{limit}} analyses left today",
       "error": "Failed to calculate transits. Please try again.",
-      "limitReached": "Daily limit of AI transit analyses reached ({{limit}}). Try again tomorrow."
+      "limitReached": "Daily limit of AI transit analyses reached ({{limit}}). Try again tomorrow.",
+      "generationInProgress": "Please wait for the current transit analysis to finish before starting a new one."
     }
   },
   "confirm": {
