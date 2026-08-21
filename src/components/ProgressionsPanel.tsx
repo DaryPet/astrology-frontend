@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import MarkdownContent from './MarkdownContent';
 import ProcessingMessage from './ProcessingMessage';
+import LiveSkyCarousel from './LiveSkyCarousel';
 import ProgressedPlanetsTable from './ProgressedPlanetsTable';
 import type { ProgressionsData, ProgressedPlanet, ProgressionAspect } from '../services/api';
 import type { StreamPhase } from '../hooks/useStreamedText';
@@ -57,6 +58,10 @@ const ProgressionsPanel: React.FC<ProgressionsPanelProps> = ({ data, analysis, d
             size="sm"
             title={phase === 'generating' ? t('dashboard.fullAnalysis.generating') : t('dashboard.fullAnalysis.searching')}
             phase={phase === 'generating' ? 'generating' : 'searching'}
+          />
+          <LiveSkyCarousel
+            variant="progressed"
+            people={data?.progressed_planets ? [{ planets: data.progressed_planets }] : []}
           />
         </div>
       )}

@@ -16,14 +16,30 @@ interface ProcessingMessageProps {
    * panels).
    */
   phase?: 'searching' | 'generating';
+  /**
+   * Optional one-time greeting shown in place of the hint line for the
+   * first few seconds after mount ("Welcome, dear soul…"), then the
+   * normal hint/rotation takes over. Static i18n text, purely decorative —
+   * no extra requests/LLM calls. Only affects call sites that pass it
+   * (see plans/live-sky-v2-loading-experience.md).
+   */
+  intro?: string;
 }
 
 const ROTATE_MS = 3500;
+const INTRO_MS = 6000;
 
-const ProcessingMessage = ({ size = 'md', title, phase }: ProcessingMessageProps) => {
+const ProcessingMessage = ({ size = 'md', title, phase, intro }: ProcessingMessageProps) => {
   const { t } = useTranslation();
   const [hintIndex, setHintIndex] = useState(0);
+  const [introActive, setIntroActive] = useState(Boolean(intro));
   const prevPhaseRef = useRef(phase);
+
+  useEffect(() => {
+    if (!intro) return;
+    const id = window.setTimeout(() => setIntroActive(false), INTRO_MS);
+    return () => window.clearTimeout(id);
+  }, [intro]);
 
   const rawHints = phase ? t(`analysis.processingHints.${phase}`, { returnObjects: true }) : null;
   const rotatingHints = Array.isArray(rawHints) ? (rawHints as string[]) : null;
@@ -39,12 +55,14 @@ const ProcessingMessage = ({ size = 'md', title, phase }: ProcessingMessageProps
   }, [phase]);
 
   useEffect(() => {
-    if (!rotatingHints || rotatingHints.length < 2) return;
+    // While the intro greeting is up, hold the rotation so it starts from
+    // the first phrase once the greeting fades.
+    if (introActive || !rotatingHints || rotatingHints.length < 2) return;
     const id = window.setInterval(() => {
       setHintIndex(i => (i + 1) % rotatingHints.length);
     }, ROTATE_MS);
     return () => window.clearInterval(id);
-  }, [rotatingHints]);
+  }, [rotatingHints, introActive]);
 
   const sizeStyles = {
     sm: {
@@ -78,10 +96,13 @@ const ProcessingMessage = ({ size = 'md', title, phase }: ProcessingMessageProps
 
   const styles = sizeStyles[size];
 
-  const hintText = rotatingHints?.[hintIndex] ?? t('analysis.processingHint');
-  // A rotating, stage-matched phrase is worth showing even where the
-  // generic static hint is normally hidden (size="sm").
-  const hintStyle = phase ? { ...styles.hint, display: 'block' } : styles.hint;
+  const hintText = (introActive && intro)
+    ? intro
+    : (rotatingHints?.[hintIndex] ?? t('analysis.processingHint'));
+  // A rotating, stage-matched phrase (or the intro greeting) is worth
+  // showing even where the generic static hint is normally hidden
+  // (size="sm").
+  const hintStyle = (phase || intro) ? { ...styles.hint, display: 'block' } : styles.hint;
 
   return (
     <div className="processing-container" style={styles.container}>

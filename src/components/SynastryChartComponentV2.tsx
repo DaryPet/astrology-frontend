@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import * as d3 from 'd3';
 
 /**
@@ -60,7 +61,12 @@ interface ChartData {
   planets?: Record<string, ChartPlanet>;
   houses?: Record<string, ChartHouse>;
 }
-interface Aspect { planet1: string; planet2: string; aspect: string; aspect_ru?: string; orb?: number; }
+// `aspect` is the canonical English key from the backend (Conjunction,
+// Opposition, …) — the same keys ASPECT_STYLE and i18n `planets.aspectNames`
+// use, so the tooltip translates off it. The localized `aspect_ru` the
+// backend also sends is deliberately NOT used: it hardcoded the tooltip to
+// Russian whatever the UI language was.
+interface Aspect { planet1: string; planet2: string; aspect: string; orb?: number; }
 interface TooltipState { x: number; y: number; color: string; content: string; }
 interface SynastryChartProps {
   chart1?: ChartData | null; chart2?: ChartData | null;
@@ -97,6 +103,7 @@ const SynastryChartComponentV2 = ({
   chart1, chart2, aspects = [], size = 700,
   name1 = 'Партнёр 1', name2 = 'Партнёр 2',
 }: SynastryChartProps) => {
+  const { t, i18n } = useTranslation();
   const svgRef = useRef<SVGSVGElement>(null);
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
 
@@ -256,7 +263,7 @@ const SynastryChartComponentV2 = ({
             x: (ev as unknown as { offsetX: number }).offsetX,
             y: (ev as unknown as { offsetY: number }).offsetY,
             color: style.color,
-            content: `${PLANET_GLYPH[asp.planet1] || asp.planet1} ${asp.aspect_ru || asp.aspect} ${PLANET_GLYPH[asp.planet2] || asp.planet2} · орб ${orb.toFixed(1)}°`,
+            content: `${PLANET_GLYPH[asp.planet1] || asp.planet1} ${t(`planets.aspectNames.${asp.aspect}`, { defaultValue: asp.aspect })} ${PLANET_GLYPH[asp.planet2] || asp.planet2} · ${t('planets.orb')} ${orb.toFixed(1)}°`,
           });
         })
         .on('mouseout', function () {
@@ -306,7 +313,10 @@ const SynastryChartComponentV2 = ({
     drawPlanets(chart1.planets!, R_P1_PLANET, R_P2_HOUSE_I, P1_COLOR, name1); // внутри
     drawPlanets(chart2.planets!, R_P2_PLANET, R_SIGN_IN, P2_COLOR, name2);    // снаружи
 
-  }, [chart1, chart2, aspects, size, name1, name2]);
+    // i18n.language: the tooltip text is baked into the d3 mouseover handler
+    // at draw time, so a language switch has to redraw the wheel — without it
+    // the old language would survive until some other prop changed.
+  }, [chart1, chart2, aspects, size, name1, name2, t, i18n.language]);
 
   if (!chart1 || !chart2) return null;
 

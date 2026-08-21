@@ -19,6 +19,8 @@ import { useStreamedText, type StreamPhase } from '../hooks/useStreamedText';
 import i18n from '../i18n';
 import Header from '../components/Header';
 import ProcessingMessage from '../components/ProcessingMessage';
+import LiveSkyFrame from '../components/LiveSkyFrame';
+import LiveSkyCarousel from '../components/LiveSkyCarousel';
 import MarkdownContent from '../components/MarkdownContent';
 import DeleteChartModal from '../components/DeleteChartModal';
 import DuplicateChartModal from '../components/DuplicateChartModal';
@@ -1930,6 +1932,18 @@ const Dashboard = () => {
   const transitsPanelLoading = transitsViewingHistoryEntry ? false : transitsLoading;
   const transitsPanelPhase: StreamPhase = transitsViewingHistoryEntry ? 'done' : transitsStream.phase;
   const transitsPanelDisplayedText = transitsViewingHistoryEntry ? (transitsPanelAnalysis ?? '') : transitsStream.displayedText;
+
+  // Every "an analysis is being generated right now" condition on this page.
+  // Each line is the exact condition its own spinner already uses, so the
+  // wheel's alive state (glow pulse + drag-to-spin) turns on and off in sync
+  // with them. Deliberately NOT scoped to the open tab: if the transits
+  // stream is running while the user is on the natal tab, generation really
+  // is happening (see plans/live-sky-panels-parity.md, D1).
+  const natalWaiting = analysisLoading && streamPhase !== 'typing' && !fullAnalysis;
+  const progressionsWaiting = progressionsLoading && progressionsStream.phase !== 'typing'
+    && !(chartDataForAnalysis?.type === 'synastry' ? progressedSynastryAnalysis : progressionsAnalysis);
+  const transitsWaiting = transitsPanelLoading && transitsPanelPhase !== 'typing' && !transitsPanelAnalysis;
+  const wheelAlive = natalWaiting || progressionsWaiting || transitsWaiting;
   // The planet table / lunar phase cards below the text — same live-vs-
   // browsing split as the analysis text above, but for the raw positions
   // (transits_positions|... written by persistTransitsResult, see the
@@ -3175,14 +3189,16 @@ const Dashboard = () => {
                         </div>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'center' }}>
-                        <SynastryChartComponent
-                          chart1={chartDataForAnalysis.chart1}
-                          chart2={chartDataForAnalysis.chart2}
-                          aspects={chartDataForAnalysis.aspects as unknown as Aspect[] | undefined}
-                          size={560}
-                          name1={chartDataForAnalysis.person1_name}
-                          name2={chartDataForAnalysis.person2_name}
-                        />
+                        <LiveSkyFrame active={wheelAlive}>
+                          <SynastryChartComponent
+                            chart1={chartDataForAnalysis.chart1}
+                            chart2={chartDataForAnalysis.chart2}
+                            aspects={chartDataForAnalysis.aspects as unknown as Aspect[] | undefined}
+                            size={560}
+                            name1={chartDataForAnalysis.person1_name}
+                            name2={chartDataForAnalysis.person2_name}
+                          />
+                        </LiveSkyFrame>
                       </div>
                     </div>
                   )}
@@ -3192,15 +3208,17 @@ const Dashboard = () => {
                     && chartDataForAnalysis.planets
                     && chartDataForAnalysis.houses && (
                     <div style={{ marginBottom: '30px', display: 'flex', justifyContent: 'center' }}>
-                      <AstroChartComponent
-                        chartData={{
-                          planets: chartDataForAnalysis.planets,
-                          houses: chartDataForAnalysis.houses,
-                          vertex: (chartDataForAnalysis.houses_meta as { vertex?: { longitude: number } } | undefined)?.vertex,
-                          houses_meta: chartDataForAnalysis.houses_meta as { pars_fortuna?: { longitude: number } } | undefined,
-                        }}
-                        size={560}
-                      />
+                      <LiveSkyFrame active={wheelAlive}>
+                        <AstroChartComponent
+                          chartData={{
+                            planets: chartDataForAnalysis.planets,
+                            houses: chartDataForAnalysis.houses,
+                            vertex: (chartDataForAnalysis.houses_meta as { vertex?: { longitude: number } } | undefined)?.vertex,
+                            houses_meta: chartDataForAnalysis.houses_meta as { pars_fortuna?: { longitude: number } } | undefined,
+                          }}
+                          size={560}
+                        />
+                      </LiveSkyFrame>
                     </div>
                   )}
                   <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '16px', flexWrap: 'wrap' }}>
@@ -3364,6 +3382,17 @@ const Dashboard = () => {
                           <ProcessingMessage
                             title={streamPhase === 'generating' ? t('dashboard.fullAnalysis.generating') : t('dashboard.fullAnalysis.searching')}
                             phase={streamPhase === 'generating' ? 'generating' : 'searching'}
+                            intro={t('liveSky.greeting')}
+                          />
+                          <LiveSkyCarousel
+                            people={chartDataForAnalysis?.type === 'synastry'
+                              ? [
+                                { label: chartDataForAnalysis.person1_name, planets: chartDataForAnalysis.chart1?.planets ?? {} },
+                                { label: chartDataForAnalysis.person2_name, planets: chartDataForAnalysis.chart2?.planets ?? {} },
+                              ]
+                              : chartDataForAnalysis?.planets
+                                ? [{ planets: chartDataForAnalysis.planets }]
+                                : []}
                           />
                         </div>
                       )}
