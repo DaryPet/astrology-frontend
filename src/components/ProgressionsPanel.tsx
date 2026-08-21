@@ -56,6 +56,7 @@ const ProgressionsPanel: React.FC<ProgressionsPanelProps> = ({ data, analysis, d
           <ProcessingMessage
             size="sm"
             title={phase === 'generating' ? t('dashboard.fullAnalysis.generating') : t('dashboard.fullAnalysis.searching')}
+            phase={phase === 'generating' ? 'generating' : 'searching'}
           />
         </div>
       )}

@@ -3363,6 +3363,7 @@ const Dashboard = () => {
                         <div style={{ marginTop: '40px' }}>
                           <ProcessingMessage
                             title={streamPhase === 'generating' ? t('dashboard.fullAnalysis.generating') : t('dashboard.fullAnalysis.searching')}
+                            phase={streamPhase === 'generating' ? 'generating' : 'searching'}
                           />
                         </div>
                       )}

@@ -469,6 +469,18 @@
     "loading": "Loading analysis...",
     "processing": "Your analysis is being processed",
     "processingHint": "Please wait...",
+    "processingHints": {
+      "searching": [
+        "Searching the knowledge base…",
+        "Cross-checking your chart…",
+        "Picking out the right sources…"
+      ],
+      "generating": [
+        "Writing your personal analysis…",
+        "Putting the interpretation into words…",
+        "Assembling the text from your chart…"
+      ]
+    },
     "error": "Error loading analysis",
     "noData": "No data available for this planet"
   },
