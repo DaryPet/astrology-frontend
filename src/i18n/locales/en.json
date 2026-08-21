@@ -460,17 +460,91 @@
       "Trine": "Trine",
       "Square": "Square",
       "Sextile": "Sextile",
-      "Quincunx": "Quincunx"
+      "Quincunx": "Quincunx",
+      "Semisextile": "Semisextile"
     }
   },
-  "analysis": {
-    "planetAnalysis": "Planet Analysis",
-    "aspectAnalysis": "Aspect Analysis",
-    "loading": "Loading analysis...",
-    "processing": "Your analysis is being processed",
-    "processingHint": "Please wait...",
-    "error": "Error loading analysis",
-    "noData": "No data available for this planet"
+"analysis": {
+      "planetAnalysis": "Planet Analysis",
+      "aspectAnalysis": "Aspect Analysis",
+      "loading": "Loading analysis...",
+      "processing": "Your analysis is being processed",
+      "processingHint": "Please wait...",
+      "processingHints": {
+        "searching": [
+          "Searching the knowledge base…",
+          "Cross-checking your chart…",
+          "Picking out the right sources…",
+          "The Moon in your natal chart shows your instinctive reactions and security needs",
+          "Mars governs your energy, assertiveness, and how you pursue goals",
+          "Venus in your chart indicates your love style and what you value in relationships",
+          "Jupiter brings luck and expansion to the areas where it's located in your chart",
+          "Saturn teaches discipline and responsibility through the life areas where it resides",
+          "Uranus symbolizes sudden changes and freedom in your life",
+          "Neptune is linked to intuition, creativity, and spiritual seeking",
+          "Pluto governs deep transformations and rebirth",
+          "The North Node shows your life purpose and lessons for this lifetime",
+          "The South Node indicates past life experiences and skills you bring with you",
+          "Chiron is your 'wounded healer,' showing where you can heal yourself and others",
+          "The Vertex is often connected to fated encounters and relationships",
+          "Mercury's position determines your thinking and communication style",
+          "The Moon shows how you express emotions and what you need for emotional well-being",
+          "The Sun represents your core identity and life purpose"
+        ],
+        "generating": [
+          "Writing your personal analysis…",
+          "Putting the interpretation into words…",
+          "Assembling the text from your chart…",
+          "Analyzing aspects between your planets to identify talents and challenges",
+          "Exploring how planets in your houses influence different life areas",
+          "Looking at planetary conjunctions for intensified energy",
+          "Analyzing tense aspects (squares, oppositions) for growth points",
+          "Studying harmonious aspects (trines, sextiles) for natural talents",
+          "Checking the Lunar Nodes for karmic tasks",
+          "Analyzing retrograde planets for inner work",
+          "Exploring stellar configurations in your chart (grand crosses, trines, etc.)",
+          "Looking for elemental imbalances (fire, earth, air, water) in your chart",
+          "Analyzing planetary placements by sign to understand their expression",
+          "Exploring how aspects to your Sun affect your self-esteem and purpose",
+          "Examining connections between your Moon and Venus for emotional needs in love",
+          "Analyzing Mars's position relative to Saturn for discipline and effort",
+          "Checking Jupiter's aspects to your personal planets for luck and opportunities"
+        ]
+      },
+      "error": "Error loading analysis",
+      "noData": "No data available for this planet"
+    },
+  "liveSky": {
+    "greeting": "Welcome, dear soul… The Universe is already reading your chart",
+    "dragHint": "✨ You can spin the wheel — just drag it",
+    "carousel": {
+      "prev": "Previous card",
+      "next": "Next card",
+      "title": "Meanwhile in your chart…",
+      "titleFor": "Meanwhile in {{name}}'s chart…",
+      "titleSky": "Right now in the sky…",
+      "titleProgressed": "Meanwhile in your progressed chart…",
+      "titleProgressedFor": "{{name}}'s progressed chart…",
+      "inSign": "{{planet}} in {{sign}}",
+      "house": "house {{num}}",
+      "retrograde": "retrograde"
+    },
+    "keywords": {
+      "Sun": "identity · vitality · purpose",
+      "Moon": "emotions · instincts · needs",
+      "Mercury": "mind · communication · connections",
+      "Venus": "love · beauty · values",
+      "Mars": "energy · drive · action",
+      "Jupiter": "luck · growth · expansion",
+      "Saturn": "discipline · structure · lessons",
+      "Uranus": "freedom · change · breakthroughs",
+      "Neptune": "dreams · intuition · inspiration",
+      "Pluto": "transformation · depth · power",
+      "Chiron": "healing · vulnerability · wisdom",
+      "NorthNode": "life purpose · growth · path",
+      "SouthNode": "past experience · gifts · habits",
+      "Lilith": "independence · instincts · shadow"
+    }
   },
   "dailyForecast": {
     "enterBirthData": "Enter birth data to get day forecast",

@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import MarkdownContent from './MarkdownContent';
 import ProcessingMessage from './ProcessingMessage';
+import LiveSkyCarousel from './LiveSkyCarousel';
 import ProgressedPlanetsTable from './ProgressedPlanetsTable';
 import type { ProgressedSynastryData, ProgressedSynastryPerson } from '../services/api';
 import type { StreamPhase } from '../hooks/useStreamedText';
@@ -96,6 +97,16 @@ const ProgressedSynastryPanel: React.FC<ProgressedSynastryPanelProps> = ({ data,
           <ProcessingMessage
             size="sm"
             title={phase === 'generating' ? t('dashboard.fullAnalysis.generating') : t('dashboard.fullAnalysis.searching')}
+            phase={phase === 'generating' ? 'generating' : 'searching'}
+          />
+          <LiveSkyCarousel
+            variant="progressed"
+            people={data
+              ? [
+                { label: name1Label, planets: data.person1.progressed_planets },
+                { label: name2Label, planets: data.person2.progressed_planets },
+              ]
+              : []}
           />
         </div>
       )}

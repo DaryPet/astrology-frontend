@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import MarkdownContent from './MarkdownContent';
 import ProcessingMessage from './ProcessingMessage';
+import LiveSkyCarousel from './LiveSkyCarousel';
 import LocationInput from './LocationInput';
 import type { TransitsData, TransitPlanet, TransitAspect } from '../services/api';
 import type { Location } from './LocationInput';
@@ -311,6 +312,13 @@ const TransitsPanel: React.FC<TransitsPanelProps> = ({
           <ProcessingMessage
             size="sm"
             title={phase === 'generating' ? t('dashboard.fullAnalysis.generating') : t('dashboard.fullAnalysis.searching')}
+            phase={phase === 'generating' ? 'generating' : 'searching'}
+          />
+          {/* Transit planets are the sky right now, not the natal chart —
+              hence variant="sky" and its own title. */}
+          <LiveSkyCarousel
+            variant="sky"
+            people={data?.transit_planets ? [{ planets: data.transit_planets }] : []}
           />
         </div>
       )}
