@@ -47,23 +47,23 @@ const ProgressedSynastryPanel: React.FC<ProgressedSynastryPanelProps> = ({ data,
         </div>
         <div style={{ fontSize: '13px', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
           <div>
-            {t('dashboard.progressedSynastry.age')}: <strong style={{ color: 'var(--text-primary)' }}>{Math.floor(person.age_years)}</strong> {t('dashboard.progressedSynastry.years')}
+            {t('dashboard.progressedSynastry.age')}: <strong className="ui-table__strong">{Math.floor(person.age_years)}</strong> {t('dashboard.progressedSynastry.years')}
           </div>
           {person.lunar_phase && (
             <div>
-              🌗 {t('dashboard.progressedSynastry.lunarPhase')}: <strong style={{ color: 'var(--text-primary)' }}>
+              🌗 {t('dashboard.progressedSynastry.lunarPhase')}: <strong className="ui-table__strong">
                 {pickLocalized(i18n.language, person.lunar_phase.phase, person.lunar_phase.phase_ru, person.lunar_phase.phase_uk)}
               </strong>
             </div>
           )}
           {progSun && (
-            <div>☀️ {t('dashboard.progressedSynastry.progressedSun')}: <strong style={{ color: 'var(--text-primary)' }}>{signName(progSun)}</strong></div>
+            <div>☀️ {t('dashboard.progressedSynastry.progressedSun')}: <strong className="ui-table__strong">{signName(progSun)}</strong></div>
           )}
           {progMoon && (
-            <div>🌙 {t('dashboard.progressedSynastry.progressedMoon')}: <strong style={{ color: 'var(--text-primary)' }}>{signName(progMoon)}</strong></div>
+            <div>🌙 {t('dashboard.progressedSynastry.progressedMoon')}: <strong className="ui-table__strong">{signName(progMoon)}</strong></div>
           )}
           {person.progressed_ascendant && (
-            <div>⬆️ {t('dashboard.progressedSynastry.progressedAscendant')}: <strong style={{ color: 'var(--text-primary)' }}>{signName(person.progressed_ascendant)}</strong></div>
+            <div>⬆️ {t('dashboard.progressedSynastry.progressedAscendant')}: <strong className="ui-table__strong">{signName(person.progressed_ascendant)}</strong></div>
           )}
         </div>
       </div>
@@ -78,22 +78,22 @@ const ProgressedSynastryPanel: React.FC<ProgressedSynastryPanelProps> = ({ data,
       padding: '30px',
       marginTop: '30px'
     }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: '8px' }}>
-        <h3 style={{ margin: 0, color: 'var(--text-primary)' }}>
+      <div className="ui-row ui-row--between ui-row--tight">
+        <h3 className="ui-subtitle" style={{ marginBottom: 0 }}>
           📈 {t('dashboard.progressedSynastry.title')}
         </h3>
         {data && (
-          <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
+          <span className="ui-meta">
             {t('dashboard.progressedSynastry.period')}: {data.period}
           </span>
         )}
       </div>
-      <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '6px' }}>
+      <p className="ui-meta" style={{ marginTop: 'var(--space-2)' }}>
         {t('dashboard.progressedSynastry.subtitle')}
       </p>
 
       {loading && phase !== 'typing' && !analysis && (
-        <div style={{ marginTop: '20px' }}>
+        <div style={{ marginTop: 'var(--space-5)' }}>
           <ProcessingMessage
             size="sm"
             title={phase === 'generating' ? t('dashboard.fullAnalysis.generating') : t('dashboard.fullAnalysis.searching')}
@@ -112,15 +112,15 @@ const ProgressedSynastryPanel: React.FC<ProgressedSynastryPanelProps> = ({ data,
       )}
 
       {error && (
-        <div className="error-message" style={{ marginTop: '16px' }}>
+        <div className="ui-error" style={{ marginTop: 'var(--space-4)' }}>
           {error}
         </div>
       )}
 
       {/* AI analysis: sits right where the spinner is — above the partner cards and planet tables. */}
       {(analysis || phase === 'typing') && (
-        <div style={{ marginTop: '24px', lineHeight: '2', fontSize: '16px' }}>
-          <h4 style={{ color: 'var(--text-primary)' }}>
+        <div className="ui-fade-in" style={{ marginTop: 'var(--space-6)', lineHeight: 'var(--leading-loose)', fontSize: 'var(--text-md)' }}>
+          <h4 className="ui-table__strong">
             {t('dashboard.progressedSynastry.analysisTitle')}
           </h4>
           <MarkdownContent content={analysis ?? displayedText} />
@@ -133,31 +133,31 @@ const ProgressedSynastryPanel: React.FC<ProgressedSynastryPanelProps> = ({ data,
       {data && (
         <>
           {/* Карточки партнёров: возраст, лунная фаза, прогр. Солнце/Луна/асцендент */}
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '16px' }}>
+          <div className="ui-row" style={{ marginTop: 'var(--space-4)', alignItems: 'stretch' }}>
             {renderPersonCard(data.person1, name1Label)}
             {renderPersonCard(data.person2, name2Label)}
           </div>
 
           {/* Таблицы прогрессивных планет по каждому партнёру */}
-          <div style={{ marginTop: '24px' }}>
-            <h4 style={{ color: 'var(--text-primary)', marginBottom: '10px' }}>
+          <div style={{ marginTop: 'var(--space-6)' }}>
+            <h4 className="ui-subtitle">
               {t('dashboard.progressedSynastry.planetsTitle')}
             </h4>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
               <div>
-                <div style={{ fontWeight: 600, marginBottom: '8px', color: 'var(--text-primary)' }}>{name1Label}</div>
+                <div className="ui-stat__value" style={{ marginBottom: 'var(--space-2)' }}>{name1Label}</div>
                 <ProgressedPlanetsTable planets={data.person1?.progressed_planets} />
               </div>
               <div>
-                <div style={{ fontWeight: 600, marginBottom: '8px', color: 'var(--text-primary)' }}>{name2Label}</div>
+                <div className="ui-stat__value" style={{ marginBottom: 'var(--space-2)' }}>{name2Label}</div>
                 <ProgressedPlanetsTable planets={data.person2?.progressed_planets} />
               </div>
             </div>
           </div>
 
           {/* Динамика периода: что изменилось по сравнению с натальной синастрией */}
-          <div style={{ marginTop: '24px' }}>
-            <h4 style={{ color: 'var(--text-primary)', marginBottom: '10px' }}>
+          <div style={{ marginTop: 'var(--space-6)' }}>
+            <h4 className="ui-subtitle">
               {t('dashboard.progressedSynastry.dynamicsTitle')}
             </h4>
             {data.dynamics && (
@@ -166,14 +166,14 @@ const ProgressedSynastryPanel: React.FC<ProgressedSynastryPanelProps> = ({ data,
                   flex: '1 1 160px', border: '1px solid var(--border)', borderRadius: '10px',
                   padding: '12px 14px', background: 'var(--bg-secondary)'
                 }}>
-                  <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{t('dashboard.progressedSynastry.natalTotal')}</div>
+                  <div className="ui-meta">{t('dashboard.progressedSynastry.natalTotal')}</div>
                   <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text-primary)' }}>{data.dynamics.natal_total}</div>
                 </div>
                 <div style={{
                   flex: '1 1 160px', border: '1px solid var(--border)', borderRadius: '10px',
                   padding: '12px 14px', background: 'var(--bg-secondary)'
                 }}>
-                  <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{t('dashboard.progressedSynastry.progressedTotal')}</div>
+                  <div className="ui-meta">{t('dashboard.progressedSynastry.progressedTotal')}</div>
                   <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text-primary)' }}>{data.dynamics.progressed_total}</div>
                 </div>
               </div>

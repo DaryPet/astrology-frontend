@@ -38,22 +38,22 @@ const ProgressionsPanel: React.FC<ProgressionsPanelProps> = ({ data, analysis, d
       padding: '30px',
       marginTop: '30px'
     }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: '8px' }}>
-        <h3 style={{ margin: 0, color: 'var(--text-primary)' }}>
+      <div className="ui-row ui-row--between ui-row--tight">
+        <h3 className="ui-subtitle" style={{ marginBottom: 0 }}>
           📈 {t('dashboard.progressions.title')}
         </h3>
         {data && (
-          <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
+          <span className="ui-meta">
             {t('dashboard.progressions.period')}: {data.period} · {t('dashboard.progressions.age')}: {Math.floor(data.age_years)} {t('dashboard.progressions.years')}
           </span>
         )}
       </div>
-      <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '6px' }}>
+      <p className="ui-meta" style={{ marginTop: 'var(--space-2)' }}>
         {t('dashboard.progressions.subtitle')}
       </p>
 
       {loading && phase !== 'typing' && !analysis && (
-        <div style={{ marginTop: '20px' }}>
+        <div style={{ marginTop: 'var(--space-5)' }}>
           <ProcessingMessage
             size="sm"
             title={phase === 'generating' ? t('dashboard.fullAnalysis.generating') : t('dashboard.fullAnalysis.searching')}
@@ -67,15 +67,15 @@ const ProgressionsPanel: React.FC<ProgressionsPanelProps> = ({ data, analysis, d
       )}
 
       {error && (
-        <div className="error-message" style={{ marginTop: '16px' }}>
+        <div className="ui-error" style={{ marginTop: 'var(--space-4)' }}>
           {error}
         </div>
       )}
 
       {/* AI analysis: sits right where the spinner is — above the planet table and aspect lists. */}
       {(analysis || phase === 'typing') && (
-        <div style={{ marginTop: '24px', lineHeight: '2', fontSize: '16px' }}>
-          <h4 style={{ color: 'var(--text-primary)' }}>
+        <div className="ui-fade-in" style={{ marginTop: 'var(--space-6)', lineHeight: 'var(--leading-loose)', fontSize: 'var(--text-md)' }}>
+          <h4 className="ui-table__strong">
             {t('dashboard.progressions.analysisTitle')}
           </h4>
           <MarkdownContent content={analysis ?? displayedText} />
@@ -88,7 +88,7 @@ const ProgressionsPanel: React.FC<ProgressionsPanelProps> = ({ data, analysis, d
       {data && (
         <>
           {/* Ключевые точки: лунная фаза + прогрессивные Луна и Солнце */}
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '16px' }}>
+          <div className="ui-row" style={{ marginTop: 'var(--space-4)', alignItems: 'stretch' }}>
             {data.lunar_phase && (
               <div style={{
                 flex: '1 1 220px',
@@ -97,10 +97,10 @@ const ProgressionsPanel: React.FC<ProgressionsPanelProps> = ({ data, analysis, d
                 padding: '14px',
                 background: 'var(--bg-secondary)'
               }}>
-                <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                <div className="ui-meta">
                   🌗 {t('dashboard.progressions.lunarPhase')}
                 </div>
-                <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginTop: '4px' }}>
+                <div className="ui-stat__value">
                   {pickLocalized(i18n.language, data.lunar_phase.phase, data.lunar_phase.phase_ru, data.lunar_phase.phase_uk)}
                 </div>
               </div>
@@ -113,10 +113,10 @@ const ProgressionsPanel: React.FC<ProgressionsPanelProps> = ({ data, analysis, d
                 padding: '14px',
                 background: 'var(--bg-secondary)'
               }}>
-                <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                <div className="ui-meta">
                   🌙 {t('dashboard.progressions.progressedMoon')}
                 </div>
-                <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginTop: '4px' }}>
+                <div className="ui-stat__value">
                   {signName(progMoon)}
                   {progMoon.natal_house ? ` · ${t('dashboard.progressions.natalHouse')} ${progMoon.natal_house}` : ''}
                 </div>
@@ -135,13 +135,13 @@ const ProgressionsPanel: React.FC<ProgressionsPanelProps> = ({ data, analysis, d
                 padding: '14px',
                 background: 'var(--bg-secondary)'
               }}>
-                <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                <div className="ui-meta">
                   ☀️ {t('dashboard.progressions.progressedSun')}
                 </div>
-                <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginTop: '4px' }}>
+                <div className="ui-stat__value">
                   {signName(progSun)}
                   {progSun.changed_sign && (
-                    <span style={{ marginLeft: '8px', fontSize: '12px', color: 'var(--accent, #8b5cf6)' }}>
+                    <span className="ui-aspect-name">
                       {t('dashboard.progressions.changedSign')}
                     </span>
                   )}
@@ -151,26 +151,26 @@ const ProgressionsPanel: React.FC<ProgressionsPanelProps> = ({ data, analysis, d
           </div>
 
           {/* Таблица прогрессивных планет */}
-          <div style={{ marginTop: '20px' }}>
-            <h4 style={{ color: 'var(--text-primary)', marginBottom: '10px' }}>
+          <div style={{ marginTop: 'var(--space-5)' }}>
+            <h4 className="ui-subtitle">
               {t('dashboard.progressions.planetsTitle')}
             </h4>
             <ProgressedPlanetsTable planets={data.progressed_planets} />
           </div>
 
           {/* Аспекты прогрессий к наталу */}
-          <div style={{ marginTop: '20px' }}>
-            <h4 style={{ color: 'var(--text-primary)', marginBottom: '10px' }}>
+          <div style={{ marginTop: 'var(--space-5)' }}>
+            <h4 className="ui-subtitle">
               {t('dashboard.progressions.aspectsTitle')}
             </h4>
             {data.aspects_to_natal?.length ? (
-              <ul style={{ margin: 0, paddingLeft: '20px', color: 'var(--text-primary)', lineHeight: 1.8 }}>
+              <ul className="ui-list">
                 {data.aspects_to_natal.slice(0, 10).map((asp, idx) => (
                   <li key={`${asp.progressed}-${asp.natal}-${idx}`}>
                     <strong>{planetName(asp.progressed)}</strong>
                     {' '}{aspectName(asp)}{' '}
                     <strong>{planetName(asp.natal)}</strong>
-                    <span style={{ color: 'var(--text-secondary)', fontSize: '12px', marginLeft: '6px' }}>
+                    <span className="ui-aspect-orb">
                       ({t('dashboard.progressions.orb')}: {asp.orb}°
                       {typeof asp.applying === 'boolean'
                         ? `, ${asp.applying ? t('dashboard.progressions.applying') : t('dashboard.progressions.separating')}`

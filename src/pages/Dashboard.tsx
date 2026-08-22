@@ -45,6 +45,9 @@ import type { Location } from '../components/LocationInput';
 import { isNearLimit, isAtLimit, MAX_MESSAGES, type ChatMessage } from '../services/chatStorage';
 import { isInFlight, markInFlight, clearInFlight, waitForClear } from '../utils/inFlightRegistry';
 import { appendStreamText, getStreamText, clearStreamText } from '../utils/streamTextRegistry';
+import { Sparkles, Users, Orbit, Table2, ArrowUp } from 'lucide-react';
+import ScrollAnchor from '../components/ScrollAnchor';
+import '../styles/dashboard.css';
 
 const MAX_TRANSITS_ANALYSIS_PER_DAY = 5;
 // Cap on how many completed transits analyses per chart we keep browsable
@@ -2970,15 +2973,7 @@ const Dashboard = () => {
     <div className="dashboard">
       <Header hasUnsavedAnalysis={hasUnsavedAnalysis} onProtectedNavigate={protectedNavigate} />
 
-      <div style={{
-        position: 'fixed',
-        top: '65px',
-        left: 0,
-        width: '260px',
-        minWidth: '260px',
-        maxHeight: 'calc(100vh - 65px)',
-        zIndex: 50,
-      }}>
+      <div className="db-sidebar-slot">
         <Sidebar
           historyCharts={historyCharts}
           historyLoading={historyLoading}
@@ -3000,567 +2995,460 @@ const Dashboard = () => {
         />
       </div>
 
-      <div className="container" style={{ paddingTop: '40px', marginLeft: '260px' }}>
-        <div style={{ display: 'flex', gap: '30px', flexWrap: 'nowrap', alignItems: 'flex-start' }}>
-          <div style={{ flex: '1 1 600px' }}>
-            <div className="dashboard-content">
-              {chartLoading && chartIdFromUrl && (
-                <div style={{ marginTop: '40px' }}>
-                  <ProcessingMessage size="sm" />
-                </div>
-              )}
-              {!chartIdFromUrl && !chartDataForAnalysis && !showFullAnalysis && (
-                <div style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: '60px 20px',
-                  textAlign: 'center',
-                  gap: '20px'
-                }}>
-                  <p style={{
-                    color: 'var(--text-secondary)',
-                    fontSize: '16px',
-                    marginBottom: '10px'
-                  }}>
-                    {t('dashboard.emptyState.selectChart')}
-                  </p>
-                  <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
-                    <button
-                      type="button"
-                      onClick={() => protectedNavigate(`/${currentLang}/`)}
-                      style={{
-                        background: 'linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%)',
-                        color: 'white',
-                        padding: '12px 20px',
-                        border: 'none',
-                        borderRadius: '10px',
-                        fontSize: '14px',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        transition: 'opacity 0.2s'
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget as HTMLButtonElement).style.opacity = '0.85'}
-                      onMouseLeave={(e) => (e.currentTarget as HTMLButtonElement).style.opacity = '1'}
-                    >
-                      <span>✦</span>
-                      {t('dashboard.actions.newChart')}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => protectedNavigate(`/${currentLang}/synastry`)}
-                      style={{
-                        width: '100%',
-                        background: 'none',
-                        border: '1px solid var(--border)',
-                        borderRadius: '10px',
-                        color: 'var(--text-secondary)',
-                        padding: '10px 16px',
-                        fontSize: '14px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '8px',
-                        transition: 'all 0.15s',
-                      }}
-                      onMouseEnter={(e) => {
-                        (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--accent)';
-                        (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-primary)';
-                      }}
-                      onMouseLeave={(e) => {
-                        (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--border)';
-                        (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-secondary)';
-                      }}
-                    >
-                      <span>🔮</span>
-                      {t('dashboard.actions.synastry')}
-                    </button>
-                  </div>
-                </div>
-              )}
-              {chartDataForAnalysis && isAuthenticated && !fullAnalysis && !savedChartId && !showFullAnalysis && (
-                <div style={{ textAlign: 'center' }}>
-                  <AnalysisModeToggle
-                    value={analysisMode}
-                    onChange={(val) => {
-                      setAnalysisMode(val);
-                      localStorage.setItem('dashboardAnalysisMode', val);
+      <div className="db-content">
+        <div className="db-content-inner">
+          {chartLoading && chartIdFromUrl && (
+            <div className="db-chart-loading">
+              <ProcessingMessage size="sm" />
+            </div>
+          )}
+          {!chartIdFromUrl && !chartDataForAnalysis && !showFullAnalysis && (
+            <div className="db-empty-state">
+              <div className="db-empty-state__icon"><Sparkles size={28} strokeWidth={1.6} /></div>
+              <p className="db-empty-state__text">
+                {t('dashboard.emptyState.selectChart')}
+              </p>
+              <div className="db-action-bar" style={{ justifyContent: 'center' }}>
+                <button
+                  type="button"
+                  onClick={() => protectedNavigate(`/${currentLang}/`)}
+                  className="db-btn-primary"
+                >
+                  <Sparkles size={16} strokeWidth={2.2} />
+                  {t('dashboard.actions.newChart')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => protectedNavigate(`/${currentLang}/synastry`)}
+                  className="db-btn-ghost"
+                >
+                  <Users size={16} strokeWidth={2} />
+                  {t('dashboard.actions.synastry')}
+                </button>
+              </div>
+            </div>
+          )}
+          {chartDataForAnalysis && isAuthenticated && !fullAnalysis && !savedChartId && !showFullAnalysis && (
+            <div style={{ textAlign: 'center' }}>
+              <AnalysisModeToggle
+                value={analysisMode}
+                onChange={(val) => {
+                  setAnalysisMode(val);
+                  localStorage.setItem('dashboardAnalysisMode', val);
+                  localStorage.removeItem('pendingAnalysisResult');
+                  pendingModeRef.current = val;
+                  setFullAnalysis(null);
+                  setShowFullAnalysis(true);
+                }}
+                disabled={analysisLoading}
+              />
+              <button
+                type="button"
+                className="db-btn-primary"
+                onClick={() => {
+                  setShowFullAnalysis(true);
+                  loadFullAnalysis();
+                }}
+                disabled={analysisLoading}
+                style={{ marginTop: '24px', marginLeft: 'auto', marginRight: 'auto', minWidth: '280px' }}
+              >
+                {t('home.getFullAnalysis')}
+              </button>
+            </div>
+          )}
+
+          {showFullAnalysis && (
+            <>
+              <div className="db-section-header">
+                <h2 className="db-section-title">
+                  {chartDataForAnalysis?.type === 'synastry' ? (
+                    <>
+                      {chartDataForAnalysis.person1_name} / {chartDataForAnalysis.person2_name}:{' '}
+                      {t('synastry.fullAnalysis.title')}
+                    </>
+                  ) : (
+                    <>
+                      {chartDataForAnalysis?.name && (
+                        <span style={{ fontWeight: '500', marginRight: '10px' }}>
+                          {chartDataForAnalysis.name}
+                        </span>
+                      )}
+                      {t('dashboard.fullAnalysis.title')}
+                    </>
+                  )}
+                </h2>
+                <AnalysisModeToggle
+                  value={analysisMode}
+                  onChange={(val) => {
+                    setAnalysisMode(val);
+                    localStorage.setItem('dashboardAnalysisMode', val);
+                    if (val === 'simple' && simpleAnalysis) {
+                      setFullAnalysis(simpleAnalysis);
+                    } else if (val === 'advanced' && advancedAnalysis) {
+                      setFullAnalysis(advancedAnalysis);
+                    } else {
                       localStorage.removeItem('pendingAnalysisResult');
                       pendingModeRef.current = val;
                       setFullAnalysis(null);
-                      setShowFullAnalysis(true);
-                    }}
-                    disabled={analysisLoading}
-                  />
-                  <button
-                    type="button"
-                    className="btn-full-analysis"
-                    onClick={() => {
-                      setShowFullAnalysis(true);
-                      loadFullAnalysis();
-                    }}
-                    disabled={analysisLoading}
-                    style={{
-                      marginTop: '24px',
-                      marginLeft: 'auto',
-                      marginRight: 'auto',
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                      color: 'white',
-                      padding: analysisLoading ? '30px 28px' : '14px 28px',
-                      border: 'none',
-                      borderRadius: '8px',
-                      fontSize: '16px',
-                      fontWeight: '600',
-                      cursor: analysisLoading ? 'default' : 'pointer',
-                      transition: 'transform 0.2s, box-shadow 0.2s',
-                      opacity: analysisLoading ? 0.8 : 1,
-                      minWidth: '280px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}
-                  >
-                    {t('home.getFullAnalysis')}
-                  </button>
+                    }
+                  }}
+                  disabled={analysisLoading || progressionsLoading}
+                />
+              </div>
+
+              {chartDataForAnalysis?.type === 'synastry'
+                && chartDataForAnalysis.chart1?.planets
+                && chartDataForAnalysis.chart2?.planets
+                && chartDataForAnalysis.chart1?.houses && (
+                <div style={{ marginBottom: '30px' }}>
+                  <div className="db-synastry-legend">
+                    <div className="db-synastry-legend__item">
+                      <div className="db-synastry-legend__dot" style={{ background: '#3b82f6' }} />
+                      <span className="db-synastry-legend__label">
+                        {chartDataForAnalysis.person1_name || t('synastry.person1')}
+                      </span>
+                    </div>
+                    <div className="db-synastry-legend__item">
+                      <div className="db-synastry-legend__dot" style={{ background: '#ef4444' }} />
+                      <span className="db-synastry-legend__label">
+                        {chartDataForAnalysis.person2_name || t('synastry.person2')}
+                      </span>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'center' }}>
+                    <LiveSkyFrame active={wheelAlive}>
+                      <SynastryChartComponent
+                        chart1={chartDataForAnalysis.chart1}
+                        chart2={chartDataForAnalysis.chart2}
+                        aspects={chartDataForAnalysis.aspects as unknown as Aspect[] | undefined}
+                        size={560}
+                        name1={chartDataForAnalysis.person1_name}
+                        name2={chartDataForAnalysis.person2_name}
+                      />
+                    </LiveSkyFrame>
+                  </div>
                 </div>
               )}
 
-              {showFullAnalysis && (
+              {chartDataForAnalysis
+                && chartDataForAnalysis.type !== 'synastry'
+                && chartDataForAnalysis.planets
+                && chartDataForAnalysis.houses && (
+                <div style={{ marginBottom: '30px', display: 'flex', justifyContent: 'center' }}>
+                  <LiveSkyFrame active={wheelAlive}>
+                    <AstroChartComponent
+                      chartData={{
+                        planets: chartDataForAnalysis.planets,
+                        houses: chartDataForAnalysis.houses,
+                        vertex: (chartDataForAnalysis.houses_meta as { vertex?: { longitude: number } } | undefined)?.vertex,
+                        houses_meta: chartDataForAnalysis.houses_meta as { pars_fortuna?: { longitude: number } } | undefined,
+                      }}
+                      size={560}
+                    />
+                  </LiveSkyFrame>
+                </div>
+              )}
+
+              <div className="db-action-bar" style={{ justifyContent: 'center', marginTop: '16px' }}>
+                {savedChartId && fullAnalysis && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowPlanetTable(false);
+                      setAnalysisTab('natal');
+                      setShowProgressions(false);
+                      setTimeout(() => {
+                        const el = document.getElementById('chat-section');
+                        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }, 100);
+                    }}
+                    className="db-btn-primary"
+                    style={{ flex: 1, minWidth: '200px' }}
+                  >
+                    {t('dashboard.chat.open')}
+                  </button>
+                )}
+                <button
+                  onClick={handleTogglePlanetTable}
+                  className="db-btn-ghost"
+                  style={{ flex: 1, minWidth: '200px' }}
+                >
+                  {showPlanetTable ? <Table2 size={16} strokeWidth={2} /> : <Orbit size={16} strokeWidth={2} />}
+                  {showPlanetTable ? t('dashboard.actions.fullAnalysis') : (chartDataForAnalysis?.type === 'synastry' ? t('dashboard.actions.aspectAnalysis') : t('dashboard.actions.planetAnalysis'))}
+                </button>
+              </div>
+
+              {!showPlanetTable && (
+                <AnalysisTabs
+                  active={analysisTab}
+                  firstTabLabel={chartDataForAnalysis?.type === 'synastry' ? t('dashboard.tabs.synastryMain') : undefined}
+                  showProgressions={!!(savedChartId && fullAnalysis)}
+                  showTransits={!!(savedChartId && fullAnalysis && chartDataForAnalysis?.type !== 'synastry')}
+                  // v1.2: daily forecast temporarily hidden from the natal chart, do not delete
+                  // showDailyForecast={!!(savedChartId && fullAnalysis && chartDataForAnalysis?.type !== 'synastry')}
+                  showDailyForecast={false}
+                  onChange={(tab) => {
+                    setAnalysisTab(tab);
+                    setShowProgressions(tab === 'progressions');
+                    const hasProgressionsData = chartDataForAnalysis?.type === 'synastry'
+                      ? !!progressedSynastryData
+                      : !!progressionsData;
+                    if (tab === 'progressions' && !hasProgressionsData) {
+                      loadProgressions();
+                    }
+                    if (tab === 'transits' && !transitsData) {
+                      loadTransitsData(transitsDate, { keepAnalysis: transitsReady });
+                    }
+                  }}
+                />
+              )}
+
+              {analysisTab === 'progressions' && !showPlanetTable && savedChartId && (
+                <div id="progressions-section">
+                  {chartDataForAnalysis?.type === 'synastry' ? (
+                    <ProgressedSynastryPanel
+                      data={progressedSynastryData}
+                      analysis={progressedSynastryAnalysis}
+                      displayedText={progressionsStream.displayedText}
+                      phase={progressionsStream.phase}
+                      loading={progressionsLoading}
+                      error={progressionsError}
+                      name1={chartDataForAnalysis.person1_name}
+                      name2={chartDataForAnalysis.person2_name}
+                    />
+                  ) : (
+                    <ProgressionsPanel
+                      data={progressionsData}
+                      analysis={progressionsAnalysis}
+                      displayedText={progressionsStream.displayedText}
+                      phase={progressionsStream.phase}
+                      loading={progressionsLoading}
+                      error={progressionsError}
+                    />
+                  )}
+                </div>
+              )}
+
+              {analysisTab === 'transits' && !showPlanetTable && savedChartId && (
+                <div id="transits-section">
+                  <TransitsPanel
+                    data={transitsPanelData}
+                    analysis={transitsPanelAnalysis}
+                    transitsReady={transitsPanelReady}
+                    displayedText={transitsPanelDisplayedText}
+                    phase={transitsPanelPhase}
+                    loading={transitsPanelLoading}
+                    error={transitsError}
+                    selectedDate={transitsDate}
+                    onDateChange={handleTransitsDateChange}
+                    onLocationChange={setTransitsLocation}
+                    transitsLocation={transitsLocation}
+                    birthPlace={chartDataForAnalysis?.meta?.birth_place}
+                    analysisLocation={transitsPanelAnalysisLocation}
+                    analysisDate={transitsPanelAnalysisDate}
+                    onRunAnalysis={() => { setHistoryViewOverride(null); runTransitsAnalysis(); }}
+                    transitsRemaining={transitsRemaining}
+                    transitsLimit={MAX_TRANSITS_ANALYSIS_PER_DAY}
+                    generationLocked={transitsGenerationLocked}
+                    history={transitsHistoryForList}
+                    viewingCacheKey={historyViewOverride}
+                    onSelectHistoryEntry={handleSelectTransitsHistoryEntry}
+                    currentEntry={transitsCurrentEntry}
+                    onSelectCurrent={() => setHistoryViewOverride(null)}
+                  />
+                </div>
+              )}
+
+              {/* v1.2: daily forecast temporarily hidden from the natal chart, do not delete
+              {analysisTab === 'dailyForecast' && !showPlanetTable && savedChartId && (
+                <div id="daily-forecast-section">
+                  <DailyForecastPanel natalChart={chartDataForAnalysis} />
+                </div>
+              )}
+              */}
+
+              {!showPlanetTable && analysisTab === 'natal' && (
                 <>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
-                    <h2 style={{ margin: 0 }}>
-                      {chartDataForAnalysis?.type === 'synastry' ? (
-                        <>
-                          {chartDataForAnalysis.person1_name} / {chartDataForAnalysis.person2_name}: {' '}
-                          {t('synastry.fullAnalysis.title')}
-                        </>
-                      ) : (
-                        <>
-                          {chartDataForAnalysis?.name && (
-                            <span style={{ fontWeight: '500', marginRight: '10px' }}>
-                              {chartDataForAnalysis.name}
-                            </span>
-                          )}
-                          {t('dashboard.fullAnalysis.title')}
-                        </>
-                      )}
-                    </h2>
-                    <AnalysisModeToggle
-                      value={analysisMode}
-                      onChange={(val) => {
-                        setAnalysisMode(val);
-                        localStorage.setItem('dashboardAnalysisMode', val);
-                        if (val === 'simple' && simpleAnalysis) {
-                          setFullAnalysis(simpleAnalysis);
-                        } else if (val === 'advanced' && advancedAnalysis) {
-                          setFullAnalysis(advancedAnalysis);
-                        } else {
-                          localStorage.removeItem('pendingAnalysisResult');
-                          pendingModeRef.current = val;
-                          setFullAnalysis(null);
-                        }
-                      }}
-                      disabled={analysisLoading || progressionsLoading}
-                    />
-                  </div>
-
-                  {chartDataForAnalysis?.type === 'synastry'
-                    && chartDataForAnalysis.chart1?.planets
-                    && chartDataForAnalysis.chart2?.planets
-                    && chartDataForAnalysis.chart1?.houses && (
-                    <div style={{ marginBottom: '30px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'center', gap: '30px', marginBottom: '16px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#3b82f6' }}></div>
-                          <span style={{ color: 'var(--text-primary)', fontSize: '14px' }}>
-                            {chartDataForAnalysis.person1_name || t('synastry.person1')}
-                          </span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#ef4444' }}></div>
-                          <span style={{ color: 'var(--text-primary)', fontSize: '14px' }}>
-                            {chartDataForAnalysis.person2_name || t('synastry.person2')}
-                          </span>
-                        </div>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'center' }}>
-                        <LiveSkyFrame active={wheelAlive}>
-                          <SynastryChartComponent
-                            chart1={chartDataForAnalysis.chart1}
-                            chart2={chartDataForAnalysis.chart2}
-                            aspects={chartDataForAnalysis.aspects as unknown as Aspect[] | undefined}
-                            size={560}
-                            name1={chartDataForAnalysis.person1_name}
-                            name2={chartDataForAnalysis.person2_name}
-                          />
-                        </LiveSkyFrame>
-                      </div>
-                    </div>
-                  )}
-
-                  {chartDataForAnalysis
-                    && chartDataForAnalysis.type !== 'synastry'
-                    && chartDataForAnalysis.planets
-                    && chartDataForAnalysis.houses && (
-                    <div style={{ marginBottom: '30px', display: 'flex', justifyContent: 'center' }}>
-                      <LiveSkyFrame active={wheelAlive}>
-                        <AstroChartComponent
-                          chartData={{
-                            planets: chartDataForAnalysis.planets,
-                            houses: chartDataForAnalysis.houses,
-                            vertex: (chartDataForAnalysis.houses_meta as { vertex?: { longitude: number } } | undefined)?.vertex,
-                            houses_meta: chartDataForAnalysis.houses_meta as { pars_fortuna?: { longitude: number } } | undefined,
-                          }}
-                          size={560}
-                        />
-                      </LiveSkyFrame>
-                    </div>
-                  )}
-                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '16px', flexWrap: 'wrap' }}>
-                    {savedChartId && fullAnalysis && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowPlanetTable(false);
-                          setAnalysisTab('natal');
-                          setShowProgressions(false);
-                          setTimeout(() => {
-                            const el = document.getElementById('chat-section');
-                            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                          }, 100);
-                        }}
-                        style={{
-                          flex: 1,
-                          minWidth: '200px',
-                          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                          color: 'white',
-                          padding: '10px 16px',
-                          border: 'none',
-                          borderRadius: '10px',
-                          fontSize: '14px',
-                          fontWeight: '600',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center'
-                        }}
-                      >
-                        {t('dashboard.chat.open')}
-                      </button>
-                    )}
-
-                    <button
-                      onClick={handleTogglePlanetTable}
-                      style={{
-                        flex: 1,
-                        minWidth: '200px',
-                        background: 'none',
-                        border: '1px solid var(--border)',
-                        borderRadius: '10px',
-                        color: 'var(--text-secondary)',
-                        padding: '10px 16px',
-                        fontSize: '14px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '8px',
-                        transition: 'all 0.15s',
-                      }}
-                      onMouseEnter={e => {
-                        e.currentTarget.style.borderColor = 'var(--accent)';
-                        e.currentTarget.style.color = 'var(--text-primary)';
-                      }}
-                      onMouseLeave={e => {
-                        e.currentTarget.style.borderColor = 'var(--border)';
-                        e.currentTarget.style.color = 'var(--text-secondary)';
-                      }}
-                    >
-                      <span>{showPlanetTable ? '📊' : '🪐'}</span>
-                      {showPlanetTable ? t('dashboard.actions.fullAnalysis') : (chartDataForAnalysis?.type === 'synastry' ? t('dashboard.actions.aspectAnalysis') : t('dashboard.actions.planetAnalysis'))}
-                    </button>
-                  </div>
-
-                  {!showPlanetTable && (
-                    <AnalysisTabs
-                      active={analysisTab}
-                      firstTabLabel={chartDataForAnalysis?.type === 'synastry' ? t('dashboard.tabs.synastryMain') : undefined}
-                      showProgressions={!!(savedChartId && fullAnalysis)}
-                      showTransits={!!(savedChartId && fullAnalysis && chartDataForAnalysis?.type !== 'synastry')}
-                      // v1.2: daily forecast temporarily hidden from the natal chart, do not delete
-                      // showDailyForecast={!!(savedChartId && fullAnalysis && chartDataForAnalysis?.type !== 'synastry')}
-                      showDailyForecast={false}
-                      onChange={(tab) => {
-                        setAnalysisTab(tab);
-                        setShowProgressions(tab === 'progressions');
-                        const hasProgressionsData = chartDataForAnalysis?.type === 'synastry'
-                          ? !!progressedSynastryData
-                          : !!progressionsData;
-                        if (tab === 'progressions' && !hasProgressionsData) {
-                          loadProgressions();
-                        }
-                        if (tab === 'transits' && !transitsData) {
-                          loadTransitsData(transitsDate, { keepAnalysis: transitsReady });
-                        }
-                      }}
-                    />
-                  )}
-
-                  {analysisTab === 'progressions' && !showPlanetTable && savedChartId && (
-                    <div id="progressions-section">
-                      {chartDataForAnalysis?.type === 'synastry' ? (
-                        <ProgressedSynastryPanel
-                          data={progressedSynastryData}
-                          analysis={progressedSynastryAnalysis}
-                          displayedText={progressionsStream.displayedText}
-                          phase={progressionsStream.phase}
-                          loading={progressionsLoading}
-                          error={progressionsError}
-                          name1={chartDataForAnalysis.person1_name}
-                          name2={chartDataForAnalysis.person2_name}
-                        />
-                      ) : (
-                        <ProgressionsPanel
-                          data={progressionsData}
-                          analysis={progressionsAnalysis}
-                          displayedText={progressionsStream.displayedText}
-                          phase={progressionsStream.phase}
-                          loading={progressionsLoading}
-                          error={progressionsError}
-                        />
-                      )}
-                    </div>
-                  )}
-
-                  {analysisTab === 'transits' && !showPlanetTable && savedChartId && (
-                    <div id="transits-section">
-                      <TransitsPanel
-                        data={transitsPanelData}
-                        analysis={transitsPanelAnalysis}
-                        transitsReady={transitsPanelReady}
-                        displayedText={transitsPanelDisplayedText}
-                        phase={transitsPanelPhase}
-                        loading={transitsPanelLoading}
-                        error={transitsError}
-                        selectedDate={transitsDate}
-                        onDateChange={handleTransitsDateChange}
-                        onLocationChange={setTransitsLocation}
-                        transitsLocation={transitsLocation}
-                        birthPlace={chartDataForAnalysis?.meta?.birth_place}
-                        analysisLocation={transitsPanelAnalysisLocation}
-                        analysisDate={transitsPanelAnalysisDate}
-                        onRunAnalysis={() => { setHistoryViewOverride(null); runTransitsAnalysis(); }}
-                        transitsRemaining={transitsRemaining}
-                        transitsLimit={MAX_TRANSITS_ANALYSIS_PER_DAY}
-                        generationLocked={transitsGenerationLocked}
-                        history={transitsHistoryForList}
-                        viewingCacheKey={historyViewOverride}
-                        onSelectHistoryEntry={handleSelectTransitsHistoryEntry}
-                        currentEntry={transitsCurrentEntry}
-                        onSelectCurrent={() => setHistoryViewOverride(null)}
+                  {analysisLoading && streamPhase !== 'typing' && !fullAnalysis && (
+                    <div className="db-chart-loading">
+                      <ProcessingMessage
+                        title={streamPhase === 'generating' ? t('dashboard.fullAnalysis.generating') : t('dashboard.fullAnalysis.searching')}
+                        phase={streamPhase === 'generating' ? 'generating' : 'searching'}
+                        intro={t('liveSky.greeting')}
+                      />
+                      <LiveSkyCarousel
+                        people={chartDataForAnalysis?.type === 'synastry'
+                          ? [
+                            { label: chartDataForAnalysis.person1_name, planets: chartDataForAnalysis.chart1?.planets ?? {} },
+                            { label: chartDataForAnalysis.person2_name, planets: chartDataForAnalysis.chart2?.planets ?? {} },
+                          ]
+                          : chartDataForAnalysis?.planets
+                            ? [{ planets: chartDataForAnalysis.planets }]
+                            : []}
                       />
                     </div>
                   )}
 
-                  {/* v1.2: daily forecast temporarily hidden from the natal chart, do not delete
-                  {analysisTab === 'dailyForecast' && !showPlanetTable && savedChartId && (
-                    <div id="daily-forecast-section">
-                      <DailyForecastPanel natalChart={chartDataForAnalysis} />
+                  {analysisError && (
+                    <div className="db-error">
+                      {analysisError}
                     </div>
                   )}
-                  */}
 
-                  {!showPlanetTable && analysisTab === 'natal' && (
-                    <>
-                      {analysisLoading && streamPhase !== 'typing' && !fullAnalysis && (
-                        <div style={{ marginTop: '40px' }}>
-                          <ProcessingMessage
-                            title={streamPhase === 'generating' ? t('dashboard.fullAnalysis.generating') : t('dashboard.fullAnalysis.searching')}
-                            phase={streamPhase === 'generating' ? 'generating' : 'searching'}
-                            intro={t('liveSky.greeting')}
-                          />
-                          <LiveSkyCarousel
-                            people={chartDataForAnalysis?.type === 'synastry'
-                              ? [
-                                { label: chartDataForAnalysis.person1_name, planets: chartDataForAnalysis.chart1?.planets ?? {} },
-                                { label: chartDataForAnalysis.person2_name, planets: chartDataForAnalysis.chart2?.planets ?? {} },
-                              ]
-                              : chartDataForAnalysis?.planets
-                                ? [{ planets: chartDataForAnalysis.planets }]
-                                : []}
-                          />
+                  {(fullAnalysis || streamPhase === 'typing') && (
+                    <div className="db-analysis-body">
+                      {!savedChartId && !analysisLoading && (
+                        <div className="db-save-bar">
+                          <button className="db-btn-primary" onClick={handleSaveChartWithAnalysis} disabled={saving}>
+                            {saving ? '…' : t('dashboard.actions.save')}
+                          </button>
                         </div>
                       )}
-
-                      {analysisError && (
-                        <div className="error-message" style={{ marginTop: '20px' }}>
-                          {analysisError}
-                        </div>
+                      <MarkdownContent content={fullAnalysis ?? displayedText} />
+                      {!fullAnalysis && streamPhase === 'typing' && (
+                        <span className="typing-cursor" aria-hidden="true">▍</span>
                       )}
 
-                      {(fullAnalysis || streamPhase === 'typing') && (
-                        <div style={{ marginTop: '40px', lineHeight: '2', fontSize: '16px' }}>
-                          {!savedChartId && !analysisLoading && (
-                            <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
-                              <button className="btn btn-primary" onClick={handleSaveChartWithAnalysis} disabled={saving}>
-                                {saving ? '...' : t('dashboard.actions.save')}
-                              </button>
-                            </div>
-                          )}
-                          <MarkdownContent content={fullAnalysis ?? displayedText} />
-                          {!fullAnalysis && streamPhase === 'typing' && (
-                            <span className="typing-cursor" aria-hidden="true">▍</span>
-                          )}
+                      <div id="chat-section">
+                        {savedChartId && (
+                          <>
+                            {!chatVisible && (
+                              <div className="db-chat__open-row">
+                                <button
+                                  onClick={() => setChatVisible(true)}
+                                  className="db-btn-primary"
+                                  style={{ maxWidth: '300px', width: '100%' }}
+                                  disabled={!fullAnalysis}
+                                >
+                                  {chatHistory.length > 0 ? t('dashboard.chat.open') : t('dashboard.chat.start')}
+                                </button>
+                              </div>
+                            )}
 
-                          <div id="chat-section">
-                            {savedChartId && (
-                              <>
-                                {!chatVisible && (
-                                  <div style={{ textAlign: 'center', marginTop: '20px' }}>
-                                    <button onClick={() => setChatVisible(true)} className="btn btn-primary" style={{ maxWidth: '300px' }} disabled={!fullAnalysis}>
-                                      {chatHistory.length > 0 ? t('dashboard.chat.open') : t('dashboard.chat.start')}
-                                    </button>
-                                  </div>
-                                )}
-
-                                {chatVisible && (
-                                  <div style={{ marginTop: '30px', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px' }}>
-                                    <div style={{ marginBottom: '20px' }}>
-                                      <h3 style={{ margin: '0 0 15px 0' }}>{t('dashboard.chat.title')}</h3>
-                                      <div style={{ minHeight: '100px', height: 'auto', border: '1px solid var(--border)', borderRadius: '8px', padding: '15px', background: 'var(--bg-secondary)' }}>
-                                        {chatHistory.length === 0 ? null : (
-                                          chatHistory.map((message, index) => (
-                                            <div key={index} style={{ marginBottom: '15px', padding: '10px', borderRadius: '8px', background: message.role === 'user' ? 'var(--bg-primary)' : 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
-                                              <strong style={{ color: message.role === 'user' ? '#4CAF50' : '#2196F3', marginRight: '10px' }}>
-                                                {message.role === 'user' ? t('dashboard.chat.user') : t('dashboard.chat.assistant')}
-                                              </strong>
-                                              <div className="chat-message-content">
-                                                <MarkdownContent content={message.content} />
-                                              </div>
-                                            </div>
-                                          ))
-                                        )}
-                                        {chatLoading && chatStream.phase === 'typing' && (
-                                          <div style={{ marginBottom: '15px', padding: '10px', borderRadius: '8px', background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
-                                            <strong style={{ color: '#2196F3', marginRight: '10px' }}>
-                                              {t('dashboard.chat.assistant')}
-                                            </strong>
-                                            <div className="chat-message-content">
-                                              <MarkdownContent content={chatStream.displayedText} />
-                                              <span className="typing-cursor" aria-hidden="true">▍</span>
-                                            </div>
-                                          </div>
-                                        )}
+                            {chatVisible && (
+                              <div className="db-chat">
+                                <h3 className="db-chat__header">{t('dashboard.chat.title')}</h3>
+                                <div className="db-chat__history">
+                                  {chatHistory.map((message, index) => (
+                                    <div
+                                      key={index}
+                                      className={`db-chat__bubble ${message.role === 'user' ? 'db-chat__bubble--user' : 'db-chat__bubble--ai'}`}
+                                    >
+                                      <span className={`db-chat__bubble-role ${message.role === 'user' ? 'db-chat__bubble-role--user' : 'db-chat__bubble-role--ai'}`}>
+                                        {message.role === 'user' ? t('dashboard.chat.user') : t('dashboard.chat.assistant')}
+                                      </span>
+                                      <div className="db-chat__bubble-body chat-message-content">
+                                        <MarkdownContent content={message.content} />
                                       </div>
                                     </div>
-                                    {isNearLimit(chatHistory) && (
-                                      <div style={{ padding: '8px 12px', marginBottom: '10px', borderRadius: '8px', background: isAtLimit(chatHistory) ? 'rgba(244,67,54,0.1)' : 'rgba(255,152,0,0.1)', border: `1px solid ${isAtLimit(chatHistory) ? '#f44336' : '#ff9800'}`, color: isAtLimit(chatHistory) ? '#f44336' : '#ff9800', fontSize: '13px', textAlign: 'center' }}>
-                                        {isAtLimit(chatHistory) ? t('dashboard.chat.limitReached', { limit: MAX_MESSAGES }) : t('dashboard.chat.messagesLeft', { count: MAX_MESSAGES - chatHistory.length })}
+                                  ))}
+                                  {chatLoading && chatStream.phase === 'typing' && (
+                                    <div className="db-chat__bubble db-chat__bubble--ai">
+                                      <span className="db-chat__bubble-role db-chat__bubble-role--ai">
+                                        {t('dashboard.chat.assistant')}
+                                      </span>
+                                      <div className="db-chat__bubble-body chat-message-content">
+                                        <MarkdownContent content={chatStream.displayedText} />
+                                        <span className="typing-cursor" aria-hidden="true">▍</span>
                                       </div>
-                                    )}
-                                    <textarea
-                                      value={chatInput}
-                                      onChange={(e) => setChatInput(e.target.value)}
-                                      onKeyPress={handleKeyPress}
-                                      onInput={(e: React.ChangeEvent<HTMLTextAreaElement>) => { const textarea = e.target; textarea.style.height = 'auto'; textarea.style.height = textarea.scrollHeight + 'px'; }}
-                                      placeholder={t('dashboard.chat.placeholder')}
-                                      maxLength={200}
-                                      disabled={chatLoading}
-                                      style={{ width: '100%', minHeight: '40px', height: '40px', resize: 'none', padding: '12px', border: '1px solid var(--border)', borderRadius: '8px', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontSize: '14px', marginBottom: '10px', overflowY: 'hidden', boxSizing: 'border-box' }}
-                                    />
-                                    <button onClick={sendChatMessage} disabled={!chatInput.trim() || chatLoading || isAtLimit(chatHistory)} className="btn btn-primary" style={{ width: '100%', padding: '12px', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', border: 'none', borderRadius: '8px', color: 'white', fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}>
-                                      {chatLoading ? t('dashboard.chat.sending') : t('dashboard.chat.send')}
-                                    </button>
-                                  </div>
-                                )}
-                              </>
+                                    </div>
+                                  )}
+                                  <ScrollAnchor watch={`${chatHistory.length}:${chatStream.displayedText.length}`} />
+                                </div>
+                                <div className="db-chat__input-area">
+                                  {isNearLimit(chatHistory) && (
+                                    <div className={`db-chat__limit-warning ${isAtLimit(chatHistory) ? 'db-chat__limit-warning--reached' : 'db-chat__limit-warning--near'}`}>
+                                      {isAtLimit(chatHistory) ? t('dashboard.chat.limitReached', { limit: MAX_MESSAGES }) : t('dashboard.chat.messagesLeft', { count: MAX_MESSAGES - chatHistory.length })}
+                                    </div>
+                                  )}
+                                  <textarea
+                                    value={chatInput}
+                                    onChange={(e) => setChatInput(e.target.value)}
+                                    onKeyPress={handleKeyPress}
+                                    onInput={(e: React.ChangeEvent<HTMLTextAreaElement>) => { const textarea = e.target; textarea.style.height = 'auto'; textarea.style.height = textarea.scrollHeight + 'px'; }}
+                                    placeholder={t('dashboard.chat.placeholder')}
+                                    maxLength={200}
+                                    disabled={chatLoading}
+                                    className="db-chat__input"
+                                  />
+                                  <button
+                                    onClick={sendChatMessage}
+                                    disabled={!chatInput.trim() || chatLoading || isAtLimit(chatHistory)}
+                                    className="db-chat__send-btn"
+                                  >
+                                    {chatLoading ? t('dashboard.chat.sending') : t('dashboard.chat.send')}
+                                  </button>
+                                </div>
+                              </div>
                             )}
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  )}
-
-                  {showPlanetTable && chartDataForAnalysis && (
-                    <div style={{ background: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border)', padding: '30px', marginTop: '30px' }}>
-                      <h3 style={{ marginBottom: '20px', color: 'var(--text-primary)' }}>
-                        {chartDataForAnalysis.type === 'synastry' ? t('planets.aspects.title') : t('planets.title')}
-                      </h3>
-                      <div style={{ marginBottom: '40px' }}>
-                        {chartDataForAnalysis.type === 'synastry' ? (
-                          <AspectGrid
-                            aspects={chartDataForAnalysis.aspects as unknown as Aspect[] | undefined}
-                            onAspectClick={handleAspectClick as (aspect: Aspect) => void}
-                          />
-                        ) : (
-                          <PlanetTable
-                            planets={chartDataForAnalysis.planets as unknown as Record<string, PlanetData>}
-                            houses={chartDataForAnalysis.houses}
-                            onPlanetClick={handlePlanetClick}
-                          />
+                          </>
                         )}
                       </div>
-                      {chartDataForAnalysis.type === 'synastry' ? (
-                        <AspectAnalysisModal
-                          aspect={selectedAspect}
-                          analysis={aspectAnalysis}
-                          displayedText={(selectedAspectKey && aspectLiveStreams[selectedAspectKey]?.text) || ''}
-                          phase={(selectedAspectKey && aspectLiveStreams[selectedAspectKey]?.phase) || 'idle'}
-                          isOpen={!!selectedAspect}
-                          onClose={() => {
-                            setSelectedAspect(null);
-                            setSelectedAspectKey(null);
-                            selectedAspectKeyRef.current = null;
-                          }}
-                          loading={aspectLoading}
-                          error={aspectError}
-                        />
-                      ) : (
-                        <PlanetAnalysisModal
-                          planet={selectedPlanet ?? undefined}
-                          analysis={planetAnalysis}
-                          displayedText={(selectedPlanetKey && planetLiveStreams[selectedPlanetKey]?.text) || ''}
-                          phase={(selectedPlanetKey && planetLiveStreams[selectedPlanetKey]?.phase) || 'idle'}
-                          isOpen={!!selectedPlanet}
-                          onClose={handleClosePlanetAnalysis}
-                          loading={planetAnalysisLoading}
-                          error={planetAnalysisError}
-                        />
-                      )}
                     </div>
                   )}
                 </>
               )}
-            </div>
-          </div>
+
+              {showPlanetTable && chartDataForAnalysis && (
+                <div className="db-planet-section">
+                  <h3 className="db-planet-section__title">
+                    {chartDataForAnalysis.type === 'synastry' ? t('planets.aspects.title') : t('planets.title')}
+                  </h3>
+                  <div style={{ marginBottom: '40px' }}>
+                    {chartDataForAnalysis.type === 'synastry' ? (
+                      <AspectGrid
+                        aspects={chartDataForAnalysis.aspects as unknown as Aspect[] | undefined}
+                        onAspectClick={handleAspectClick as (aspect: Aspect) => void}
+                      />
+                    ) : (
+                      <PlanetTable
+                        planets={chartDataForAnalysis.planets as unknown as Record<string, PlanetData>}
+                        houses={chartDataForAnalysis.houses}
+                        onPlanetClick={handlePlanetClick}
+                      />
+                    )}
+                  </div>
+                  {chartDataForAnalysis.type === 'synastry' ? (
+                    <AspectAnalysisModal
+                      aspect={selectedAspect}
+                      analysis={aspectAnalysis}
+                      displayedText={(selectedAspectKey && aspectLiveStreams[selectedAspectKey]?.text) || ''}
+                      phase={(selectedAspectKey && aspectLiveStreams[selectedAspectKey]?.phase) || 'idle'}
+                      isOpen={!!selectedAspect}
+                      onClose={() => {
+                        setSelectedAspect(null);
+                        setSelectedAspectKey(null);
+                        selectedAspectKeyRef.current = null;
+                      }}
+                      loading={aspectLoading}
+                      error={aspectError}
+                    />
+                  ) : (
+                    <PlanetAnalysisModal
+                      planet={selectedPlanet ?? undefined}
+                      analysis={planetAnalysis}
+                      displayedText={(selectedPlanetKey && planetLiveStreams[selectedPlanetKey]?.text) || ''}
+                      phase={(selectedPlanetKey && planetLiveStreams[selectedPlanetKey]?.phase) || 'idle'}
+                      isOpen={!!selectedPlanet}
+                      onClose={handleClosePlanetAnalysis}
+                      loading={planetAnalysisLoading}
+                      error={planetAnalysisError}
+                    />
+                  )}
+                </div>
+              )}
+            </>
+          )}
         </div>
       </div>
 
       {showScrollTop && (
         <button
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          style={{
-            position: 'fixed',
-            bottom: '32px',
-            right: '32px',
-            width: '44px',
-            height: '44px',
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            color: 'white',
-            border: 'none',
-            fontSize: '20px',
-            cursor: 'pointer',
-            zIndex: 100,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-          }}
+          className="db-scroll-top"
+          aria-label={t('common.scrollTop')}
         >
-          ↑
+          <ArrowUp size={18} strokeWidth={2.4} />
         </button>
       )}
 

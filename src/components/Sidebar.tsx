@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import i18n from '../i18n';
-import ProcessingMessage from './ProcessingMessage';
+import { Menu, X, Sparkles, ChevronDown, Pencil, Trash2, Check, Users, Calendar, MapPin } from 'lucide-react';
+import '../styles/dashboard.css';
 
 interface ChartItem {
   id: string | number;
@@ -71,274 +72,184 @@ const Sidebar = ({
   const { t } = useTranslation();
   const currentLang = lang || i18n.language || 'ru';
   const [historyOpen, setHistoryOpen] = useState(true);
+  // Drawer живёт здесь, а не в Dashboard: так Dashboard.tsx не меняется вовсе
+  // (openspec/changes/premium-design-system, Decision 5). На десктопе класс
+  // ни на что не влияет — вся мобильная механика внутри @media.
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const closeDrawer = () => setDrawerOpen(false);
 
   return (
-    <aside style={{
-      width: '260px',
-      minWidth: '260px',
-      background: 'var(--bg-card)',
-      borderRight: '1px solid var(--border)',
-      minHeight: 'calc(100vh - 65px)',
-      display: 'flex',
-      flexDirection: 'column',
-      padding: '24px 16px',
-      gap: '8px',
-      position: 'sticky',
-      top: '65px',
-      left: 0,
-      alignSelf: 'flex-start',
-      maxHeight: 'calc(100vh - 65px)',
-      overflowY: 'auto',
-    }}>
-
-      {/* Новая карта — главная кнопка */}
+    <>
       <button
-        onClick={onNewChart}
-        style={{
-          width: '100%',
-          background: 'linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%)',
-          color: 'white',
-          padding: '12px 16px',
-          border: 'none',
-          borderRadius: '10px',
-          fontSize: '14px',
-          fontWeight: '600',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          marginBottom: '8px',
-          transition: 'opacity 0.2s',
-        }}
-        onMouseEnter={(e) => (e.currentTarget as HTMLButtonElement).style.opacity = '0.85'}
-        onMouseLeave={(e) => (e.currentTarget as HTMLButtonElement).style.opacity = '1'}
+        type="button"
+        className={`db-sidebar-burger${drawerOpen ? ' db-sidebar-burger--hidden' : ''}`}
+        onClick={() => setDrawerOpen(true)}
+        aria-label={t('dashboard.actions.openMenu')}
+        aria-expanded={drawerOpen}
       >
-        <span style={{ fontSize: '16px' }}>✦</span>
-        {t('dashboard.actions.newChart')}
+        <Menu size={18} strokeWidth={2} />
       </button>
 
-      {/* Divider */}
-      <div style={{ height: '1px', background: 'var(--border)', margin: '4px 0' }} />
+      {drawerOpen && (
+        <div className="db-sidebar-overlay" onClick={closeDrawer} aria-hidden="true" />
+      )}
 
-      {/* История карт */}
-      <div>
+      <aside className={`db-sidebar${drawerOpen ? ' db-sidebar--open' : ''}`}>
+
         <button
-          onClick={() => setHistoryOpen(!historyOpen)}
-          style={{
-            width: '100%',
-            background: 'none',
-            border: 'none',
-            color: 'var(--text-secondary)',
-            fontSize: '11px',
-            fontWeight: '700',
-            letterSpacing: '0.1em',
-            textTransform: 'uppercase',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '8px 4px',
-          }}
+          type="button"
+          className="db-sidebar__close"
+          onClick={closeDrawer}
+          aria-label={t('dashboard.actions.closeMenu')}
         >
-          {t('dashboard.features.history.title')}
-          <span style={{
-            fontSize: '10px',
-            transition: 'transform 0.2s',
-            transform: historyOpen ? 'rotate(180deg)' : 'rotate(0deg)'
-          }}>▼</span>
+          <X size={16} strokeWidth={2} />
         </button>
 
-        {historyOpen && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px' }}>
-            {historyLoading ? (
-              <div style={{ padding: '8px 4px' }}>
-                <ProcessingMessage size="sm" />
-              </div>
-            ) : historyCharts.length === 0 ? (
-              <div style={{ color: 'var(--text-secondary)', fontSize: '13px', padding: '8px 4px' }}>
-                {t('history.empty')}
-              </div>
-            ) : (
-              historyCharts.map((chart) => {
-                const chartData = chart.chart_data;
-                const isSynastry = chartData?.type === 'synastry';
+        <button onClick={() => { closeDrawer(); onNewChart(); }} className="db-sidebar__new-btn">
+          <Sparkles size={16} strokeWidth={2.2} />
+          {t('dashboard.actions.newChart')}
+        </button>
 
-                // Имя для отображения (всегда из chart.name, включая переименованные синастрии)
-                const displayName = chart.name || t('dashboard.chart.defaultName');
+        <div className="db-sidebar__divider" />
 
-                // Иконка
-                const icon = isSynastry ? '🔮' : getSunSignEmoji ? getSunSignEmoji(chart.sun_sign || '') : '🌟';
+        <div>
+          <button
+            onClick={() => setHistoryOpen(!historyOpen)}
+            className="db-sidebar__section-header"
+          >
+            {t('dashboard.features.history.title')}
+            <ChevronDown
+              size={13}
+              strokeWidth={2.5}
+              className={`db-sidebar__section-chevron${historyOpen ? ' db-sidebar__section-chevron--open' : ''}`}
+            />
+          </button>
 
-                // Дата
-                let dateDisplay;
-                if (isSynastry) {
-                  const date1 = chartData?.chart1?.birth_date?.split('T')[0] || '—';
-                  const date2 = chartData?.chart2?.birth_date?.split('T')[0] || '—';
-                  dateDisplay = `📅 ${date1} / ${date2}`;
-                } else {
-                  dateDisplay = `📅 ${chart.chart_data?.meta?.birth_date?.split('T')[0] || '—'}`;
-                }
+          {historyOpen && (
+            <div className="db-sidebar__chart-list">
+              {historyLoading ? (
+                <div className="db-sidebar__skeleton-list">
+                  <div className="db-skeleton db-skeleton--chart-item" />
+                  <div className="db-skeleton db-skeleton--chart-item" />
+                  <div className="db-skeleton db-skeleton--chart-item" />
+                </div>
+              ) : historyCharts.length === 0 ? (
+                <div className="db-sidebar__empty">{t('history.empty')}</div>
+              ) : (
+                historyCharts.map((chart) => {
+                  const chartData = chart.chart_data;
+                  const isSynastry = chartData?.type === 'synastry';
+                  const isActive = savedChartId === chart.id;
+                  const isEditing = renameChartId === chart.id;
+                  const displayName = chart.name || t('dashboard.chart.defaultName');
+                  const icon = isSynastry ? '🔮' : getSunSignEmoji ? getSunSignEmoji(chart.sun_sign || '') : '🌟';
 
-                // Место
-                let placeDisplay;
-                if (isSynastry) {
-                  const place1 = chartData?.chart1?.birth_place || '—';
-                  const place2 = chartData?.chart2?.birth_place || '—';
-                  placeDisplay = `📍 ${place1} / ${place2}`;
-                } else {
-                  placeDisplay = `📍 ${chart.chart_data?.meta?.birth_place || '—'}`;
-                }
+                  let dateDisplay: string;
+                  if (isSynastry) {
+                    const date1 = chartData?.chart1?.birth_date?.split('T')[0] || '—';
+                    const date2 = chartData?.chart2?.birth_date?.split('T')[0] || '—';
+                    dateDisplay = `${date1} / ${date2}`;
+                  } else {
+                    dateDisplay = chart.chart_data?.meta?.birth_date?.split('T')[0] || '—';
+                  }
 
-                return (
-                  <div
-                    key={chart.id}
-                    onClick={renameChartId === chart.id ? undefined : () => onSelectChart(chart)}
-                    style={{
-                      padding: '10px 12px',
-                      borderRadius: '8px',
-                      cursor: renameChartId === chart.id ? 'default' : 'pointer',
-                      background: savedChartId === chart.id
-                        ? 'rgba(124, 58, 237, 0.15)'
-                        : 'transparent',
-                      border: savedChartId === chart.id
-                        ? '1px solid rgba(124, 58, 237, 0.3)'
-                        : '1px solid transparent',
-                      transition: 'all 0.15s',
-                    }}
-                    onMouseEnter={(e) => {
-                      if (savedChartId !== chart.id && renameChartId !== chart.id) {
-                        (e.currentTarget as HTMLDivElement).style.background = 'var(--bg-secondary)';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (savedChartId !== chart.id) {
-                        (e.currentTarget as HTMLDivElement).style.background = 'transparent';
-                      }
-                    }}
-                  >
-                    {renameChartId === chart.id ? (
-                      <div onClick={(e) => e.stopPropagation()}>
-                        <input
-                          type="text"
-                          value={renameChartName}
-                          onChange={(e) => onRenameChange(e.target.value)}
-                          maxLength={15}
-                          autoFocus
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') onSaveRename();
-                            if (e.key === 'Escape') onCancelRename();
-                          }}
-                          style={{
-                            width: '100%',
-                            fontSize: '13px',
-                            padding: '4px 6px',
-                            border: '1px solid var(--accent)',
-                            borderRadius: '4px',
-                            background: 'var(--bg-secondary)',
-                            color: 'var(--text-primary)',
-                            marginBottom: '4px',
-                          }}
-                        />
-                        <div style={{ fontSize: '11px', color: renameError ? 'var(--error)' : 'var(--text-secondary)' }}>
-                          {renameError || `${renameChartName.length}/15`}
-                        </div>
-                        <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
-                          <button onClick={onSaveRename} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}>
-                            {renaming ? '...' : '💾'}
-                          </button>
-                          <button onClick={onCancelRename} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}>❌</button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', overflow: 'hidden', flex: 1 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden' }}>
-                            <span style={{ fontSize: '14px' }}>{icon}</span>
-                            <span style={{
-                              fontSize: '13px',
-                              fontWeight: savedChartId === chart.id ? '600' : '400',
-                              color: savedChartId === chart.id ? 'var(--text-primary)' : 'var(--text-secondary)',
-                              whiteSpace: 'nowrap',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                            }}>
-                              {displayName}
-                            </span>
+                  let placeDisplay: string;
+                  if (isSynastry) {
+                    const place1 = chartData?.chart1?.birth_place || '—';
+                    const place2 = chartData?.chart2?.birth_place || '—';
+                    placeDisplay = `${place1} / ${place2}`;
+                  } else {
+                    placeDisplay = chart.chart_data?.meta?.birth_place || '—';
+                  }
+
+                  return (
+                    <div
+                      key={chart.id}
+                      onClick={isEditing ? undefined : () => { closeDrawer(); onSelectChart(chart); }}
+                      className={[
+                        'db-sidebar__chart-item',
+                        isActive ? 'db-sidebar__chart-item--active' : '',
+                        isEditing ? 'db-sidebar__chart-item--editing' : '',
+                      ].filter(Boolean).join(' ')}
+                    >
+                      {isEditing ? (
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="text"
+                            value={renameChartName}
+                            onChange={(e) => onRenameChange(e.target.value)}
+                            maxLength={15}
+                            autoFocus
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') onSaveRename();
+                              if (e.key === 'Escape') onCancelRename();
+                            }}
+                            className="db-sidebar__rename-input"
+                          />
+                          <div className={`db-sidebar__rename-counter ${renameError ? 'db-sidebar__rename-counter--error' : 'db-sidebar__rename-counter--ok'}`}>
+                            {renameError || `${renameChartName.length}/15`}
                           </div>
-                          <div style={{
-                            fontSize: '12px',
-                            color: 'var(--text-secondary)',
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                          }}>
-                            {dateDisplay}
-                          </div>
-                          <div style={{
-                            fontSize: '12px',
-                            color: 'var(--text-secondary)',
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                          }}>
-                            {placeDisplay}
+                          <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
+                            <button onClick={onSaveRename} className="db-sidebar__icon-btn">
+                              {renaming ? '…' : <Check size={14} strokeWidth={2.4} />}
+                            </button>
+                            <button onClick={onCancelRename} className="db-sidebar__icon-btn">
+                              <X size={14} strokeWidth={2.4} />
+                            </button>
                           </div>
                         </div>
-                        <div style={{ display: 'flex', gap: '2px', flexShrink: 0, alignItems: 'flex-start' }}>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); onStartRename(chart); }}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px', padding: '2px', opacity: '0.6' }}
-                            onMouseEnter={(e) => (e.currentTarget as HTMLButtonElement).style.opacity = '1'}
-                            onMouseLeave={(e) => (e.currentTarget as HTMLButtonElement).style.opacity = '0.6'}
-                          >✏️</button>
-                          <button
-                            onClick={(e) => onDeleteChart(chart, e)}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px', padding: '2px', opacity: '0.6' }}
-                            onMouseEnter={(e) => (e.currentTarget as HTMLButtonElement).style.opacity = '1'}
-                            onMouseLeave={(e) => (e.currentTarget as HTMLButtonElement).style.opacity = '0.6'}
-                          >🗑️</button>
+                      ) : (
+                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', overflow: 'hidden', flex: 1 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden' }}>
+                              <span style={{ fontSize: '14px', flexShrink: 0 }}>{icon}</span>
+                              <span className={`db-sidebar__chart-name ${isActive ? 'db-sidebar__chart-name--active' : 'db-sidebar__chart-name--inactive'}`}>
+                                {displayName}
+                              </span>
+                            </div>
+                            <div className="db-sidebar__chart-meta">
+                              <Calendar size={11} strokeWidth={2} />
+                              <span>{dateDisplay}</span>
+                            </div>
+                            <div className="db-sidebar__chart-meta">
+                              <MapPin size={11} strokeWidth={2} />
+                              <span>{placeDisplay}</span>
+                            </div>
+                          </div>
+                          <div className="db-sidebar__chart-actions">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); onStartRename(chart); }}
+                              className="db-sidebar__icon-btn"
+                            ><Pencil size={13} strokeWidth={2} /></button>
+                            <button
+                              onClick={(e) => onDeleteChart(chart, e)}
+                              className="db-sidebar__icon-btn"
+                            ><Trash2 size={13} strokeWidth={2} /></button>
+                          </div>
                         </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })
-            )}
-          </div>
-        )}
-      </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          )}
+        </div>
 
-      {/* Синастрия */}
-      <button
-        onClick={() => onProtectedNavigation ? onProtectedNavigation(`/${currentLang}/synastry`) : navigate(`/${currentLang}/synastry`)}
-        style={{
-          width: '100%',
-          background: 'none',
-          border: '1px solid var(--border)',
-          borderRadius: '10px',
-          color: 'var(--text-secondary)',
-          padding: '10px 16px',
-          fontSize: '14px',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          transition: 'all 0.15s',
-        }}
-        onMouseEnter={(e) => {
-          (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--accent)';
-          (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-primary)';
-        }}
-        onMouseLeave={(e) => {
-          (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--border)';
-          (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-secondary)';
-        }}
-      >
-        <span>🔮</span>
-        {t('dashboard.actions.synastry')}
-      </button>
+        <button
+          onClick={() => {
+            closeDrawer();
+            if (onProtectedNavigation) onProtectedNavigation(`/${currentLang}/synastry`);
+            else navigate(`/${currentLang}/synastry`);
+          }}
+          className="db-sidebar__nav-btn"
+        >
+          <Users size={15} strokeWidth={2} />
+          {t('dashboard.actions.synastry')}
+        </button>
 
-    </aside>
+      </aside>
+    </>
   );
 };
 

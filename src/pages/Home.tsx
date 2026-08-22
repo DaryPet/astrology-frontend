@@ -558,7 +558,7 @@ function Home() {
                     placeholder={t('home.form.namePlaceholder')}
                     maxLength={10}
                   />
-                  {nameError && <div style={{ color: 'red', fontSize: '12px', marginTop: '4px' }}>{nameError}</div>}
+                  {nameError && <div style={{ color: 'var(--error)', fontSize: 'var(--text-xs)', marginTop: 'var(--space-1)' }}>{nameError}</div>}
                 </div>
 
                 <div className="form-row">
@@ -604,7 +604,7 @@ function Home() {
       </section>
 
       {chartData && (
-        <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
+        <div style={{ padding: 'var(--space-5)', maxWidth: '1200px', margin: '0 auto' }}>
           <div style={{
             textAlign: 'center',
             margin: '40px 0',
@@ -613,33 +613,22 @@ function Home() {
             borderRadius: '12px',
             border: '1px solid var(--border)'
           }}>
-            <h2 style={{ marginBottom: '10px', color: 'var(--text-primary)' }}>
+            <h2 className="ui-subtitle">
               {t('home.chart.title')}
             </h2>
             {chartData.name && (
-              <p style={{
-                fontSize: '18px',
-                color: 'var(--text-secondary)',
-                marginBottom: '20px',
-                fontWeight: '500'
-              }}>
+              <p className="ui-meta" style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--space-5)', fontWeight: 500 }}>
                 {chartData.name}
               </p>
             )}
-            <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <div className="ui-row" style={{ justifyContent: 'center' }}>
               <AstroChartComponent
                 chartData={chartData}
                 size={700}
               />
             </div>
-            <div style={{
-              display: 'flex',
-              justifyContent: 'center',
-              marginTop: '30px',
-              color: 'var(--text-secondary)',
-              fontSize: '14px'
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '30px', flexWrap: 'wrap' }}>
+            <div className="ui-row ui-meta" style={{ justifyContent: 'center', marginTop: 'var(--space-7)' }}>
+              <div className="ui-row" style={{ justifyContent: 'center', gap: 'var(--space-7)' }}>
                 <div><strong>{t('home.chart.sun')}:</strong> {chartData.sun_sign ? t(`planets.signs.${chartData.sun_sign}`) : '—'}</div>
                 <div><strong>{t('home.chart.moon')}:</strong> {chartData.moon_sign ? t(`planets.signs.${chartData.moon_sign}`) : '—'}</div>
                 <div><strong>{t('home.chart.ascendant')}:</strong> {chartData.ascendant ? t(`planets.signs.${chartData.ascendant}`) : '—'}</div>
@@ -647,11 +636,11 @@ function Home() {
               </div>
             </div>
 
-            <div style={{ textAlign: 'center', marginTop: '24px' }}>
+            <div style={{ textAlign: 'center', marginTop: 'var(--space-6)' }}>
               <AnalysisModeToggle value={analysisMode} onChange={setAnalysisMode} />
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap', marginTop: '24px' }}>
+            <div className="ui-row" style={{ justifyContent: 'center', marginTop: 'var(--space-6)' }}>
               <button
                 type="button"
                 className="btn-full-analysis"
@@ -720,18 +709,12 @@ function Home() {
             </button>
           </div>
 
-          <div style={{
-            background: 'var(--bg-card)',
-            borderRadius: '12px',
-            border: '1px solid var(--border)',
-            padding: '30px',
-            marginTop: '30px'
-          }}>
-            <h3 style={{ marginBottom: '20px', color: 'var(--text-primary)' }}>
+          <div className="ui-card" style={{ marginTop: 'var(--space-7)' }}>
+            <h3 className="ui-subtitle" style={{ marginBottom: 'var(--space-5)' }}>
               {t('home.planets.title')}
             </h3>
 
-            <div style={{ marginBottom: '40px' }}>
+            <div style={{ marginBottom: 'var(--space-8)' }}>
               <PlanetTable
                 planets={chartData.planets}
                 houses={chartData.houses}
@@ -753,8 +736,8 @@ function Home() {
 
           {/* v1.2: daily forecast temporarily hidden from the natal chart, do not delete
           {showDailyForecast && (
-            <div style={{ marginTop: '30px' }}>
-              <h3 style={{ marginBottom: '20px', color: 'var(--text-primary)' }}>
+            <div style={{ marginTop: 'var(--space-7)' }}>
+              <h3 className="ui-subtitle" style={{ marginBottom: 'var(--space-5)' }}>
                 {t('dailyForecast.forPerson')}: {chartData.name}
               </h3>
               <DailyForecastPanel natalChart={chartData} />

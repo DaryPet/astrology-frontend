@@ -29,20 +29,14 @@ const AspectGrid = ({ aspects, _planets, onAspectClick, title, emptyTitle, empty
 
   if (!aspects || aspects.length === 0) {
     return (
-      <div style={{
-        background: 'var(--bg-secondary)',
-        borderRadius: '12px',
-        padding: '40px 20px',
-        border: '1px solid var(--border)',
-        textAlign: 'center'
-      }}>
-        <div style={{ fontSize: '48px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+      <div className="ui-card" style={{ textAlign: 'center', padding: 'var(--space-9) var(--space-5)' }}>
+        <div className="ui-muted" style={{ fontSize: '48px', marginBottom: 'var(--space-4)' }}>
           ☊
         </div>
-        <h3 style={{ marginTop: 0, marginBottom: '8px', color: 'var(--text-primary)' }}>
+        <h3 className="ui-subtitle">
           {emptyTitle || t('planets.aspects.notFound')}
         </h3>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '14px', margin: 0 }}>
+        <p className="ui-meta" style={{ margin: 0 }}>
           {emptyDescription || t('planets.aspects.notFoundDesc')}
         </p>
       </div>
@@ -62,44 +56,15 @@ const AspectGrid = ({ aspects, _planets, onAspectClick, title, emptyTitle, empty
   };
 
   return (
-    <div style={{
-      background: 'var(--bg-secondary)',
-      borderRadius: '12px',
-      padding: '20px',
-      border: '1px solid var(--border)',
-      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
-    }}>
-      <h3 style={{
-        marginTop: 0,
-        marginBottom: '20px',
-        color: 'var(--text-primary)',
-        fontSize: '18px',
-        fontWeight: 'bold',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '10px'
-      }}>
-        <span style={{
-          width: '24px',
-          height: '24px',
-          borderRadius: '50%',
-          background: 'linear-gradient(135deg, #7c3aed, #a78bfa)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: '12px',
-          color: '#fff'
-        }}>
+    <div className="ui-card">
+      <h3 className="ui-subtitle ui-row ui-row--tight" style={{ marginBottom: 'var(--space-5)' }}>
+        <span className="ui-dot">
           △
         </span>
         {title || t('planets.aspects.title')} ({aspects.length})
       </h3>
 
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-        gap: '16px'
-      }}>
+      <div className="ui-grid ui-grid--loose">
         {aspects.map((aspect, index) => {
           const aspectColor = ASPECT_COLORS[aspect.aspect || ''] || '#7c3aed';
           const isSelected = selectedAspect === index;
@@ -134,15 +99,9 @@ const AspectGrid = ({ aspects, _planets, onAspectClick, title, emptyTitle, empty
                   (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
                   (e.currentTarget as HTMLDivElement).style.boxShadow = 'none';
                 }
-              }}
-            >
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                marginBottom: '12px'
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div className="ui-row ui-row--between" style={{ marginBottom: 'var(--space-3)', flexWrap: 'nowrap' }}>
+                <div className="ui-row">
                   <div style={{
                     width: '40px',
                     height: '40px',
@@ -166,32 +125,16 @@ const AspectGrid = ({ aspects, _planets, onAspectClick, title, emptyTitle, empty
                     }}>
                       {aspectName}
                     </div>
-                    <div style={{
-                      fontSize: '12px',
-                      color: 'var(--text-secondary)'
-                    }}>
+                    <div className="ui-aspect-orb" style={{ marginLeft: 0 }}>
                       {t('planets.orb')}: <span style={{ fontWeight: 'bold', color: aspectColor }}>{aspect.orb}°</span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '12px',
-                padding: '12px',
-                background: 'var(--bg-secondary)',
-                borderRadius: '8px'
-              }}>
+              <div className="ui-row ui-row--between" style={{ marginBottom: 'var(--space-3)', padding: 'var(--space-3)', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', flexWrap: 'nowrap' }}>
                 <div style={{ textAlign: 'center', flex: 1 }}>
-                  <div style={{
-                    fontSize: '14px',
-                    fontWeight: 'bold',
-                    color: 'var(--text-primary)',
-                    marginBottom: '4px'
-                  }}>
+                  <div className="ui-table__strong" style={{ marginBottom: 'var(--space-1)' }}>
                     {planet1Name}
                   </div>
                 </div>
@@ -206,12 +149,7 @@ const AspectGrid = ({ aspects, _planets, onAspectClick, title, emptyTitle, empty
                 </div>
 
                 <div style={{ textAlign: 'center', flex: 1 }}>
-                  <div style={{
-                    fontSize: '14px',
-                    fontWeight: 'bold',
-                    color: 'var(--text-primary)',
-                    marginBottom: '4px'
-                  }}>
+                  <div className="ui-table__strong" style={{ marginBottom: 'var(--space-1)' }}>
                     {planet2Name}
                   </div>
                 </div>

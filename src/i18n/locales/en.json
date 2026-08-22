@@ -1,4 +1,8 @@
 {
+  "meta": {
+    "title": "Astrology — natal chart, synastry and transits",
+    "description": "Natal chart, synastry, transits and progressions with detailed interpretation. Build your chart from date, time and place of birth."
+  },
   "nav": {
     "home": "Home",
     "synastry": "Synastry",
@@ -158,7 +162,9 @@
       "save": "Save",
       "planetAnalysis": "Planet Analysis",
       "aspectAnalysis": "Aspect Analysis",
-      "fullAnalysis": "Full Analysis"
+      "fullAnalysis": "Full Analysis",
+      "openMenu": "Open menu",
+      "closeMenu": "Close menu"
     },
     "emptyState": {
       "selectChart": "Select a chart from history to get analysis"
@@ -295,7 +301,8 @@
     "backHome": "Go to home",
     "email": "Email",
     "googleSignIn": "Sign in with Google",
-    "or": "or"
+    "or": "or",
+    "scrollTop": "Back to top"
   },
   "forgotPassword": {
     "title": "Forgot Password?",

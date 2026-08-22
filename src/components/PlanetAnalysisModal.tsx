@@ -34,54 +34,15 @@ const PlanetAnalysisModal = ({ planet, analysis, displayedText = '', phase = 'id
 
   return (
     <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: 'rgba(0, 0, 0, 0.7)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1000,
-        padding: '20px'
-      }}
+      className="ui-modal-overlay"
       onClick={handleOverlayClick}
     >
       <div
-        style={{
-          background: 'var(--bg-secondary)',
-          borderRadius: '12px',
-          padding: '24px',
-          maxWidth: '600px',
-          width: '100%',
-          maxHeight: '80vh',
-          overflow: 'auto',
-          position: 'relative',
-          border: '1px solid var(--border)',
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
-        }}
+        className="ui-modal ui-modal--wide"
       >
         <button
           onClick={onClose}
-          style={{
-            position: 'absolute',
-            top: '16px',
-            right: '16px',
-            background: 'none',
-            border: 'none',
-            fontSize: '24px',
-            cursor: 'pointer',
-            color: 'var(--text-secondary)',
-            width: '32px',
-            height: '32px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderRadius: '50%',
-            transition: 'background 0.2s'
-          }}
+          className="ui-modal__close"
           onMouseEnter={(e) => {
             (e.currentTarget as HTMLButtonElement).style.background = 'var(--bg-primary)';
           }}
@@ -92,25 +53,8 @@ const PlanetAnalysisModal = ({ planet, analysis, displayedText = '', phase = 'id
           ×
         </button>
 
-        <h2 style={{
-          margin: '0 0 20px 0',
-          color: 'var(--text-primary)',
-          fontSize: '20px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px'
-        }}>
-          <span style={{
-            width: '36px',
-            height: '36px',
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg, #7c3aed, #a78bfa)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '14px',
-            color: '#fff'
-          }}>
+        <h2 className="ui-modal__title">
+          <span className="ui-dot" style={{ width: 36, height: 36 }}>
             {planet?.name?.substring(0, 2)}
           </span>
           {t('analysis.planetAnalysis')}: {planet?.name ? t(`planets.names.${planet.name}`, planet.name) : ''}
@@ -138,30 +82,20 @@ const PlanetAnalysisModal = ({ planet, analysis, displayedText = '', phase = 'id
         )}
 
         {error && (
-          <div style={{
-            padding: '16px',
-            background: 'rgba(255, 59, 48, 0.1)',
-            borderRadius: '8px',
-            color: '#ff3b30',
-            marginBottom: '16px'
-          }}>
+          <div className="ui-error" style={{ marginTop: 0, marginBottom: 'var(--space-4)' }}>
             {error}
           </div>
         )}
 
         {phase === 'typing' && !analysis && (
-          <div className="markdown-content" style={{
-            marginTop: '12px'
-          }}>
+          <div className="markdown-content" style={{ marginTop: 'var(--space-3)' }}>
             <MarkdownContent content={displayedText} />
             <span className="typing-cursor" aria-hidden="true">▍</span>
           </div>
         )}
 
         {analysis && !loading && (
-          <div className="markdown-content" style={{
-            marginTop: '12px'
-          }}>
+          <div className="markdown-content" style={{ marginTop: 'var(--space-3)' }}>
             <MarkdownContent content={analysis} />
           </div>
         )}
