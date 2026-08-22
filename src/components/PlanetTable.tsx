@@ -141,44 +141,15 @@ const PlanetTable = ({ planets, houses, onPlanetClick }: PlanetTableProps) => {
   }, {} as Record<string, number>);
 
   return (
-    <div style={{
-      background: 'var(--bg-secondary)',
-      borderRadius: '12px',
-      padding: '20px',
-      border: '1px solid var(--border)',
-      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
-    }}>
-      <h3 style={{
-        marginTop: 0,
-        marginBottom: '20px',
-        color: 'var(--text-primary)',
-        fontSize: '18px',
-        fontWeight: 'bold',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '10px'
-      }}>
-        <span style={{
-          width: '24px',
-          height: '24px',
-          borderRadius: '50%',
-          background: 'linear-gradient(135deg, #7c3aed, #a78bfa)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: '12px',
-          color: '#fff'
-        }}>
+    <div className="ui-card">
+      <h3 className="ui-subtitle ui-row ui-row--tight" style={{ marginBottom: 'var(--space-5)' }}>
+        <span className="ui-dot">
           ♆
         </span>
         {t('planets.title')}
       </h3>
 
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-        gap: '12px'
-      }}>
+      <div className="ui-grid">
         {planetList.map((planet) => (
           <div
             key={planet.name}
@@ -208,8 +179,7 @@ const PlanetTable = ({ planets, houses, onPlanetClick }: PlanetTableProps) => {
             onMouseLeave={(e) => {
               (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
               (e.currentTarget as HTMLDivElement).style.boxShadow = 'none';
-            }}
-          >
+            }}>
             <div style={{
               position: 'absolute',
               top: 0,
@@ -219,7 +189,7 @@ const PlanetTable = ({ planets, houses, onPlanetClick }: PlanetTableProps) => {
               background: ELEMENT_COLORS[planet.element] || '#7c3aed'
             }} />
 
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '12px' }}>
+            <div className="ui-row" style={{ marginBottom: 'var(--space-3)', flexWrap: 'nowrap' }}>
               <div style={{
                 width: '32px',
                 height: '32px',
@@ -243,17 +213,8 @@ const PlanetTable = ({ planets, houses, onPlanetClick }: PlanetTableProps) => {
               </div>
 
               <div style={{ flex: 1 }}>
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: '4px'
-                }}>
-                  <span style={{
-                    color: 'var(--text-primary)',
-                    fontSize: '16px',
-                    fontWeight: 'bold'
-                  }}>
+                <div className="ui-row ui-row--between" style={{ marginBottom: 'var(--space-1)', flexWrap: 'nowrap' }}>
+                  <span className="ui-stat__value">
                     {planet.translatedName}
                     {planet.speed < 0 && (
                       <span style={{
@@ -266,11 +227,7 @@ const PlanetTable = ({ planets, houses, onPlanetClick }: PlanetTableProps) => {
                   </span>
                 </div>
 
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}>
+                <div className="ui-row ui-row--tight">
                   <span style={{
                     color: ELEMENT_COLORS[planet.element] || '#7c3aed',
                     fontSize: '14px',
@@ -279,10 +236,7 @@ const PlanetTable = ({ planets, houses, onPlanetClick }: PlanetTableProps) => {
                     {planet.translatedSign}
                   </span>
 
-                  <span style={{
-                    color: 'var(--text-secondary)',
-                    fontSize: '13px'
-                  }}>
+                  <span className="ui-meta">
                     {planet.degrees}°{planet.minutes}′
                   </span>
                 </div>
@@ -299,7 +253,7 @@ const PlanetTable = ({ planets, houses, onPlanetClick }: PlanetTableProps) => {
               paddingTop: '8px',
               borderTop: '1px solid var(--border)'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div className="ui-row ui-row--tight">
                 <div style={{
                   width: '10px',
                   height: '10px',
@@ -311,15 +265,15 @@ const PlanetTable = ({ planets, houses, onPlanetClick }: PlanetTableProps) => {
                 </span>
               </div>
 
-              <div style={{ textAlign: 'center' }}>
-                <span style={{ fontWeight: 'bold', color: 'var(--text-primary)' }}>
+              <div className="ui-table__center">
+                <span className="ui-table__strong">
                   {t('planets.house')} {planet.house ? planet.house.toString().trim() : '—'}
                 </span>
               </div>
 
-              <div style={{ textAlign: 'right' }}>
+              <div className="ui-table__num">
                 <span style={{ marginRight: '4px' }}>{t('planets.degree')}:</span>
-                <span style={{ fontWeight: 'bold', color: 'var(--text-primary)' }}>
+                <span className="ui-table__strong">
                   {typeof planet.degree === 'number' ? planet.degree.toFixed(2) : planet.degree}°
                 </span>
               </div>
@@ -328,28 +282,12 @@ const PlanetTable = ({ planets, houses, onPlanetClick }: PlanetTableProps) => {
         ))}
       </div>
 
-      <div style={{
-        marginTop: '24px',
-        padding: '16px',
-        background: 'var(--bg-primary)',
-        borderRadius: '8px',
-        border: '1px solid var(--border)'
-      }}>
-        <h4 style={{
-          marginTop: 0,
-          marginBottom: '12px',
-          color: 'var(--text-primary)',
-          fontSize: '14px',
-          fontWeight: 'bold'
-        }}>
+      <div className="ui-card ui-card--tight" style={{ marginTop: 'var(--space-6)', background: 'var(--bg-primary)' }}>
+        <h4 className="ui-label" style={{ marginBottom: 'var(--space-3)' }}>
           {t('planets.legend')}
         </h4>
 
-        <div style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '12px'
-        }}>
+        <div className="ui-row">
           {[
             { element: 'fire', name: t('planets.elements.fire'), signs: [t('planets.signs.Aries'), t('planets.signs.Leo'), t('planets.signs.Sagittarius')], count: elementCounts.fire || 0 },
             { element: 'earth', name: t('planets.elements.earth'), signs: [t('planets.signs.Taurus'), t('planets.signs.Virgo'), t('planets.signs.Capricorn')], count: elementCounts.earth || 0 },
@@ -365,13 +303,8 @@ const PlanetTable = ({ planets, houses, onPlanetClick }: PlanetTableProps) => {
                 borderRadius: '6px',
                 padding: '12px',
                 borderLeft: `4px solid ${ELEMENT_COLORS[item.element]}`
-              }}
-            >
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                marginBottom: '8px'
               }}>
+              <div className="ui-row ui-row--tight" style={{ marginBottom: 'var(--space-2)', flexWrap: 'nowrap' }}>
                 <div style={{
                   width: '12px',
                   height: '12px',
@@ -379,20 +312,12 @@ const PlanetTable = ({ planets, houses, onPlanetClick }: PlanetTableProps) => {
                   background: ELEMENT_COLORS[item.element],
                   marginRight: '8px'
                 }} />
-                <span style={{
-                  color: 'var(--text-primary)',
-                  fontWeight: 'bold',
-                  fontSize: '13px'
-                }}>
+                <span className="ui-table__strong">
                   {item.name}
                 </span>
               </div>
 
-              <div style={{
-                fontSize: '12px',
-                color: 'var(--text-secondary)',
-                lineHeight: '1.4'
-              }}>
+              <div className="ui-aspect-orb" style={{ marginLeft: 0, lineHeight: 1.4 }}>
                 {item.signs.join(', ')}
               </div>
             </div>

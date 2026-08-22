@@ -11,6 +11,7 @@ import Logout from './pages/Logout';
 import ConfirmEmail from './pages/ConfirmEmail';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import DocumentMeta from './i18n/DocumentMeta';
 
 function LanguageSync() {
   const { i18n } = useTranslation();
@@ -77,6 +78,7 @@ function App() {
   return (
     <div className="app">
       <LanguageSync />
+      <DocumentMeta />
       <AppRoutes />
     </div>
   );

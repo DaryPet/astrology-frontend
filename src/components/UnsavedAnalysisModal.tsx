@@ -27,11 +27,7 @@ const UnsavedAnalysisModal: React.FC<UnsavedAnalysisModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div style={{
-      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-      background: 'rgba(0,0,0,0.6)', zIndex: 1000,
-      display: 'flex', alignItems: 'center', justifyContent: 'center'
-    }}>
+    <div className="ui-modal-overlay">
       <div style={{
         background: 'var(--bg-card)', borderRadius: '16px',
         padding: '32px', maxWidth: '420px', width: '90%',

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import MarkdownContent from './MarkdownContent';
 import ProcessingMessage from './ProcessingMessage';
 import LiveSkyCarousel from './LiveSkyCarousel';
+import { Calendar, MapPin, Check } from 'lucide-react';
 import LocationInput from './LocationInput';
 import type { TransitsData, TransitPlanet, TransitAspect } from '../services/api';
 import type { Location } from './LocationInput';
@@ -93,11 +94,11 @@ const TransitsPanel: React.FC<TransitsPanelProps> = ({
       {' '}{aspectName(asp)}{' '}
       <strong>{planetName(asp.natal)}</strong>
       {asp.is_return && (
-        <span style={{ marginLeft: '6px', fontSize: '12px', color: 'var(--accent, #8b5cf6)', fontWeight: 600 }}>
+        <span className="ui-aspect-name">
           ⟳ {t('dashboard.transits.return')}
         </span>
       )}
-      <span style={{ color: 'var(--text-secondary)', fontSize: '12px', marginLeft: '6px' }}>
+      <span className="ui-aspect-orb">
         ({t('dashboard.progressions.orb')}: {asp.orb}°
         {typeof asp.applying === 'boolean'
           ? `, ${asp.applying ? t('dashboard.progressions.applying') : t('dashboard.progressions.separating')}`
@@ -107,16 +108,10 @@ const TransitsPanel: React.FC<TransitsPanelProps> = ({
   );
 
   return (
-    <div style={{
-      marginTop: '24px',
-      border: '1px solid var(--border)',
-      borderRadius: '12px',
-      padding: '20px',
-      background: 'var(--bg-primary)'
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginBottom: '12px' }}>
-        <h3 style={{ color: 'var(--text-primary)', margin: 0 }}>
-            🌌 {t('dashboard.transits.title')}
+    <div className="ui-card ui-section ui-fade-in">
+      <div className="ui-row" style={{ marginBottom: 'var(--space-3)' }}>
+        <h3 className="ui-subtitle" style={{ marginBottom: 0 }}>
+          {t('dashboard.transits.title')}
         </h3>
         {/* Выбор дня: по умолчанию сегодня, любой день прошлого/будущего */}
         <input
@@ -124,36 +119,21 @@ const TransitsPanel: React.FC<TransitsPanelProps> = ({
           value={selectedDate}
           onChange={(e) => e.target.value && onDateChange(e.target.value)}
           aria-label={t('dashboard.transits.pickDate')}
-          style={{
-            padding: '8px 12px',
-            border: '1px solid var(--border)',
-            borderRadius: '8px',
-            background: 'var(--bg-secondary)',
-            color: 'var(--text-primary)',
-            fontSize: '14px',
-            cursor: 'pointer',
-          }}
+          className="ui-input"
+          style={{ width: 'auto', cursor: 'pointer' }}
         />
         <button
           type="button"
           onClick={() => onDateChange(new Date().toISOString().slice(0, 10))}
-          style={{
-            padding: '8px 12px',
-            border: '1px solid var(--border)',
-            borderRadius: '8px',
-            background: 'none',
-            color: 'var(--text-secondary)',
-            fontSize: '13px',
-            cursor: 'pointer',
-          }}
+          className="ui-btn ui-btn--ghost ui-btn--sm"
         >
           {t('dashboard.transits.today')}
         </button>
       </div>
 
       {/* Выбор места для транзитов */}
-      <div style={{ marginBottom: '12px' }}>
-        <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '6px' }}>
+      <div className="ui-field">
+        <label className="ui-label">
           {t('dashboard.transits.locationTitle')}
         </label>
         <LocationInput
@@ -164,57 +144,34 @@ const TransitsPanel: React.FC<TransitsPanelProps> = ({
           style={{ width: '300px', maxWidth: '100%' }}
         />
         {transitsLocation && (
-          <div style={{ color: 'var(--text-secondary)', fontSize: '12px', marginTop: '4px' }}>
+          <div className="ui-hint">
             {transitsLocation.display_name}
             <button
               type="button"
               onClick={() => onLocationChange?.(null)}
-              style={{
-                marginLeft: '8px',
-                background: 'none',
-                border: 'none',
-                color: 'var(--accent)',
-                cursor: 'pointer',
-                fontSize: '12px',
-                textDecoration: 'underline'
-              }}
+              className="ui-linklike"
             >
               {t('dashboard.transits.useBirthLocation')}
             </button>
           </div>
         )}
-        <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '6px' }}>
+        <p className="ui-meta" style={{ marginTop: 'var(--space-2)' }}>
           {t('dashboard.transits.subtitle')}
         </p>
       </div>
 
       {/* Запуск AI-анализа: явная кнопка + остаток дневного лимита — сразу после выбора даты/места, до расчётов */}
-      <div style={{
-        marginBottom: '16px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '12px',
-        flexWrap: 'wrap'
-      }}>
+      <div className="ui-row" style={{ marginBottom: 'var(--space-4)' }}>
         <button
           type="button"
           onClick={() => onRunAnalysis?.()}
           disabled={loading || generationLocked || transitsRemaining === 0}
-          style={{
-            padding: '10px 18px',
-            border: 'none',
-            borderRadius: '8px',
-            background: (loading || generationLocked || transitsRemaining === 0) ? 'var(--bg-secondary)' : 'var(--accent, #8b5cf6)',
-            color: (loading || generationLocked || transitsRemaining === 0) ? 'var(--text-secondary)' : '#fff',
-            fontSize: '14px',
-            fontWeight: 600,
-            cursor: (loading || generationLocked || transitsRemaining === 0) ? 'not-allowed' : 'pointer',
-          }}
+          className="ui-btn ui-btn--primary"
         >
           {t('dashboard.transits.giveAnalysis')}
         </button>
         {typeof transitsRemaining === 'number' && typeof transitsLimit === 'number' && (
-          <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
+          <span className="ui-meta">
             {t('dashboard.transits.remaining', { count: transitsRemaining, limit: transitsLimit })}
           </span>
         )}
@@ -223,10 +180,10 @@ const TransitsPanel: React.FC<TransitsPanelProps> = ({
       {/* На что рассчитан показанный анализ: если он уже готов (или ещё
           стримится) — дата/место заморожены на момент запуска, иначе —
           текущий выбор в форме выше. */}
-      <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '12px' }}>
-        📅 {t('dashboard.transits.calculatedFor')}: {(analysis && analysisDate) ? analysisDate : selectedDate}
-        {' · '}
-        📍{' '}
+      <div className="ui-meta ui-row ui-row--tight" style={{ marginBottom: 'var(--space-3)' }}>
+        <Calendar size={13} strokeWidth={2} />
+        <span>{t('dashboard.transits.calculatedFor')}: {(analysis && analysisDate) ? analysisDate : selectedDate}</span>
+        <MapPin size={13} strokeWidth={2} />{' '}
         {analysis && analysisLocation
           ? analysisLocation
           : transitsLocation
@@ -244,36 +201,26 @@ const TransitsPanel: React.FC<TransitsPanelProps> = ({
           готовый текст — что сейчас реально происходит для выбранной даты),
           даже пока просматривается какая-то из более старых записей. */}
       {(currentEntry || history.length > 0) && (
-        <div style={{ marginBottom: '16px' }}>
-          <h4 style={{ color: 'var(--text-primary)', fontSize: '14px', marginBottom: '8px' }}>
+        <div style={{ marginBottom: 'var(--space-4)' }}>
+          <h4 className="ui-label">
             {t('dashboard.transits.historyTitle')}
           </h4>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div className="ui-stack">
             {currentEntry && (
               <button
                 type="button"
                 onClick={() => onSelectCurrent?.()}
-                style={{
-                  textAlign: 'left',
-                  padding: '8px 12px',
-                  border: `1px solid ${!viewingCacheKey ? 'var(--accent, #8b5cf6)' : 'var(--border)'}`,
-                  borderRadius: '8px',
-                  background: !viewingCacheKey ? 'var(--bg-secondary)' : 'none',
-                  color: 'var(--text-primary)',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
+                className={`ui-listbtn${!viewingCacheKey ? ' ui-listbtn--active' : ''}`}
               >
                 {t('dashboard.transits.currentLabel')} — {currentEntry.day}
                 {currentEntry.locationName ? ` · ${currentEntry.locationName}` : ''}
                 {currentEntry.status === 'locked' && (
-                  <span style={{ marginLeft: '8px', color: 'var(--accent, #8b5cf6)' }}>
-                    ⏳ {t('dashboard.transits.inProgress')}
+                  <span className="ui-chip" style={{ marginLeft: 'var(--space-2)' }}>
+                    {t('dashboard.transits.inProgress')}
                   </span>
                 )}
                 {!viewingCacheKey && currentEntry.status === 'ready' && (
-                  <span style={{ marginLeft: '8px', color: 'var(--accent, #8b5cf6)' }}>✓</span>
+                  <Check size={14} strokeWidth={2.5} className="ui-accent" style={{ marginLeft: 'var(--space-2)' }} />
                 )}
               </button>
             )}
@@ -284,21 +231,12 @@ const TransitsPanel: React.FC<TransitsPanelProps> = ({
                   key={entry.cacheKey}
                   type="button"
                   onClick={() => onSelectHistoryEntry?.(entry)}
-                  style={{
-                    textAlign: 'left',
-                    padding: '8px 12px',
-                    border: `1px solid ${isActive ? 'var(--accent, #8b5cf6)' : 'var(--border)'}`,
-                    borderRadius: '8px',
-                    background: isActive ? 'var(--bg-secondary)' : 'none',
-                    color: 'var(--text-primary)',
-                    fontSize: '13px',
-                    cursor: 'pointer',
-                  }}
+                  className={`ui-listbtn${isActive ? ' ui-listbtn--active' : ''}`}
                 >
                   {entry.day}
                   {entry.locationName ? ` · ${entry.locationName}` : ''}
                   {isActive && (
-                    <span style={{ marginLeft: '8px', color: 'var(--accent, #8b5cf6)' }}>✓</span>
+                    <Check size={14} strokeWidth={2.5} className="ui-accent" style={{ marginLeft: 'var(--space-2)' }} />
                   )}
                 </button>
               );
@@ -308,7 +246,7 @@ const TransitsPanel: React.FC<TransitsPanelProps> = ({
       )}
 
       {loading && phase !== 'typing' && !analysis && (
-        <div style={{ marginTop: '20px' }}>
+        <div style={{ marginTop: 'var(--space-5)' }}>
           <ProcessingMessage
             size="sm"
             title={phase === 'generating' ? t('dashboard.fullAnalysis.generating') : t('dashboard.fullAnalysis.searching')}
@@ -324,7 +262,7 @@ const TransitsPanel: React.FC<TransitsPanelProps> = ({
       )}
 
       {error && (
-        <div className="error-message" style={{ marginTop: '16px' }}>
+        <div className="ui-error">
           {error}
         </div>
       )}
@@ -333,8 +271,8 @@ const TransitsPanel: React.FC<TransitsPanelProps> = ({
           or while a just-started analysis is streaming (phase === 'typing').
           Sits right where the spinner is — above the planet table and aspect lists. */}
       {((transitsReady && analysis) || phase === 'typing') && (
-        <div style={{ marginTop: '24px', lineHeight: '2', fontSize: '16px' }}>
-          <h4 style={{ color: 'var(--text-primary)' }}>
+        <div className="ui-fade-in" style={{ marginTop: 'var(--space-6)', lineHeight: 'var(--leading-loose)', fontSize: 'var(--text-md)' }}>
+          <h4 className="ui-subtitle">
             {t('dashboard.transits.analysisTitle')}
           </h4>
           <MarkdownContent content={analysis ?? displayedText} />
@@ -347,19 +285,13 @@ const TransitsPanel: React.FC<TransitsPanelProps> = ({
       {data && (
         <>
           {/* Ключевые точки дня: лунная фаза + Луна */}
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '16px' }}>
+          <div className="ui-row" style={{ marginTop: 'var(--space-4)', alignItems: 'stretch' }}>
             {data.lunar_phase && (
-              <div style={{
-                flex: '1 1 220px',
-                border: '1px solid var(--accent, #8b5cf6)',
-                borderRadius: '10px',
-                padding: '14px',
-                background: 'var(--bg-secondary)'
-              }}>
-                <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+              <div className="ui-card ui-card--tight" style={{ flex: '1 1 220px' }}>
+                <div className="ui-stat__label">
                   🌗 {t('dashboard.progressions.lunarPhase')}
                 </div>
-                <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginTop: '4px' }}>
+                <div className="ui-stat__value">
                   {pickLocalized(i18n.language, data.lunar_phase.phase, data.lunar_phase.phase_ru, data.lunar_phase.phase_uk)}
                 </div>
               </div>
@@ -372,10 +304,10 @@ const TransitsPanel: React.FC<TransitsPanelProps> = ({
                 padding: '14px',
                 background: 'var(--bg-secondary)'
               }}>
-                <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                <div className="ui-stat__label">
                   🌙 {t('dashboard.transits.moonOfDay')}
                 </div>
-                <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginTop: '4px' }}>
+                <div className="ui-stat__value">
                   {signName(tMoon)}
                   {tMoon.natal_house ? ` · ${t('dashboard.progressions.natalHouse')} ${tMoon.natal_house}` : ''}
                 </div>
@@ -384,32 +316,32 @@ const TransitsPanel: React.FC<TransitsPanelProps> = ({
           </div>
 
           {/* Таблица транзитных планет */}
-          <div style={{ marginTop: '20px', overflowX: 'auto' }}>
-            <h4 style={{ color: 'var(--text-primary)', marginBottom: '10px' }}>
+          <div style={{ marginTop: 'var(--space-5)' }}>
+            <h4 className="ui-subtitle">
               {t('dashboard.transits.planetsTitle')}
             </h4>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+            <table className="ui-table">
               <thead>
-                <tr style={{ color: 'var(--text-secondary)', textAlign: 'left' }}>
-                  <th style={{ padding: '8px', borderBottom: '1px solid var(--border)' }}>{t('planets.sign')}</th>
-                  <th style={{ padding: '8px', borderBottom: '1px solid var(--border)' }}>{t('planets.degree')}</th>
-                  <th style={{ padding: '8px', borderBottom: '1px solid var(--border)' }}>{t('dashboard.transits.movingThroughHouse')}</th>
+                <tr >
+                  <th>{t('planets.sign')}</th>
+                  <th>{t('planets.degree')}</th>
+                  <th>{t('dashboard.transits.movingThroughHouse')}</th>
                 </tr>
               </thead>
               <tbody>
                 {sortedPlanets.map((planet) => (
-                  <tr key={planet.planet} style={{ color: 'var(--text-primary)' }}>
-                    <td style={{ padding: '8px', borderBottom: '1px solid var(--border)' }}>
+                  <tr key={planet.planet} className="ui-table__strong">
+                    <td>
                       <strong>{planetName(planet.planet)}</strong>
                       {planet.is_retrograde && (
-                        <span style={{ color: 'var(--text-secondary)', marginLeft: '4px' }}>℞</span>
+                        <span className="ui-muted">℞</span>
                       )}
                       {' — '}{signName(planet)}
                     </td>
-                    <td style={{ padding: '8px', borderBottom: '1px solid var(--border)' }}>
+                    <td>
                       {planet.degree?.toFixed(1)}°
                     </td>
-                    <td style={{ padding: '8px', borderBottom: '1px solid var(--border)' }}>
+                    <td>
                       {planet.natal_house ?? '—'}
                     </td>
                   </tr>
@@ -419,30 +351,30 @@ const TransitsPanel: React.FC<TransitsPanelProps> = ({
           </div>
 
           {/* Аспекты: медленные = темы периода */}
-          <div style={{ marginTop: '20px' }}>
-            <h4 style={{ color: 'var(--text-primary)', marginBottom: '10px' }}>
+          <div style={{ marginTop: 'var(--space-5)' }}>
+            <h4 className="ui-subtitle">
               {t('dashboard.transits.slowAspectsTitle')}
             </h4>
             {slowAspects.length ? (
-              <ul style={{ margin: 0, paddingLeft: '20px', color: 'var(--text-primary)', lineHeight: 1.8 }}>
+              <ul className="ui-list">
                 {slowAspects.slice(0, 8).map(renderAspect)}
               </ul>
             ) : (
-              <p style={{ color: 'var(--text-secondary)' }}>{t('dashboard.transits.noSlowAspects')}</p>
+              <p className="ui-muted">{t('dashboard.transits.noSlowAspects')}</p>
             )}
           </div>
 
           {/* Аспекты: быстрые = окраска дня */}
-          <div style={{ marginTop: '16px' }}>
-            <h4 style={{ color: 'var(--text-primary)', marginBottom: '10px' }}>
+          <div style={{ marginTop: 'var(--space-4)' }}>
+            <h4 className="ui-subtitle">
               {t('dashboard.transits.fastAspectsTitle')}
             </h4>
             {fastAspects.length ? (
-              <ul style={{ margin: 0, paddingLeft: '20px', color: 'var(--text-primary)', lineHeight: 1.8 }}>
+              <ul className="ui-list">
                 {fastAspects.slice(0, 8).map(renderAspect)}
               </ul>
             ) : (
-              <p style={{ color: 'var(--text-secondary)' }}>{t('dashboard.transits.noFastAspects')}</p>
+              <p className="ui-muted">{t('dashboard.transits.noFastAspects')}</p>
             )}
           </div>
         </>

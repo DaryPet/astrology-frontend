@@ -91,7 +91,7 @@ const Login = () => {
               background: '#fff',
               color: '#333',
               border: '1px solid #ddd',
-              borderRadius: '8px',
+              borderRadius: 'var(--radius-md)',
               cursor: googleLoading ? 'not-allowed' : 'pointer',
               fontSize: '14px',
               fontWeight: '500'

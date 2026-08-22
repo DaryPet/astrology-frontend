@@ -117,18 +117,18 @@ const DailyForecastPanel: React.FC<DailyForecastPanelProps> = ({ natalChart }) =
   };
 
   return (
-    <div style={{ marginTop: '24px' }}>
+    <div style={{ marginTop: 'var(--space-6)' }}>
       {/* Форма */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'flex-end' }}>
-        <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+        <label className="ui-stack ui-meta">
           {t('dailyForecast.dateLabel')}
           <input type="date" style={inputStyle} value={date} onChange={e => setDate(e.target.value)} />
         </label>
-        <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+        <label className="ui-stack ui-meta">
           {t('dailyForecast.timeLabel')}
           <input type="time" style={inputStyle} value={time} onChange={e => setTime(e.target.value)} />
         </label>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+        <div className="ui-stack ui-meta">
           {t('dailyForecast.locationLabel')}
           <LocationInput
             value={location?.display_name || ''}
@@ -138,7 +138,7 @@ const DailyForecastPanel: React.FC<DailyForecastPanelProps> = ({ natalChart }) =
             style={{ width: '260px', maxWidth: '100%' }}
           />
         </div>
-        <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+        <label className="ui-stack ui-meta">
           {t('dailyForecast.modelLabel')}
           <select
             style={inputStyle}
@@ -146,8 +146,7 @@ const DailyForecastPanel: React.FC<DailyForecastPanelProps> = ({ natalChart }) =
             onChange={e => {
               const [provider, model] = e.target.value.split('|');
               setLlm(LLM_MODELS.find(m => m.provider === provider && (m.model || '') === model) || DEFAULT_LLM);
-            }}
-          >
+            }}>
             {LLM_MODELS.map(m => (
               <option key={`${m.provider}|${m.model || ''}`} value={`${m.provider}|${m.model || ''}`}>
                 {m.label}
@@ -161,13 +160,13 @@ const DailyForecastPanel: React.FC<DailyForecastPanelProps> = ({ natalChart }) =
       </div>
 
       {loading && (
-        <div style={{ marginTop: '24px' }}>
+        <div style={{ marginTop: 'var(--space-6)' }}>
           <ProcessingMessage />
         </div>
       )}
 
       {error && (
-        <div className="error-message" style={{ marginTop: '16px' }}>{error}</div>
+        <div className="ui-error" style={{ marginTop: 'var(--space-4)' }}>{error}</div>
       )}
 
       {result && !loading && (
@@ -180,8 +179,7 @@ const DailyForecastPanel: React.FC<DailyForecastPanelProps> = ({ natalChart }) =
             display: 'flex',
             flexDirection: 'column',
             gap: '14px',
-          }}
-        >
+          }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
             <div style={{ fontSize: '44px', fontWeight: 700, color: catColor }}>
               {result.score}/10
@@ -194,8 +192,7 @@ const DailyForecastPanel: React.FC<DailyForecastPanelProps> = ({ natalChart }) =
                 color: '#fff',
                 fontSize: '14px',
                 fontWeight: 600,
-              }}
-            >
+              }}>
               {catLabel}
             </span>
             <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
@@ -204,7 +201,7 @@ const DailyForecastPanel: React.FC<DailyForecastPanelProps> = ({ natalChart }) =
           </div>
 
           {result.summary && (
-            <p style={{ margin: 0, lineHeight: 1.7, fontSize: '15px' }}>{result.summary}</p>
+            <p style={{ margin: 0, lineHeight: 'var(--leading-relaxed)', fontSize: 'var(--text-md)' }}>{result.summary}</p>
           )}
           {result.llm_error && (
             <p style={{ margin: 0, fontSize: '13px', color: CATEGORY_COLORS.challenging }}>
@@ -212,7 +209,7 @@ const DailyForecastPanel: React.FC<DailyForecastPanelProps> = ({ natalChart }) =
             </p>
           )}
 
-          <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+          <div className="ui-meta">
             {t('dailyForecast.activatedHouses')}: {result.houses_activated.join(', ') || '—'}
             {result.fortune != null && <> · {t('dailyForecast.fortune')}: {result.fortune}°</>}
             {result.is_day_chart != null && (
@@ -230,31 +227,30 @@ const DailyForecastPanel: React.FC<DailyForecastPanelProps> = ({ natalChart }) =
               color: 'var(--accent, #7c3aed)',
               fontSize: '14px',
               padding: 0,
-            }}
-          >
+            }}>
             {showAspects ? t('dailyForecast.aspectsHide') : t('dailyForecast.aspectsShow')}
           </button>
 
           {showAspects && (
             <table style={{ borderCollapse: 'collapse', fontSize: '13px', width: '100%' }}>
               <thead>
-                <tr style={{ textAlign: 'left', color: 'var(--text-secondary)' }}>
-                  <th style={{ padding: '6px' }}>{t('dailyForecast.colTransit')}</th>
-                  <th style={{ padding: '6px' }}>{t('dailyForecast.colAspect')}</th>
-                  <th style={{ padding: '6px' }}>{t('dailyForecast.colNatal')}</th>
-                  <th style={{ padding: '6px' }}>{t('dailyForecast.colOrb')}</th>
-                  <th style={{ padding: '6px' }}>{t('dailyForecast.colWeight')}</th>
+                <tr>
+                  <th>{t('dailyForecast.colTransit')}</th>
+                  <th>{t('dailyForecast.colAspect')}</th>
+                  <th>{t('dailyForecast.colNatal')}</th>
+                  <th>{t('dailyForecast.colOrb')}</th>
+                  <th>{t('dailyForecast.colWeight')}</th>
                 </tr>
               </thead>
               <tbody>
                 {result.key_aspects.map((a, i) => (
                   <tr key={i} style={{ borderTop: '1px solid var(--border)' }}>
-                    <td style={{ padding: '6px' }}>{t(`planets.names.${a.transit}`, { defaultValue: a.transit })}</td>
-                    <td style={{ padding: '6px' }}>{t(`dailyForecast.aspects.${a.aspect}`, { defaultValue: a.aspect })}</td>
-                    <td style={{ padding: '6px' }}>
+                    <td>{t(`planets.names.${a.transit}`, { defaultValue: a.transit })}</td>
+                    <td>{t(`dailyForecast.aspects.${a.aspect}`, { defaultValue: a.aspect })}</td>
+                    <td>
                       {a.is_point ? a.natal : t(`planets.names.${a.natal}`, { defaultValue: a.natal })}
                     </td>
-                    <td style={{ padding: '6px' }}>{a.orb}°</td>
+                    <td>{a.orb}°</td>
                     <td style={{ padding: '6px', color: a.weight >= 0 ? CATEGORY_COLORS.favorable : CATEGORY_COLORS.critical }}>
                       {a.weight > 0 ? `+${a.weight}` : a.weight}
                     </td>

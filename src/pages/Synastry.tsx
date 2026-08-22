@@ -370,8 +370,8 @@ function Synastry() {
     <div className="synastry-page">
       <Header />
 
-      <div className="container" style={{ padding: '40px 0' }}>
-        <h1 style={{ textAlign: 'center', marginBottom: '40px' }}>{t('synastry.title')}</h1>
+      <div className="container" style={{ padding: 'var(--space-8) 0' }}>
+        <h1 style={{ textAlign: 'center', marginBottom: 'var(--space-8)' }}>{t('synastry.title')}</h1>
 
         {error && <div className="error">{error}</div>}
 
@@ -439,14 +439,14 @@ function Synastry() {
           </form>
         ) : (
           <div>
-            <div className="result-card" style={{ marginBottom: '30px' }}>
-              <h3 style={{ textAlign: 'center', marginBottom: '20px' }}>{t('synastry.title')}</h3>
+            <div className="result-card" style={{ marginBottom: 'var(--space-7)' }}>
+              <h3 style={{ textAlign: 'center', marginBottom: 'var(--space-5)' }}>{t('synastry.title')}</h3>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+              <div className="ui-grid" style={{ gap: 'var(--space-5)', marginBottom: 'var(--space-5)' }}>
                 <div>
                   <h4 style={{ color: '#3b82f6', marginBottom: '10px', textAlign: 'center' }}>{personNames.p1 || t('synastry.person1')}</h4>
-                  <div style={{ display: 'flex', justifyContent: 'center', color: 'var(--text-secondary)', fontSize: '14px' }}>
-                    <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+                  <div className="ui-row ui-meta" style={{ justifyContent: 'center' }}>
+                    <div className="ui-row" style={{ gap: 'var(--space-5)' }}>
                       <div><strong>{t('chart.sun')}:</strong> {synastry.chart1?.sun_sign ? t('planets.signs.' + synastry.chart1.sun_sign) : '—'}</div>
                       <div><strong>{t('chart.moon')}:</strong> {synastry.chart1?.moon_sign ? t('planets.signs.' + synastry.chart1.moon_sign) : '—'}</div>
                       <div><strong>{t('chart.ascendant')}:</strong> {synastry.chart1?.ascendant ? t('planets.signs.' + synastry.chart1.ascendant) : '—'}</div>
@@ -455,8 +455,8 @@ function Synastry() {
                 </div>
                 <div>
                   <h4 style={{ color: '#ef4444', marginBottom: '10px', textAlign: 'center' }}>{personNames.p2 || t('synastry.person2')}</h4>
-                  <div style={{ display: 'flex', justifyContent: 'center', color: 'var(--text-secondary)', fontSize: '14px' }}>
-                    <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+                  <div className="ui-row ui-meta" style={{ justifyContent: 'center' }}>
+                    <div className="ui-row" style={{ gap: 'var(--space-5)' }}>
                       <div><strong>{t('chart.sun')}:</strong> {synastry.chart2?.sun_sign ? t('planets.signs.' + synastry.chart2.sun_sign) : '—'}</div>
                       <div><strong>{t('chart.moon')}:</strong> {synastry.chart2?.moon_sign ? t('planets.signs.' + synastry.chart2.moon_sign) : '—'}</div>
                       <div><strong>{t('chart.ascendant')}:</strong> {synastry.chart2?.ascendant ? t('planets.signs.' + synastry.chart2.ascendant) : '—'}</div>
@@ -466,24 +466,24 @@ function Synastry() {
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'center', gap: '30px', marginBottom: '20px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div className="ui-row ui-row--tight">
                   <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#3b82f6' }}></div>
-                  <span style={{ color: 'var(--text-primary)', fontSize: '14px' }}>{personNames.p1 || t('synastry.person1')}</span>
+                  <span style={{ color: 'var(--text-primary)', fontSize: 'var(--text-base)' }}>{personNames.p1 || t('synastry.person1')}</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div className="ui-row ui-row--tight">
                   <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#ef4444' }}></div>
-                  <span style={{ color: 'var(--text-primary)', fontSize: '14px' }}>{personNames.p2 || t('synastry.person2')}</span>
+                  <span style={{ color: 'var(--text-primary)', fontSize: 'var(--text-base)' }}>{personNames.p2 || t('synastry.person2')}</span>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <div className="ui-row" style={{ justifyContent: 'center' }}>
                 {chart1Data && chart2Data && (
                   <SynastryChartComponent chart1={chart1Data} chart2={chart2Data} aspects={synastry.aspects} size={700} name1={personNames.p1} name2={personNames.p2} />
                 )}
               </div>
 
               {!loading && !isNavigating && synastry && (
-                <div style={{ textAlign: 'center', marginTop: '24px' }}>
+                <div style={{ textAlign: 'center', marginTop: 'var(--space-6)' }}>
                   <AnalysisModeToggle value={analysisMode} onChange={setAnalysisMode} />
                   <div style={{ marginTop: '16px', marginBottom: '16px' }}>
                     <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-primary)', fontSize: '14px' }}>
