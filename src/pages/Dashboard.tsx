@@ -3002,7 +3002,18 @@ const Dashboard = () => {
               <ProcessingMessage size="sm" />
             </div>
           )}
-          {!chartIdFromUrl && !chartDataForAnalysis && !showFullAnalysis && (
+          {/* Пустое состояние показывается всегда, когда не рендерится ни один
+              из трёх блоков ниже — условие зеркалит их, а не описывает свой
+              случай. Раньше здесь стояло !chartIdFromUrl && !chartDataForAnalysis,
+              и при возврате на дашборд получался пустой экран: chartDataForAnalysis
+              и savedChartId восстанавливаются из localStorage, а showFullAnalysis
+              сбрасывается в false, потому что Dashboard размонтируется при любой
+              навигации (key={location.key} в App.tsx). Все три блока оказывались
+              выключены одновременно. */}
+          {!showFullAnalysis
+            && !(chartLoading && chartIdFromUrl)
+            && !(chartDataForAnalysis && isAuthenticated && !fullAnalysis && !savedChartId)
+            && (
             <div className="db-empty-state">
               <div className="db-empty-state__icon"><Sparkles size={28} strokeWidth={1.6} /></div>
               <p className="db-empty-state__text">
@@ -3103,13 +3114,13 @@ const Dashboard = () => {
                 <div style={{ marginBottom: '30px' }}>
                   <div className="db-synastry-legend">
                     <div className="db-synastry-legend__item">
-                      <div className="db-synastry-legend__dot" style={{ background: '#3b82f6' }} />
+                      <div className="db-synastry-legend__dot" style={{ background: 'var(--person-1)' }} />
                       <span className="db-synastry-legend__label">
                         {chartDataForAnalysis.person1_name || t('synastry.person1')}
                       </span>
                     </div>
                     <div className="db-synastry-legend__item">
-                      <div className="db-synastry-legend__dot" style={{ background: '#ef4444' }} />
+                      <div className="db-synastry-legend__dot" style={{ background: 'var(--person-2)' }} />
                       <span className="db-synastry-legend__label">
                         {chartDataForAnalysis.person2_name || t('synastry.person2')}
                       </span>

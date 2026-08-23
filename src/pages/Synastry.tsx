@@ -7,10 +7,12 @@ import { geocodeAPI, astrologyAPI } from '../services/api';
 import { streamSynastryAspectAnalysis } from '../services/streamApi';
 import type { StreamPhase } from '../hooks/useStreamedText';
 import Header from '../components/Header';
+import StarfieldBackground from '../components/StarfieldBackground';
 import LocationInput from '../components/LocationInput';
 // СТАРЫЙ рендер синастрии (D3, чёрный центр). Не удалять — вернуть при необходимости:
 // import SynastryChartComponent from '../components/SynastryChartComponent-draft';
 import SynastryChartComponent from '../components/SynastryChartComponentV2';
+import LiveSkyFrame from '../components/LiveSkyFrame';
 import AspectGrid from '../components/AspectGrid';
 import AspectAnalysisModal from '../components/AspectAnalysisModal';
 import AnalysisModeToggle from '../components/AnalysisModeToggle';
@@ -368,10 +370,19 @@ function Synastry() {
 
   return (
     <div className="synastry-page">
+      <StarfieldBackground />
       <Header />
 
       <div className="container" style={{ padding: 'var(--space-8) 0' }}>
-        <h1 style={{ textAlign: 'center', marginBottom: 'var(--space-8)' }}>{t('synastry.title')}</h1>
+        {/* Та же разметка, что в hero главной (.hero / .hero h1 / .hero p),
+            чтобы обе страницы выглядели одинаково без второго набора стилей.
+            heroTitle/heroSubtitle — отдельные ключи: synastry.title ниже
+            переиспользуется как заголовок над готовой картой, вопрос там
+            неуместен (см. plans/home-synastry-design.md). */}
+        <div className="hero">
+          <h1>{t('synastry.heroTitle')}</h1>
+          <p>{t('synastry.heroSubtitle')}</p>
+        </div>
 
         {error && <div className="error">{error}</div>}
 
@@ -379,7 +390,7 @@ function Synastry() {
           <form onSubmit={handleSubmit}>
             <div className="synastry-form">
               <div className="form-card">
-                <h3 style={{ marginBottom: '20px', color: '#ffd700' }}>{t('synastry.person1')}</h3>
+                <h3 style={{ marginBottom: 'var(--space-5)', color: 'var(--person-1)' }}>{t('synastry.person1')}</h3>
                 <div className="form-group">
                   <label>{t('synastry.form.name')}</label>
                   <input type="text" value={formData.person1.name} onChange={(e) => setFormData({ ...formData, person1: { ...formData.person1, name: e.target.value } })} required />
@@ -406,7 +417,7 @@ function Synastry() {
               </div>
 
               <div className="form-card">
-                <h3 style={{ marginBottom: '20px', color: '#ff6b6b' }}>{t('synastry.person2')}</h3>
+                <h3 style={{ marginBottom: 'var(--space-5)', color: 'var(--person-2)' }}>{t('synastry.person2')}</h3>
                 <div className="form-group">
                   <label>{t('synastry.form.name')}</label>
                   <input type="text" value={formData.person2.name} onChange={(e) => setFormData({ ...formData, person2: { ...formData.person2, name: e.target.value } })} required />
@@ -439,12 +450,12 @@ function Synastry() {
           </form>
         ) : (
           <div>
-            <div className="result-card" style={{ marginBottom: 'var(--space-7)' }}>
+            <div style={{ marginBottom: 'var(--space-7)' }}>
               <h3 style={{ textAlign: 'center', marginBottom: 'var(--space-5)' }}>{t('synastry.title')}</h3>
 
-              <div className="ui-grid" style={{ gap: 'var(--space-5)', marginBottom: 'var(--space-5)' }}>
+              <div className="synastry-people">
                 <div>
-                  <h4 style={{ color: '#3b82f6', marginBottom: '10px', textAlign: 'center' }}>{personNames.p1 || t('synastry.person1')}</h4>
+                  <h4 style={{ color: 'var(--person-1)', marginBottom: 'var(--space-3)', textAlign: 'center' }}>{personNames.p1 || t('synastry.person1')}</h4>
                   <div className="ui-row ui-meta" style={{ justifyContent: 'center' }}>
                     <div className="ui-row" style={{ gap: 'var(--space-5)' }}>
                       <div><strong>{t('chart.sun')}:</strong> {synastry.chart1?.sun_sign ? t('planets.signs.' + synastry.chart1.sun_sign) : '—'}</div>
@@ -454,7 +465,7 @@ function Synastry() {
                   </div>
                 </div>
                 <div>
-                  <h4 style={{ color: '#ef4444', marginBottom: '10px', textAlign: 'center' }}>{personNames.p2 || t('synastry.person2')}</h4>
+                  <h4 style={{ color: 'var(--person-2)', marginBottom: 'var(--space-3)', textAlign: 'center' }}>{personNames.p2 || t('synastry.person2')}</h4>
                   <div className="ui-row ui-meta" style={{ justifyContent: 'center' }}>
                     <div className="ui-row" style={{ gap: 'var(--space-5)' }}>
                       <div><strong>{t('chart.sun')}:</strong> {synastry.chart2?.sun_sign ? t('planets.signs.' + synastry.chart2.sun_sign) : '—'}</div>
@@ -467,18 +478,24 @@ function Synastry() {
 
               <div style={{ display: 'flex', justifyContent: 'center', gap: '30px', marginBottom: '20px' }}>
                 <div className="ui-row ui-row--tight">
-                  <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#3b82f6' }}></div>
+                  <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: 'var(--person-1)' }}></div>
                   <span style={{ color: 'var(--text-primary)', fontSize: 'var(--text-base)' }}>{personNames.p1 || t('synastry.person1')}</span>
                 </div>
                 <div className="ui-row ui-row--tight">
-                  <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#ef4444' }}></div>
+                  <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: 'var(--person-2)' }}></div>
                   <span style={{ color: 'var(--text-primary)', fontSize: 'var(--text-base)' }}>{personNames.p2 || t('synastry.person2')}</span>
                 </div>
               </div>
 
+              {/* Колесо в живом небе — тем же компонентом, что на дашборде.
+                  Звёзды и комета крутятся вокруг колеса всегда; `active`
+                  добавляет только пульс свечения и перетаскивание на время
+                  ожидания (см. LiveSkyFrame и INSIGHTS.md). */}
               <div className="ui-row" style={{ justifyContent: 'center' }}>
                 {chart1Data && chart2Data && (
-                  <SynastryChartComponent chart1={chart1Data} chart2={chart2Data} aspects={synastry.aspects} size={700} name1={personNames.p1} name2={personNames.p2} />
+                  <LiveSkyFrame active={loading}>
+                    <SynastryChartComponent chart1={chart1Data} chart2={chart2Data} aspects={synastry.aspects} size={700} name1={personNames.p1} name2={personNames.p2} />
+                  </LiveSkyFrame>
                 )}
               </div>
 
@@ -567,7 +584,9 @@ function Synastry() {
               )}
             </div>
 
-            <div className="result-card" style={{ marginTop: '20px' }}>
+            {/* Рамку рисует сам AspectGrid (.ui-card) — внешний result-card
+                давал бы вторую рамку поверх первой. */}
+            <div style={{ marginTop: 'var(--space-5)' }}>
               <AspectGrid aspects={synastry.aspects} onAspectClick={handleAspectClick} />
             </div>
           </div>

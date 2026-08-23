@@ -188,6 +188,17 @@
 .ui-input:disabled,
 .ui-select:disabled { opacity: 0.5; cursor: not-allowed; }
 
+/* Подсказка «здесь можно кликнуть». Пунктирная линия слева читается как
+   приглашение к действию и не спорит с заголовком секции. */
+.ui-hint-clickable {
+  margin: 0 0 var(--space-5) 0;
+  padding-left: var(--space-3);
+  border-left: 2px solid var(--accent-ring);
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  color: var(--text-secondary);
+}
+
 .ui-hint {
   font-size: var(--text-xs);
   color: var(--text-secondary);
@@ -338,6 +349,20 @@
   gap: var(--space-3);
 }
 .ui-grid--loose { gap: var(--space-4); }
+
+/* Двое партнёров в синастрии — строго две колонки, слева и справа.
+   ui-grid здесь не подходит: auto-fill minmax(280px, 1fr) в широком
+   контейнере создаёт больше двух колонок, и оба блока прижимаются влево. */
+.synastry-people {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-5);
+  margin-bottom: var(--space-5);
+}
+
+@media (max-width: 560px) {
+  .synastry-people { grid-template-columns: 1fr; }
+}
 
 .ui-grid3 {
   display: grid;
@@ -528,6 +553,72 @@
   box-shadow: none;
 }
 .ui-btn--danger:hover:not(:disabled) { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+
+/* ---------------------------------------------------------------------------
+   Фоновое небо (StarfieldBackground)
+
+   Слой лежит под всем контентом через z-index: -1 — это ставит его выше
+   градиента body, но ниже любого элемента страницы, и не требует трогать
+   z-index у самого контента.
+
+   Показывается только в тёмной теме: на светлом фоне звёзды читаются как
+   грязь. Все анимации переиспользованы из index.css.
+   --------------------------------------------------------------------------- */
+
+.starfield {
+  display: none;
+}
+
+[data-theme="dark"] .starfield {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Орбита кометы — окружность заметно больше экрана, чтобы комета обходила
+   страницу по краю. Пунктирная рамка, которая есть у .live-sky-orbit вокруг
+   колеса, здесь не нужна: на всю страницу это был бы кривой круг поверх
+   контента. */
+.starfield__orbit {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 118vmax;
+  height: 118vmax;
+  margin: -59vmax 0 0 -59vmax;
+  border-radius: 50%;
+  animation: live-sky-orbit-spin 20s linear infinite;
+  will-change: transform;
+}
+
+/* Звёзды на фоне тусклее, чем вокруг колеса: там они акцент ожидания,
+   здесь — фон, который не должен спорить с текстом. */
+.starfield__star {
+  opacity: 0.1;
+}
+
+.starfield__shooting-star {
+  top: 14%;
+}
+
+/* На узком экране половина звёзд лишняя — и по виду, и по кадрам.
+   Первые 20 в массиве покрывают экран сами по себе. */
+@media (max-width: 768px) {
+  .starfield__star:nth-of-type(n + 21) { display: none; }
+  .starfield__orbit { width: 150vmax; height: 150vmax; margin: -75vmax 0 0 -75vmax; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .starfield__star,
+  .starfield__orbit,
+  .starfield__shooting-star {
+    animation: none !important;
+  }
+  .starfield__shooting-star { opacity: 0; }
+}
 
 /* ---------------------------------------------------------------------------
    Появление

@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { createPortal } from 'react-dom';
 
 interface UnsavedAnalysisModalProps {
   isOpen: boolean;
@@ -26,7 +27,11 @@ const UnsavedAnalysisModal: React.FC<UnsavedAnalysisModalProps> = ({
 
   if (!isOpen) return null;
 
-  return (
+  // Портал в body: у модалки position: fixed, а он отсчитывается от экрана
+  // только если ни у одного предка нет transform / filter / will-change.
+  // Модалки рендерятся глубоко внутри страницы, и любая анимация появления
+  // у обёртки уводила окно вниз. Портал снимает зависимость от предков.
+  return createPortal(
     <div className="ui-modal-overlay">
       <div style={{
         background: 'var(--bg-card)', borderRadius: '16px',
@@ -82,6 +87,8 @@ const UnsavedAnalysisModal: React.FC<UnsavedAnalysisModalProps> = ({
         </div>
       </div>
     </div>
+    ,
+    document.body,
   );
 };
 
