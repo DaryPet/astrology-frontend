@@ -8,10 +8,12 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import i18n from '../i18n';
 import Header from '../components/Header';
+import StarfieldBackground from '../components/StarfieldBackground';
 import LocationInput from '../components/LocationInput';
 import PlanetTable from '../components/PlanetTable';
 import PlanetAnalysisModal from '../components/PlanetAnalysisModal';
 import AstroChartComponent from '../components/AstroChartComponent';
+import LiveSkyFrame from '../components/LiveSkyFrame';
 import ProcessingMessage from '../components/ProcessingMessage';
 import AnalysisModeToggle from '../components/AnalysisModeToggle';
 // v1.2: daily forecast temporarily hidden from the natal chart, do not delete
@@ -530,6 +532,7 @@ function Home() {
 
   return (
     <div className="home">
+      <StarfieldBackground />
       <Header />
 
       <section className="hero">
@@ -605,14 +608,9 @@ function Home() {
 
       {chartData && (
         <div style={{ padding: 'var(--space-5)', maxWidth: '1200px', margin: '0 auto' }}>
-          <div style={{
-            textAlign: 'center',
-            margin: '40px 0',
-            padding: '20px',
-            background: 'var(--bg-card)',
-            borderRadius: '12px',
-            border: '1px solid var(--border)'
-          }}>
+          {/* Без карточки: колесо лежит прямо на звёздном фоне, как на
+              синастрии. Серый фон остаётся только у блока анализа планет. */}
+          <div style={{ textAlign: 'center', margin: 'var(--space-8) 0' }}>
             <h2 className="ui-subtitle">
               {t('home.chart.title')}
             </h2>
@@ -622,10 +620,12 @@ function Home() {
               </p>
             )}
             <div className="ui-row" style={{ justifyContent: 'center' }}>
-              <AstroChartComponent
-                chartData={chartData}
-                size={700}
-              />
+              <LiveSkyFrame active={loading}>
+                <AstroChartComponent
+                  chartData={chartData}
+                  size={700}
+                />
+              </LiveSkyFrame>
             </div>
             <div className="ui-row ui-meta" style={{ justifyContent: 'center', marginTop: 'var(--space-7)' }}>
               <div className="ui-row" style={{ justifyContent: 'center', gap: 'var(--space-7)' }}>

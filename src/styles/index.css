@@ -22,6 +22,13 @@
   --accent-grad: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);
   --accent-grad-warm: linear-gradient(135deg, #7c3aed 0%, #9333ea 100%);
   --focus-ring: #c084fc;
+
+  /* Партнёры в синастрии. Один источник цвета на форму и легенду.
+     Колесо (SynastryChartComponentV2: #243b6b / #8a4b1f) намеренно оставлено
+     как есть — там цвета подобраны под читаемость линий на светлом чертеже,
+     см. plans/home-synastry-design.md. */
+  --person-1: #7c3aed;
+  --person-2: #0ea5a4;
   --warning: #f59e0b;
   --info: #818cf8;
   --warning-soft: rgba(245, 158, 11, 0.1);
@@ -797,7 +804,10 @@ body {
 }
 
 .live-sky-drag-hint {
-  margin-top: 10px;
+  /* Орбита кометы выходит за габариты колеса (.live-sky-sky растянут на
+     inset: -16px), поэтому 10px не хватало — подсказка попадала прямо на
+     траекторию кометы. */
+  margin-top: 34px;
   font-size: 12px;
   color: var(--text-secondary);
   opacity: 0.8;
@@ -1235,7 +1245,7 @@ body {
 .sign-value {
   font-size: 24px;
   font-weight: 700;
-  background: linear-gradient(135deg, #ffd700, #ff6b6b);
+  background: var(--accent-grad);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -1351,7 +1361,7 @@ body {
 }
 
 .aspect-type {
-  color: #ffd700;
+  color: var(--accent-glow);
   font-size: 12px;
 }
 
@@ -1405,8 +1415,8 @@ body {
 
 .btn-logout {
   background: transparent;
-  color: #ff6b6b;
-  border: 1px solid #ff6b6b;
+  color: var(--error);
+  border: 1px solid var(--error);
   padding: 6px 12px;
   font-size: 13px;
 }
@@ -1510,12 +1520,12 @@ body {
 }
 
 .auth-form .form-input.error {
-  border-color: #ff6b6b;
+  border-color: var(--error);
 }
 
 .auth-form .form-input.error:focus {
-  border-color: #ff6b6b;
-  box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.1);
+  border-color: var(--error);
+  box-shadow: 0 0 0 3px var(--error-soft);
 }
 
 .btn-auth {
@@ -1568,7 +1578,7 @@ body {
 
 /* Стили для Formik ошибок */
 .field-error {
-  color: #ff6b6b;
+  color: var(--error);
   font-size: 12px;
   margin-top: 5px;
 }

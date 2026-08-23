@@ -16,8 +16,8 @@
     "greeting": "Hello, {{name}}"
   },
   "home": {
-    "title": "Natal Chart Calculator",
-    "subtitle": "Professional astrological birth chart calculation using Swiss Ephemeris",
+    "title": "Looking for your path?",
+    "subtitle": "The answer was written in the sky the minute you were born. All it takes is a date, a time and a city — the chart will tell the rest.",
     "form": {
       "name": "Name *",
       "namePlaceholder": "Enter your name",
@@ -40,7 +40,7 @@
       "title": "Planets Analysis"
     },
     "chart": {
-      "title": "Natal Chart (Swiss Ephemeris)",
+      "title": "Natal Chart",
       "sun": "Sun",
       "moon": "Moon",
       "ascendant": "Ascendant",
@@ -379,6 +379,8 @@
   },
   "synastry": {
     "title": "Synastry",
+    "heroTitle": "Looking for common ground?",
+    "heroSubtitle": "The answer is in two charts at once. Synastry compares the skies you were born under and shows where you match, what draws you together, and where the friction will be.",
     "subtitle": "Relationship Compatibility",
     "person1": "Person 1",
     "person2": "Person 2",
@@ -409,6 +411,7 @@
   },
   "planets": {
     "title": "Planets in Signs",
+    "clickHint": "Tap any planet — find out what it says about you.",
     "legend": "Elements Legend",
     "house": "House",
     "degree": "Degree",

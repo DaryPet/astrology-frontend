@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { chartsApi } from '../services/chartsApi';
 import ConfirmDeleteModal from './ConfirmDeleteModal';
+import { createPortal } from 'react-dom';
 
 interface ChartItem {
   id: string | number;
@@ -101,7 +102,11 @@ function DeleteChartModal({ isOpen, onClose, onDeleted }: DeleteChartModalProps)
     return new Date(dateStr).toLocaleDateString();
   };
 
-  return (
+  // Портал в body: у модалки position: fixed, а он отсчитывается от экрана
+  // только если ни у одного предка нет transform / filter / will-change.
+  // Модалки рендерятся глубоко внутри страницы, и любая анимация появления
+  // у обёртки уводила окно вниз. Портал снимает зависимость от предков.
+  return createPortal(
     <div
       className="ui-modal-overlay"
       onClick={onClose}
@@ -185,6 +190,8 @@ function DeleteChartModal({ isOpen, onClose, onDeleted }: DeleteChartModalProps)
         deleting={deleting}
       />
     </div>
+    ,
+    document.body,
   );
 }
 

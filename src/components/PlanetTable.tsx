@@ -142,12 +142,18 @@ const PlanetTable = ({ planets, houses, onPlanetClick }: PlanetTableProps) => {
 
   return (
     <div className="ui-card">
-      <h3 className="ui-subtitle ui-row ui-row--tight" style={{ marginBottom: 'var(--space-5)' }}>
+      <h3 className="ui-subtitle ui-row ui-row--tight" style={{ marginBottom: 'var(--space-2)' }}>
         <span className="ui-dot">
           ♆
         </span>
         {t('planets.title')}
       </h3>
+
+      {/* Подсказка появляется только там, где клик реально что-то делает:
+          onPlanetClick — опциональный проп, без него карточки не кликабельны. */}
+      {onPlanetClick && (
+        <p className="ui-hint-clickable">{t('planets.clickHint')}</p>
+      )}
 
       <div className="ui-grid">
         {planetList.map((planet) => (
