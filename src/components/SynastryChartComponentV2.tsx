@@ -321,8 +321,16 @@ const SynastryChartComponentV2 = ({
   if (!chart1 || !chart2) return null;
 
   return (
-    <div style={{ position: 'relative', display: 'inline-block' }}>
-      <svg ref={svgRef} width={size} height={size} style={{ display: 'block' }} />
+    /* `size` остаётся эталонным разрешением: вся геометрия ниже считается от
+       него как от логических единиц, а на экране колесо тянется по ширине
+       контейнера через viewBox. Это не требует ни перезапуска d3-эффекта, ни
+       ResizeObserver — масштабирует браузер. */
+    <div className="chart-wheel-fluid" style={{ position: 'relative' }}>
+      <svg
+        ref={svgRef}
+        viewBox={`0 0 ${size} ${size}`}
+        preserveAspectRatio="xMidYMid meet"
+      />
       {tooltip && (
         <div style={{
           position: 'absolute', left: tooltip.x + 14, top: tooltip.y - 10,

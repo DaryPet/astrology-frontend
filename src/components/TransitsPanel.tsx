@@ -320,34 +320,39 @@ const TransitsPanel: React.FC<TransitsPanelProps> = ({
             <h4 className="ui-subtitle">
               {t('dashboard.transits.planetsTitle')}
             </h4>
-            <table className="ui-table">
-              <thead>
-                <tr >
-                  <th>{t('planets.sign')}</th>
-                  <th>{t('planets.degree')}</th>
-                  <th>{t('dashboard.transits.movingThroughHouse')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortedPlanets.map((planet) => (
-                  <tr key={planet.planet} className="ui-table__strong">
-                    <td>
-                      <strong>{planetName(planet.planet)}</strong>
-                      {planet.is_retrograde && (
-                        <span className="ui-muted">℞</span>
-                      )}
-                      {' — '}{signName(planet)}
-                    </td>
-                    <td>
-                      {planet.degree?.toFixed(1)}°
-                    </td>
-                    <td>
-                      {planet.natal_house ?? '—'}
-                    </td>
+            {/* Обёртка обязательна: без неё таблица растягивает страницу по
+                горизонтали на узком экране (ui.css:213, эталон применения —
+                ProgressedPlanetsTable.tsx). */}
+            <div className="ui-table-wrap">
+              <table className="ui-table">
+                <thead>
+                  <tr >
+                    <th>{t('planets.sign')}</th>
+                    <th>{t('planets.degree')}</th>
+                    <th>{t('dashboard.transits.movingThroughHouse')}</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {sortedPlanets.map((planet) => (
+                    <tr key={planet.planet} className="ui-table__strong">
+                      <td>
+                        <strong>{planetName(planet.planet)}</strong>
+                        {planet.is_retrograde && (
+                          <span className="ui-muted">℞</span>
+                        )}
+                        {' — '}{signName(planet)}
+                      </td>
+                      <td>
+                        {planet.degree?.toFixed(1)}°
+                      </td>
+                      <td>
+                        {planet.natal_house ?? '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           {/* Аспекты: медленные = темы периода */}

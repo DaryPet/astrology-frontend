@@ -215,6 +215,36 @@
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
   -webkit-overflow-scrolling: touch;
+  /* Аффорданса прокрутки: тень у правого края, пока есть что листать.
+     На тач-устройстве полосы прокрутки нет вовсе, и без этого признака
+     «таблицу можно двигать вбок» приходится угадывать.
+     Приём — две пары фонов: непрозрачные «маски» цвета подложки прибиты к
+     краям через background-attachment: local, а тени — scroll. Когда контейнер
+     прокручен в край, маска накрывает тень. Чистый CSS, без слушателей.  */
+  background-color: var(--bg-card);
+  background-image:
+    linear-gradient(to right, var(--bg-card) 30%, rgba(0, 0, 0, 0)),
+    linear-gradient(to left,  var(--bg-card) 30%, rgba(0, 0, 0, 0)),
+    radial-gradient(farthest-side at 0 50%, var(--overlay-bg), rgba(0, 0, 0, 0)),
+    radial-gradient(farthest-side at 100% 50%, var(--overlay-bg), rgba(0, 0, 0, 0));
+  background-position: left center, right center, left center, right center;
+  background-repeat: no-repeat;
+  background-size: 32px 100%, 32px 100%, 14px 100%, 14px 100%;
+  background-attachment: local, local, scroll, scroll;
+}
+
+/* Фон переехал на обёртку, иначе непрозрачная таблица накрыла бы тени.
+   Цвет тот же (--bg-card), поэтому вид таблиц не меняется. */
+.ui-table-wrap > table {
+  background: transparent;
+}
+
+/* Для таблиц, у которых своей рамки не было и появление её было бы видимым
+   изменением оформления (напр. таблица аспектов в DailyForecastPanel).
+   Нужна только прокрутка, не оправа. */
+.ui-table-wrap--plain {
+  border: none;
+  border-radius: 0;
 }
 
 .ui-table {
@@ -360,7 +390,7 @@
   margin-bottom: var(--space-5);
 }
 
-@media (max-width: 560px) {
+@media (max-width: 599px) {
   .synastry-people { grid-template-columns: 1fr; }
 }
 
@@ -386,7 +416,7 @@
   flex-shrink: 0;
 }
 
-@media (max-width: 560px) {
+@media (max-width: 599px) {
   .ui-grid { grid-template-columns: 1fr; }
   .ui-grid3 { grid-template-columns: 1fr 1fr; }
 }
@@ -478,6 +508,8 @@
 .ui-modal-overlay {
   position: fixed;
   inset: 0;
+  /* Нижняя кромка модалки не должна попадать под «домашнюю полоску». */
+  padding-bottom: max(var(--space-4), env(safe-area-inset-bottom));
   background: var(--overlay-bg);
   display: flex;
   align-items: center;
@@ -554,6 +586,73 @@
 }
 .ui-btn--danger:hover:not(:disabled) { transform: translateY(-2px); box-shadow: var(--shadow-md); }
 
+/* --- Модалки на узком экране -----------------------------------------------
+   До 600px окно прижимается к низу и занимает почти всю высоту. Причина не в
+   моде на bottom-sheet: в PlanetAnalysisModal и AspectAnalysisModal идёт
+   длинный текст стрима, и `max-width: 400px` + `max-height: 80vh` посреди
+   экрана оставляли на него узкую форточку. Низ — ещё и ближе к большому
+   пальцу. */
+@media (max-width: 599px) {
+  /* Оверлей перестаёт быть flex-контейнером. Причина конкретная: у flex-элемента
+     `min-width: auto`, то есть окно НЕ МОЖЕТ стать уже своего min-content — и
+     любой широкий потомок раздувает его шире экрана, сколько ни пиши
+     `width: 100%`. Именно это и было видно: текст уезжал за правый край.
+     `position: absolute` + left/right: 0 внутри fixed-оверлея задаёт ширину
+     от краёв вьюпорта и от содержимого не зависит вообще. */
+  .ui-modal-overlay {
+    display: block;
+    padding: 0;
+    /* backdrop-filter создаёт containing block для fixed-потомков — ровно та
+       же механика, что увела шесть модалок вниз страницы (INSIGHTS.md,
+       2026-08-23). Здесь она бы привязала окно к оверлею, а нам нужно к
+       экрану. На мобильном размытие подложки и без того дорого. */
+    backdrop-filter: none;
+  }
+
+  .ui-modal,
+  .ui-modal--wide {
+    /* fixed, а не absolute: containing block для fixed — сам экран, поэтому
+       ширина окна не зависит от того, каким получился оверлей. Замер по двум
+       скриншотам заказчика показал, что оверлей выходит 750px при экране 430,
+       хотя объявлен `position: fixed; inset: 0`; окно наследовало эту ширину
+       и текст уезжал за правый край. Причина ширины оверлея пока не найдена,
+       но окно от неё теперь не зависит. */
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: auto;
+    max-width: none;
+    min-width: 0;
+    max-height: 92vh;
+    max-height: 92dvh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    border-bottom: none;
+    padding: var(--space-6) var(--gutter) calc(var(--space-8) + env(safe-area-inset-bottom));
+  }
+
+  /* Длинное слово или ссылка без пробелов иначе задаёт min-content шире экрана
+     и возвращает ту же болезнь через содержимое. */
+  .ui-modal * {
+    min-width: 0;
+    overflow-wrap: break-word;
+  }
+
+  /* Полоска-хват: показывает, что это лист снизу, а не окно посередине. */
+  .ui-modal::before {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 4px;
+    margin: 0 auto var(--space-4);
+    border-radius: var(--radius-full);
+    background: var(--border);
+  }
+}
+
+
 /* ---------------------------------------------------------------------------
    Фоновое небо (StarfieldBackground)
 
@@ -606,6 +705,8 @@
 
 /* На узком экране половина звёзд лишняя — и по виду, и по кадрам.
    Первые 20 в массиве покрывают экран сами по себе. */
+/* 768, а не 899, намеренно: это эвристика нагрузки, а не точка слома
+   раскладки — на планшете лишние звёзды по кадрам не мешают. */
 @media (max-width: 768px) {
   .starfield__star:nth-of-type(n + 21) { display: none; }
   .starfield__orbit { width: 150vmax; height: 150vmax; margin: -75vmax 0 0 -75vmax; }
@@ -635,11 +736,37 @@
    Мобильный
    --------------------------------------------------------------------------- */
 
-@media (max-width: 768px) {
-  .ui-card { padding: var(--space-4) var(--space-4); }
+@media (max-width: 899px) {
+  .ui-card { padding: var(--space-4) var(--gutter); }
   .ui-section-title { font-size: var(--text-xl); }
   .ui-table th,
   .ui-table td { padding: var(--space-2) var(--space-3); }
+}
+
+/* ---------------------------------------------------------------------------
+   Тач: размеры и hover
+   --------------------------------------------------------------------------- */
+
+@media (pointer: coarse) {
+  /* Крестик модалки был padding: 4px вокруг иконки — около 24px. */
+  .ui-modal__close {
+    padding: var(--space-3);
+  }
+
+  /* Кнопка-ссылка вообще не имела площади (padding: 0). */
+  .ui-linklike {
+    padding: var(--space-2) 0;
+  }
+}
+
+@media (hover: none) {
+  .ui-btn:hover:not(:disabled),
+  .ui-btn--danger:hover:not(:disabled) {
+    transform: none;
+    box-shadow: none;
+  }
+  .ui-table tbody tr:hover { background: transparent; }
+  .ui-listbtn:hover { border-color: var(--border); background: none; }
 }
 
 /* ---------------------------------------------------------------------------

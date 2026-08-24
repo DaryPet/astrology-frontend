@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { Maximize2, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 interface LiveSkyFrameProps {
@@ -10,6 +12,15 @@ interface LiveSkyFrameProps {
    * its hint); the starry sky itself stays on afterwards.
    */
   active: boolean;
+  /**
+   * Предельная ширина сцены в пикселях — то же число, что передаётся колесу
+   * пропом `size`. Ниже неё сцена тянется по контейнеру, выше — не растёт.
+   * Ограничение стоит именно на сцене, а не на колесе: звёзды (`live-sky-sky`,
+   * `inset: -16px`) и орбита кометы позиционируются от её краёв, и если сцена
+   * станет шире колеса, всё небо расползётся по строке вместо того, чтобы
+   * обнимать чертёж.
+   */
+  maxWidth?: number;
   children: React.ReactNode;
 }
 
@@ -59,7 +70,7 @@ const STARS: Array<{ top: string; left: string; size: number; delay: number }> =
  * effects). Drag listens on our own wrapper div, not on the
  * library-generated SVG, so no fragile SVG hit-testing is involved.
  */
-const LiveSkyFrame: React.FC<LiveSkyFrameProps> = ({ active, children }) => {
+const LiveSkyFrame: React.FC<LiveSkyFrameProps> = ({ active, maxWidth = 700, children }) => {
   const { t } = useTranslation();
   const stageRef = useRef<HTMLDivElement>(null);
   const [angle, setAngle] = useState(0);
@@ -101,11 +112,32 @@ const LiveSkyFrame: React.FC<LiveSkyFrameProps> = ({ active, children }) => {
     setDragging(false);
   };
 
+  // Полноэкранный просмотр. Резина делает колесо видимым, но на 320px подписи
+  // в чертеже физически нечитаемы при любом честном масштабе — единственный
+  // честный способ их прочитать — развернуть и увеличить пальцами.
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    if (!expanded) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setExpanded(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    // Фон не должен уезжать под открытым просмотром.
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      document.body.style.overflow = prev;
+    };
+  }, [expanded]);
+
   return (
     <div className="live-sky-frame">
       <div
         ref={stageRef}
         className={`live-sky-stage${active ? ' live-sky-stage--draggable' : ''}${dragging ? ' live-sky-stage--dragging' : ''}`}
+        style={{ maxWidth }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={endDrag}
@@ -136,9 +168,53 @@ const LiveSkyFrame: React.FC<LiveSkyFrameProps> = ({ active, children }) => {
         >
           {children}
         </div>
+
+        <button
+          type="button"
+          className="live-sky-expand"
+          onClick={() => setExpanded(true)}
+          // Без этого нажатие на кнопку во время ожидания начинало бы
+          // вращение колеса: pointerdown всплыл бы до обработчика сцены.
+          onPointerDown={e => e.stopPropagation()}
+          aria-label={t('liveSky.expand')}
+          title={t('liveSky.expand')}
+        >
+          <Maximize2 size={18} strokeWidth={2} />
+        </button>
       </div>
       {active && (
         <div className="live-sky-drag-hint">{t('liveSky.dragHint')}</div>
+      )}
+
+      {/* Портал в document.body обязателен, а не предпочтителен: колесо на
+          дашборде лежит внутри .db-planet-section с `animation … both`,
+          последний кадр которой навсегда оставляет transform — а это делает
+          блок containing block'ом для любого position: fixed внутри. Ровно так
+          шесть модалок уезжали вниз страницы (INSIGHTS.md, 2026-08-23).
+          Замена последнего кадра на `transform: none` там уже проверена и не
+          сработала — не повторять. */}
+      {expanded && createPortal(
+        <div
+          className="chart-fullscreen"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setExpanded(false)}
+        >
+          <button
+            type="button"
+            className="chart-fullscreen__close"
+            onClick={() => setExpanded(false)}
+            aria-label={t('liveSky.collapse')}
+          >
+            <X size={20} strokeWidth={2} />
+          </button>
+          {/* Клик по самому чертежу не должен закрывать просмотр — иначе
+              рассмотреть его пальцем невозможно. */}
+          <div className="chart-fullscreen__stage" onClick={e => e.stopPropagation()}>
+            {children}
+          </div>
+        </div>,
+        document.body,
       )}
     </div>
   );

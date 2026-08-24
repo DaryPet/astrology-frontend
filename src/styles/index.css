@@ -72,15 +72,21 @@
   --radius-xl: 20px;
   --radius-full: 999px;
 
-  /* --- Типографика --- */
-  --text-xs: 11px;
-  --text-sm: 13px;
-  --text-base: 14px;
-  --text-md: 15px;
-  --text-lg: 17px;
-  --text-xl: 20px;
-  --text-2xl: 24px;
-  --text-3xl: 32px;
+  /* --- Типографика ---
+     Шкала резиновая: между 320 и 1200 кегли едут плавно, без ступенек на
+     брейкпоинтах. ВЕРХНЯЯ ГРАНИЦА КАЖДОГО clamp РАВНА ПРЕЖНЕМУ ПИКСЕЛЬНОМУ
+     ЗНАЧЕНИЮ — на ширине ≥1200 (и вообще везде, где предпочтительное значение
+     упирается в максимум) типографика та же, что была (Decision 3).
+     Формула предпочтительного значения выведена по двум точкам: минимум на
+     320px, максимум на 1200px. */
+  --text-xs: clamp(10px, 9.6px + 0.13vw, 11px);
+  --text-sm: clamp(12px, 11.6px + 0.11vw, 13px);
+  --text-base: clamp(13px, 12.6px + 0.11vw, 14px);
+  --text-md: clamp(14px, 13.6px + 0.11vw, 15px);
+  --text-lg: clamp(15px, 14.3px + 0.23vw, 17px);
+  --text-xl: clamp(17px, 16.0px + 0.34vw, 20px);
+  --text-2xl: clamp(20px, 18.6px + 0.45vw, 24px);
+  --text-3xl: clamp(24px, 21.1px + 0.91vw, 32px);
   --leading-tight: 1.25;
   --leading-normal: 1.5;
   --leading-relaxed: 1.65;
@@ -112,6 +118,43 @@
   --z-header: 100;
   --z-float: 100;
   --z-modal: 1000;
+
+  /* --- Размеры оболочки ---
+     `--header-h` — высота шапки. До этого токена число 65 было захардкожено
+     в шести местах dashboard.css (top сайдбара и оверлея, три calc(100vh - 65px))
+     плюс 73 = 65 + 8 у бургера. Десктопное значение намеренно оставлено ровно
+     65px: оно описывает сегодняшнее поведение, а менять внешний вид на ≥1200
+     этот change не имеет права (design.md, Decision 3). На мобильном шапка
+     получает собственную высоту — см. переопределение ниже по файлу. */
+  --header-h: 65px;
+
+  /* `--gutter` — единое боковое поле страницы. До него их было четыре разных:
+     20px у .container, 16px у .db-content на мобильном, 16px у .ui-card и
+     18/16px у .db-planet-section — на узком экране левые края блоков не
+     совпадали между собой. */
+  --gutter: 20px;
+}
+
+/* =============================================================================
+   ТАБЛИЦА БРЕЙКПОИНТОВ — единственный источник правды на три CSS-файла.
+   Заведена в openspec/changes/adaptive-layout (Decision 2). Новых значений не
+   изобретать; 560 выведен из обихода, он не совпадал ни с чем.
+
+     XS   320–599   одна колонка; --gutter 12–16; колесо во всю ширину
+     MD   600–899   две колонки в формах, партнёрах синастрии, статах карты
+     LG   900–1199  возвращается сайдбар 268px; мобильная шапка выключается
+     XL   ≥1200     текущий десктоп — не меняется (Decision 3)
+
+   Размеры едут через clamp(), брейкпоинты меняют только расстановку. Если
+   размер прыгает на брейкпоинте — это ошибка, его место в clamp().
+   ============================================================================= */
+
+@media (max-width: 413px) {
+  :root { --gutter: 12px; }
+}
+
+@media (min-width: 414px) and (max-width: 599px) {
+  :root { --gutter: 16px; }
 }
 
 [data-theme="dark"] {
@@ -138,11 +181,31 @@
   box-sizing: border-box;
 }
 
+/* Страховочная сетка от горизонтального переполнения — на HTML, а НЕ на body.
+   Это не стилистический выбор, а единственный работающий вариант: когда у
+   корневого элемента overflow `visible`, браузер БЕРЁТ значение с body,
+   переносит его на вьюпорт, а самому body назначает `visible` — то есть
+   правило на body не обрезает вообще ничего. Проверено дорого: закрытая панель
+   мобильного меню (.header-panel, `translateX(100%)`) висела за правым краем,
+   расширяла вьюпорт с 430 до 750, и из-за этого модалка анализа — честно
+   занимавшая весь вьюпорт — выглядела обрезанной.
+
+   Именно `clip`, а не `hidden`: `hidden` создал бы скролл-контейнер и сломал
+   `position: sticky` у .header. `clip` скролл-контейнера не создаёт, а
+   `overflow-x: clip` при `overflow-y: visible` оставляет вертикальную
+   прокрутку нетронутой.
+
+   Сетка не заменяет исправление причины: В.9 ищет элемент-виновник отдельно. */
+html {
+  overflow-x: clip;
+}
+
 body {
   font-family: var(--font-ui);
   background: var(--bg-primary);
   color: var(--text-primary);
   min-height: 100vh;
+  min-height: 100dvh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   /* В светлой теме верхнее пятно было тёмно-синим (rgba(26,26,46,.3)) —
@@ -163,12 +226,19 @@ body {
 
 .app {
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 20px;
+  /* Единое боковое поле (--gutter) вместо прежних 20px: на узком экране левые
+     края .container, .db-content, .ui-card и .db-planet-section обязаны
+     совпадать. max() с safe-area — для альбомной ориентации на iPhone, где
+     контент иначе уезжает под «уши». */
+  padding: 0 var(--gutter);
+  padding-left: max(var(--gutter), env(safe-area-inset-left));
+  padding-right: max(var(--gutter), env(safe-area-inset-right));
 }
 
 /* Header */
@@ -213,8 +283,278 @@ body {
   transition: color 0.2s;
 }
 
+/* --- Мобильное меню шапки -------------------------------------------------
+   Разметка одна на все ширины. На десктопе .header-panel объявлена
+   `display: contents`, то есть в раскладке её как будто нет: .nav и
+   .language-dropdown остаются прямыми flex-детьми .header-content ровно как
+   до этой правки. Ниже 900px та же обёртка становится выездной панелью.
+   Бургер, кнопка закрытия и оверлей на десктопе не существуют вовсе. */
+.header-panel {
+  display: contents;
+}
+
+.header-panel__close,
+.header-burger,
+.header-overlay {
+  display: none;
+}
+
+/* Кнопка темы. Значения — ровно те, что были в inline-стиле кнопки до правки,
+   поэтому на десктопе она рендерится байт-в-байт как раньше. Перенесены в
+   класс по одной причине: inline-стиль невозможно переопределить в @media,
+   а на мобильном кнопке нужен тач-размер 44px. Шрифт намеренно НЕ задан —
+   в inline-стиле его тоже не было, кнопка берёт браузерный по умолчанию. */
+.header-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+}
+
+/* Было inline-стилем на .language-dropdown. Вынесено, чтобы в @media его
+   можно было снять без !important. */
+.language-dropdown {
+  margin-left: 20px;
+}
+
+/* Выпадающее меню языка. Значения перенесены из inline-стиля один в один
+   (z-index 1000 — это ровно --z-modal), поэтому на десктопе меню то же самое. */
+.language-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: var(--z-modal);
+  min-width: 140px;
+}
+
 .nav a:hover {
   color: var(--text-primary);
+}
+
+/* --- Шапка ниже 900px -----------------------------------------------------
+   Логотип слева, справа две круглые кнопки 44px: тема и бургер. Навигация,
+   аккаунт и выбор языка уезжают в правую панель. Порог 900, а не 768: см.
+   openspec/changes/adaptive-layout/design.md, Decision 2. */
+@media (max-width: 899px) {
+  /* Шапка сама задаёт свою высоту, поэтому токен здесь не измерение, а
+     объявление: 64px включают нижнюю границу (box-sizing: border-box). */
+  :root {
+    --header-h: 64px;
+  }
+
+  .header {
+    padding: 0;
+    height: var(--header-h);
+  }
+
+  .header-content {
+    height: 100%;
+    gap: var(--space-2);
+  }
+
+  /* Прижимает пару кнопок вправо без изменения разметки: панель и оверлей
+     из потока выпадают, в строке остаются логотип, тема и бургер. */
+  .logo {
+    margin-right: auto;
+    font-size: 1.25rem;
+  }
+
+  .header-icon-btn,
+  .header-burger {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border-radius: var(--radius-full);
+    flex-shrink: 0;
+  }
+
+  .header-burger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    cursor: pointer;
+  }
+
+  .header-icon-btn {
+    font-size: 18px;
+  }
+
+  /* Открытая панель накрыла бы бургер, поэтому он убирается флагом из JSX —
+     комбинатора «следующий соседний с состоянием» в CSS нет. Тот же приём,
+     что у .db-sidebar-burger--hidden. */
+  .header-burger--hidden {
+    display: none;
+  }
+
+  .header-burger:focus-visible,
+  .header-panel__close:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+
+  .header-panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    position: absolute;
+    top: 100%;
+    right: 0;
+    width: min(320px, 86vw);
+    height: calc(100vh - var(--header-h));
+    height: calc(100dvh - var(--header-h));
+    padding: var(--space-4);
+    overflow-y: auto;
+    background: var(--bg-card);
+    border-left: 1px solid var(--border);
+    box-shadow: var(--shadow-lg);
+    z-index: var(--z-drawer);
+    /* ЗАКРЫТАЯ ПАНЕЛЬ ОБЯЗАНА ИСЧЕЗАТЬ ИЗ РАСКЛАДКИ, а не уезжать за край.
+       Прежний вариант (transform: translateX(100%) + visibility: hidden)
+       выглядел рабочим и был неверен: ни transform, ни visibility не убирают
+       элемент из потока — панель шириной 320px продолжала висеть справа за
+       границей экрана и растягивала вьюпорт с 430 до 750. После этого
+       window.innerWidth возвращал 750, и всё привязанное к вьюпорту
+       (position: fixed — оверлей и окно модалки анализа) занимало 750,
+       из-за чего модалка выглядела обрезанной. Симптом вылезал далеко от
+       причины и трижды увёл диагностику не туда.
+       display: none закрывает это по определению: нет коробки — нет
+       переполнения, нет и обхода Tab по невидимому меню. */
+    display: none;
+  }
+
+  .header-panel--open {
+    display: flex;
+    /* Появление анимируется через animation, а не transition: из display: none
+       переход не стартует. Закрытие мгновенное — осознанный размен на
+       гарантию, что закрытая панель не существует в раскладке вообще. */
+    animation: header-panel-in var(--duration-slow) var(--ease-out);
+  }
+
+  @keyframes header-panel-in {
+    from { transform: translateX(100%); }
+    to   { transform: translateX(0); }
+  }
+
+  .header-panel__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    align-self: flex-end;
+    width: 40px;
+    height: 40px;
+    margin-bottom: var(--space-1);
+    border: none;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .header-panel__close:hover {
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+  }
+
+  .header-panel .nav {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-1);
+  }
+
+  /* Навигация в шапке белая в обеих темах (--header-fg), а фон панели —
+     var(--bg-card), в светлой теме белый. Без этого правила ссылки были бы
+     белым по белому. Специфичность поднята выше `[data-theme="light"] .nav-link`
+     намеренно, а не за счёт порядка правил. */
+  .header-panel .nav-link,
+  .header-panel .user-name,
+  [data-theme="light"] .header-panel .nav-link,
+  [data-theme="light"] .header-panel .user-name,
+  .header-panel .nav a {
+    color: var(--text-primary);
+  }
+
+  .header-panel .nav-link {
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-md);
+    font-size: var(--text-lg);
+  }
+
+  .header-panel .user-info,
+  .header-panel .auth-buttons {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-3);
+    margin-top: var(--space-3);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--border);
+  }
+
+  .header-panel .btn-login,
+  .header-panel .btn-register,
+  .header-panel .btn-logout {
+    padding: var(--space-3) var(--space-4);
+    text-align: center;
+  }
+
+  /* Язык прижат к низу панели: это настройка, а не навигация. */
+  .header-panel .language-dropdown {
+    margin-left: 0;
+    margin-top: auto;
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--border);
+  }
+
+  .header-panel .language-dropdown > button {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  /* Внутри панели меню разворачивается в потоке, а не absolute'ом: панель
+     скроллится (overflow-y: auto), и выпадающий вниз absolute обрезался бы
+     по её нижнему краю — селектор языка стоит последним. */
+  .header-panel .language-menu {
+    position: static;
+    width: 100%;
+    margin-top: var(--space-2);
+    box-shadow: none;
+  }
+
+  .header-overlay {
+    display: block;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    height: 100vh;
+    height: 100dvh;
+    background: var(--overlay-bg);
+    z-index: var(--z-overlay);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .header-panel--open {
+    animation: none !important;
+  }
+  /* .chart-fullscreen и .live-sky-expand — в конце файла, рядом со своими
+     базовыми правилами: здесь они работали только за счёт !important. */
 }
 
 /* Hero */
@@ -224,7 +564,9 @@ body {
 }
 
 .hero h1 {
-  font-size: 3.5rem;
+  /* Было 3.5rem с одной ступенькой в 2rem на 768 — между 320 и 768 не менялось
+     ничего. Теперь плавно: 32px на 320, 56px на 1200 и выше (Decision 3). */
+  font-size: clamp(2rem, 23.3px + 2.73vw, 3.5rem);
   margin-bottom: 20px;
   background: linear-gradient(135deg, var(--text-primary), var(--accent-glow));
   -webkit-background-clip: text;
@@ -356,10 +698,14 @@ body {
   margin-bottom: 40px;
 }
 
+/* Было 400px жёстко и 300px на ≤768 — второе всё равно шире доступных на 320
+   288px, то есть мобильное значение само давало горизонтальный скролл.
+   aspect-ratio сохраняет квадрат без второй величины, которую надо было бы
+   держать синхронной с первой. */
 .wheel-container {
   position: relative;
-  width: 400px;
-  height: 400px;
+  width: min(100%, 400px);
+  aspect-ratio: 1;
   margin: 0 auto;
 }
 
@@ -771,11 +1117,35 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
+  /* Резина: рамка занимает доступную ширину, а предел ставит сцена ниже —
+     через проп maxWidth, равный эталонному размеру колеса. */
+  width: 100%;
 }
 
 .live-sky-stage {
   position: relative;
-  display: inline-flex;
+  /* Было inline-flex (shrink-to-fit). С резиновым колесом это давало цикл:
+     ребёнок с width:100% внутри контейнера, который меряется по ребёнку.
+     max-width приходит инлайном из LiveSkyFrame. */
+  display: flex;
+  width: 100%;
+  aspect-ratio: 1;
+}
+
+/* Колесо тянется на всю сцену. Ограничение по ширине живёт на сцене, чтобы
+   звёзды и орбита кометы, привязанные к её краям, не отрывались от чертежа. */
+.chart-wheel-fluid {
+  width: 100%;
+}
+
+/* Перебивает пиксельные атрибуты width/height, которые @astrodraw/astrochart
+   ставит корню SVG. У презентационных атрибутов минимальная специфичность,
+   поэтому одного правила достаточно — библиотеку патчить не нужно, а viewBox
+   она проставляет сама. Для синастрического колеса viewBox добавлен вручную. */
+.chart-wheel-fluid > svg {
+  display: block;
+  width: 100%;
+  height: auto;
 }
 
 /* While the wait lasts the wheel can be spun by dragging. */
@@ -793,6 +1163,7 @@ body {
 .chart-wheel-live {
   position: relative;
   z-index: 1;
+  width: 100%;
   transform-origin: center center;
   transition: transform 0.6s ease;
 }
@@ -1020,6 +1391,168 @@ body {
   color: var(--accent-glow);
 }
 
+/* --- Полноэкранный просмотр колеса ----------------------------------------
+   Кнопка живёт в углу сцены; на десктопе она проявляется по наведению, на
+   тач-устройствах видна всегда (там hover не существует). */
+.live-sky-expand {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--duration-base), color var(--duration-fast);
+}
+
+.live-sky-stage:hover .live-sky-expand,
+.live-sky-expand:focus-visible {
+  opacity: 1;
+}
+
+.live-sky-expand:hover {
+  color: var(--accent);
+}
+
+.live-sky-expand:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+@media (hover: none) {
+  .live-sky-expand {
+    opacity: 1;
+    width: 44px;
+    height: 44px;
+  }
+}
+
+.chart-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  background: var(--overlay-bg);
+  backdrop-filter: blur(2px);
+  animation: ui-fade-in var(--duration-fast) var(--ease-out) both;
+  /* Нативный пинч-зум вместо библиотеки: чертёж можно увеличить пальцами,
+     а `overflow: auto` даёт возможность довести его до нужного угла. */
+  touch-action: pinch-zoom;
+  overflow: auto;
+}
+
+.chart-fullscreen__stage {
+  width: 100%;
+  max-width: min(100%, 92vh);
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
+  box-shadow: var(--shadow-lg);
+}
+
+.chart-fullscreen__close {
+  position: fixed;
+  top: var(--space-4);
+  right: var(--space-4);
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.chart-fullscreen__close:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* Карусель ожидания на узком экране: паддинг 44+44 оставлял тексту 200px из
+   288 доступных. Стрелки при этом выросли до 44px под палец, поэтому текст
+   уводится от них не паддингом, а отдельной строкой. */
+@media (max-width: 599px) {
+  .live-sky-card {
+    padding-left: var(--space-4);
+    padding-right: var(--space-4);
+    padding-bottom: var(--space-8);
+  }
+
+  .live-sky-card-arrow--prev { left: 50%; margin-left: -48px; top: auto; bottom: 6px; transform: none; }
+  .live-sky-card-arrow--next { left: 50%; margin-left: 8px; top: auto; bottom: 6px; transform: none; }
+}
+
+/* --- Дорогое оформление на слабых устройствах -------------------------------- */
+@media (pointer: coarse) {
+  /* Размытие подложки у липкой шапки пересчитывается на каждом кадре скролла.
+     На среднем Android это самая дорогая строка во всём файле, а выигрыш —
+     эффект, которого на маленьком экране почти не видно. */
+  .header {
+    backdrop-filter: none;
+  }
+}
+
+/* --- Тач-таргеты ------------------------------------------------------------
+   Всё, что мельче пальца, доводится до 40–44px там, где курсора нет.
+   Условие по указателю, а не по ширине (design.md, Decision 8). */
+@media (pointer: coarse) {
+  /* Стрелки карусели и глифы планет — были 32×32. */
+  .live-sky-card-arrow,
+  .live-sky-chip {
+    width: 44px;
+    height: 44px;
+  }
+
+  /* Карточка карусели ужимается ровно на столько, на сколько выросли стрелки,
+     чтобы текст не оказался под ними. */
+  .live-sky-card {
+    padding-left: 52px;
+    padding-right: 52px;
+  }
+}
+
+/* --- Колесо на тач-устройствах ---------------------------------------------
+   Два правила, оба про палец, а не про ширину экрана (design.md, Decision 8). */
+@media (pointer: coarse) {
+  /* `touch-action: none` на квадрате во весь экран отнимал у страницы
+     вертикальную прокрутку: провести пальцем по колесу во время ожидания
+     анализа (около минуты) значило не проскроллить, а покрутить чертёж.
+     Вращение мышью на десктопе при этом остаётся. */
+  .live-sky-stage--draggable {
+    touch-action: auto;
+    cursor: default;
+  }
+
+  /* Единственный дорогой эффект Live Sky: анимирует filter: drop-shadow,
+     то есть перерисовывает весь SVG каждый кадр вместо композитинга на GPU
+     (INSIGHTS.md, 2026-08-21). На мобильном GPU это заметно, а идёт оно всю
+     минуту ожидания. Звёзды, орбита и падающая звезда остаются — они на
+     transform/opacity и стоят копейки. */
+  .chart-wheel-live--active {
+    animation: none;
+  }
+
+  /* Подсказка «колесо можно покрутить» без вращения была бы враньём. */
+  .live-sky-drag-hint {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .chart-wheel-live--active,
   .live-sky-star,
@@ -1136,12 +1669,10 @@ body {
   display: none;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .hero h1 {
-    font-size: 2rem;
-  }
-  
+/* Responsive. Порог 899 — граница LG по таблице брейкпоинтов вверху файла. */
+@media (max-width: 899px) {
+  /* .hero h1 здесь больше не переопределяется: кегль резиновый через clamp(). */
+
   .form-card {
     padding: 24px;
   }
@@ -1149,18 +1680,28 @@ body {
   .synastry-form {
     grid-template-columns: 1fr;
   }
-  
-  .wheel-container {
-    width: 300px;
-    height: 300px;
-  }
+  /* .wheel-container больше не переопределяется здесь: базовое правило
+     min(100%, 400px) уже резиновое, а прежние 300px были шире доступных
+     на 320 288px и сами давали горизонтальный скролл. */
 }
 
-/* Form Rows */
+/* Form Rows.
+   Две колонки — исключение, а не база: на 320 пара «дата + время» получала бы
+   по ~128px на поле, а нативный input[type=date] в iOS Safari шире по
+   min-content и распирал .form-card вместе со всей страницей. Соседний
+   .synastry-form схлопывался на 768, а этот блок забыли.
+   Локальный min-width здесь допустим по design.md, Decision 1: на ≥600px
+   раскладка ровно та же, что была, десктоп не двигается. */
 .form-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 16px;
+}
+
+@media (min-width: 600px) {
+  .form-row {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 /* Autocomplete */
@@ -1457,6 +1998,7 @@ body {
 /* Страницы аутентификации */
 .auth-page {
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--bg-primary);
 }
 
@@ -1586,6 +2128,7 @@ body {
 /* Страница выхода */
 .logout-page {
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--bg-primary);
 }
 
@@ -1629,6 +2172,7 @@ body {
 /* Dashboard */
 .dashboard {
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--bg-primary);
 }
 
@@ -1861,12 +2405,69 @@ button[style*="transparent"]:hover {
 }
 
 /* Responsive adjustments for relationship types */
-@media (max-width: 768px) {
+@media (max-width: 899px) {
   .relationship-types-container {
     padding: 16px;
   }
   
   .relationship-types-container h3 {
     font-size: 16px;
+  }
+}
+
+/* =============================================================================
+   Адаптивные переопределения, которым обязательно быть в конце файла.
+
+   У этих правил та же специфичность, что у базовых, поэтому решает порядок.
+   Стояли выше по файлу — и молча не работали: `.auth-card` не сжимался в
+   альбомной ориентации, а `.feature` продолжал подниматься по «наведению»
+   на тач-устройстве. Ровно та же ошибка была допущена с bottom-sheet-модалками
+   в ui.css. Проверять это глазами бесполезно — нужен обход файла.
+   ============================================================================= */
+
+/* --- Телефон в альбомной ориентации -----------------------------------------
+   Высота 320–500px: вертикальные отступы, рассчитанные на портрет, съедают
+   весь экран — до формы расчёта приходилось скроллить, хотя она главное на
+   странице. Условие по ВЫСОТЕ, а не по ширине: 568×320 и 812×375 — это тот же
+   телефон, просто повёрнутый. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .hero {
+    padding: var(--space-6) 0;
+  }
+
+  .hero p {
+    margin-bottom: var(--space-5);
+  }
+
+  .chart-page {
+    padding: var(--space-5) 0;
+  }
+
+  .auth-card {
+    margin: var(--space-5) auto;
+  }
+}
+
+/* --- Hover только там, где есть курсор --------------------------------------
+   На iOS :hover «залипает» после тапа и держится до нажатия в другом месте:
+   карточка планеты остаётся приподнятой с тенью, будто выбрана. */
+@media (hover: none) {
+  .btn-primary:hover,
+  .btn-register:hover,
+  .btn-secondary:hover,
+  .btn-login:hover,
+  .nav-link:hover,
+  .feature:hover {
+    transform: none;
+    box-shadow: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chart-fullscreen {
+    animation: none;
+  }
+  .live-sky-expand {
+    transition: none;
   }
 }

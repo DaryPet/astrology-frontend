@@ -23,6 +23,14 @@ const ASPECT_COLORS: Record<string, string> = {
   'Square': '#FF6347', 'Sextile': '#1E90FF', 'Quincunx': '#9370DB'
 };
 
+// На тач-устройствах `mouseenter` эмулируется при тапе, и приподнятая карточка
+// остаётся такой до нажатия в другом месте — выглядит как «выбрана». Отключить
+// это медиазапросом нельзя: обработчик пишет inline-стиль, а он специфичнее
+// любого CSS. Проверка разовая, внутри обработчика — это не подписка на
+// matchMedia (design.md, Non-Goals).
+const canHover = () =>
+  typeof window !== 'undefined' && window.matchMedia('(hover: hover)').matches;
+
 const AspectGrid = ({ aspects, _planets, onAspectClick, title, emptyTitle, emptyDescription }: AspectGridProps) => {
   const { t } = useTranslation();
   const [selectedAspect, setSelectedAspect] = useState<number | null>(null);
@@ -89,6 +97,7 @@ const AspectGrid = ({ aspects, _planets, onAspectClick, title, emptyTitle, empty
               }}
               onClick={() => { setSelectedAspect(isSelected ? null : index); onAspectClick && onAspectClick(aspect); }}
               onMouseEnter={(e) => {
+                if (!canHover()) return;
                 if (!isSelected) {
                   (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-4px)';
                   (e.currentTarget as HTMLDivElement).style.boxShadow = `0 8px 24px ${aspectColor}40`;

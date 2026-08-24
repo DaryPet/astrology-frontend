@@ -8,16 +8,18 @@
 
 .db-sidebar-slot {
   position: fixed;
-  top: 65px;
+  top: var(--header-h);
   left: 0;
   width: 268px;
-  max-height: calc(100vh - 65px);
+  max-height: calc(100vh - var(--header-h));
+  max-height: calc(100dvh - var(--header-h));
   z-index: var(--z-sidebar);
 }
 
 .db-content {
   margin-left: 268px;
-  min-height: calc(100vh - 65px);
+  min-height: calc(100vh - var(--header-h));
+  min-height: calc(100dvh - var(--header-h));
   padding: 32px 40px 60px;
   max-width: 100%;
   box-sizing: border-box;
@@ -36,7 +38,8 @@
   width: 268px;
   background: var(--bg-card);
   border-right: 1px solid var(--border);
-  height: calc(100vh - 65px);
+  height: calc(100vh - var(--header-h));
+  height: calc(100dvh - var(--header-h));
   display: flex;
   flex-direction: column;
   padding: 16px 12px 24px;
@@ -215,6 +218,40 @@
 }
 .db-sidebar__icon-btn:hover { opacity: 1; background: var(--bg-secondary); }
 .db-sidebar__icon-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* --- Действия с картой на устройствах без курсора --------------------------
+   До этого правила переименовать или удалить карту с телефона было НЕВОЗМОЖНО:
+   `.db-sidebar__chart-actions` имеет opacity: 0 и проявляется только по :hover,
+   а на тач-устройстве события hover не существует — кнопки оставались
+   невидимыми (у активной карты — на 55%, то есть угадываемыми, но не
+   очевидными). Это функциональная дыра, а не косметика.
+
+   Условие по указателю, а не по ширине экрана (design.md, Decision 8): узкое
+   окно на десктопе мышь не теряет, а планшет 1024 работает пальцем. */
+@media (hover: none) {
+  .db-sidebar__chart-actions,
+  .db-sidebar__chart-item--active .db-sidebar__chart-actions {
+    opacity: 1;
+  }
+
+  /* Тач-таргет вместо 21×17px. 40px, а не 44: внутри строки шириной 224px две
+     кнопки по 44 плюс зазор съели бы 92px и оставили имени карты 132. 40 — тот
+     же размер, что у уже существующего .db-sidebar-burger в этом файле, так что
+     это ещё и единственный размер иконочной кнопки на весь дашборд.
+     Расширять область попадания псевдоэлементом нельзя: кнопки стоят вплотную
+     (gap: 1px), их зоны наложились бы, и промах по «переименовать» попадал бы
+     в «удалить» — это разрушающее действие. Поэтому зазор тоже увеличен. */
+  .db-sidebar__chart-actions {
+    gap: var(--space-1);
+  }
+
+  .db-sidebar__icon-btn {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    opacity: 0.75;
+  }
+}
 
 .db-sidebar__rename-input {
   width: 100%;
@@ -724,20 +761,46 @@
 }
 
 /* ---------------------------------------------------------------------------
+   13.5 Планшет: сайдбар уже вернулся, но места ещё мало
+   --------------------------------------------------------------------------- */
+
+/* В диапазоне 900–1199 сайдбар (268px) снова прибит, и десктопные поля по 40px
+   отнимают у контента последнее: на 900px ему остаётся 552. Сужаем ПОЛЯ, а не
+   саму колонку — её ширина (.db-content-inner, 900px) подобрана под читаемость
+   и на планшете всё равно не достигается. */
+@media (min-width: 900px) and (max-width: 1199px) {
+  .db-content {
+    padding-left: var(--space-6);
+    padding-right: var(--space-6);
+  }
+}
+
+/* ---------------------------------------------------------------------------
    14. Responsive — mobile
    --------------------------------------------------------------------------- */
 
-@media (max-width: 768px) {
+@media (max-width: 899px) {
   /* Слот больше не display:none — иначе вместе с сайдбаром прятался бы
      и бургер. Вместо этого сайдбар уезжает за левый край. */
   .db-sidebar-slot { width: 0; }
-  .db-content { margin-left: 0; padding: 64px 16px 48px; }
-  .db-planet-section { padding: 18px 16px; }
-  .db-scroll-top { bottom: 20px; right: 16px; width: 42px; height: 42px; }
+  .db-content {
+    margin-left: 0;
+    padding: 64px var(--gutter) 48px;
+    padding-left: max(var(--gutter), env(safe-area-inset-left));
+    padding-right: max(var(--gutter), env(safe-area-inset-right));
+  }
+  .db-planet-section { padding: 18px var(--gutter); }
+  /* На iPhone с «домашней полоской» кнопка вставала прямо под ней. */
+  .db-scroll-top {
+    bottom: calc(20px + env(safe-area-inset-bottom));
+    right: calc(16px + env(safe-area-inset-right));
+    width: 42px;
+    height: 42px;
+  }
 
   .db-sidebar {
     position: fixed;
-    top: 65px;
+    top: var(--header-h);
     left: 0;
     transform: translateX(-100%);
     transition: transform 0.25s ease;
@@ -752,7 +815,7 @@
     align-items: center;
     justify-content: center;
     position: fixed;
-    top: 73px;
+    top: calc(var(--header-h) + 8px);
     left: 12px;
     z-index: var(--z-burger);
     width: 40px;
@@ -777,7 +840,7 @@
   .db-sidebar-overlay {
     display: block;
     position: fixed;
-    top: 65px;
+    top: var(--header-h);
     right: 0;
     bottom: 0;
     left: 0;

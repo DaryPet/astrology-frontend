@@ -620,7 +620,7 @@ function Home() {
               </p>
             )}
             <div className="ui-row" style={{ justifyContent: 'center' }}>
-              <LiveSkyFrame active={loading}>
+              <LiveSkyFrame active={loading} maxWidth={700}>
                 <AstroChartComponent
                   chartData={chartData}
                   size={700}

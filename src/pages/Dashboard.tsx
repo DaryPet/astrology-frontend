@@ -3127,7 +3127,7 @@ const Dashboard = () => {
                     </div>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'center' }}>
-                    <LiveSkyFrame active={wheelAlive}>
+                    <LiveSkyFrame active={wheelAlive} maxWidth={560}>
                       <SynastryChartComponent
                         chart1={chartDataForAnalysis.chart1}
                         chart2={chartDataForAnalysis.chart2}
@@ -3146,7 +3146,7 @@ const Dashboard = () => {
                 && chartDataForAnalysis.planets
                 && chartDataForAnalysis.houses && (
                 <div style={{ marginBottom: '30px', display: 'flex', justifyContent: 'center' }}>
-                  <LiveSkyFrame active={wheelAlive}>
+                  <LiveSkyFrame active={wheelAlive} maxWidth={560}>
                     <AstroChartComponent
                       chartData={{
                         planets: chartDataForAnalysis.planets,

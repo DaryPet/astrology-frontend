@@ -231,33 +231,38 @@ const DailyForecastPanel: React.FC<DailyForecastPanelProps> = ({ natalChart }) =
             {showAspects ? t('dailyForecast.aspectsHide') : t('dailyForecast.aspectsShow')}
           </button>
 
+          {/* Пять колонок на 320 не помещаются; --plain — потому что своей рамки
+              у этой таблицы не было, а обычный .ui-table-wrap добавил бы её и
+              на десктопе. */}
           {showAspects && (
-            <table style={{ borderCollapse: 'collapse', fontSize: '13px', width: '100%' }}>
-              <thead>
-                <tr>
-                  <th>{t('dailyForecast.colTransit')}</th>
-                  <th>{t('dailyForecast.colAspect')}</th>
-                  <th>{t('dailyForecast.colNatal')}</th>
-                  <th>{t('dailyForecast.colOrb')}</th>
-                  <th>{t('dailyForecast.colWeight')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {result.key_aspects.map((a, i) => (
-                  <tr key={i} style={{ borderTop: '1px solid var(--border)' }}>
-                    <td>{t(`planets.names.${a.transit}`, { defaultValue: a.transit })}</td>
-                    <td>{t(`dailyForecast.aspects.${a.aspect}`, { defaultValue: a.aspect })}</td>
-                    <td>
-                      {a.is_point ? a.natal : t(`planets.names.${a.natal}`, { defaultValue: a.natal })}
-                    </td>
-                    <td>{a.orb}°</td>
-                    <td style={{ padding: '6px', color: a.weight >= 0 ? CATEGORY_COLORS.favorable : CATEGORY_COLORS.critical }}>
-                      {a.weight > 0 ? `+${a.weight}` : a.weight}
-                    </td>
+            <div className="ui-table-wrap ui-table-wrap--plain">
+              <table style={{ borderCollapse: 'collapse', fontSize: '13px', width: '100%' }}>
+                <thead>
+                  <tr>
+                    <th>{t('dailyForecast.colTransit')}</th>
+                    <th>{t('dailyForecast.colAspect')}</th>
+                    <th>{t('dailyForecast.colNatal')}</th>
+                    <th>{t('dailyForecast.colOrb')}</th>
+                    <th>{t('dailyForecast.colWeight')}</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {result.key_aspects.map((a, i) => (
+                    <tr key={i} style={{ borderTop: '1px solid var(--border)' }}>
+                      <td>{t(`planets.names.${a.transit}`, { defaultValue: a.transit })}</td>
+                      <td>{t(`dailyForecast.aspects.${a.aspect}`, { defaultValue: a.aspect })}</td>
+                      <td>
+                        {a.is_point ? a.natal : t(`planets.names.${a.natal}`, { defaultValue: a.natal })}
+                      </td>
+                      <td>{a.orb}°</td>
+                      <td style={{ padding: '6px', color: a.weight >= 0 ? CATEGORY_COLORS.favorable : CATEGORY_COLORS.critical }}>
+                        {a.weight > 0 ? `+${a.weight}` : a.weight}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       )}

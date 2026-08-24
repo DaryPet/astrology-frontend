@@ -30,24 +30,29 @@ const MarkdownContent = ({ content }: MarkdownContentProps) => {
   const flushTable = () => {
     if (tableRows.length > 0) {
       elements.push(
-        <table key={`table-${elements.length}`} className="markdown-table">
-          <thead>
-            <tr>
-              {tableHeaders.map((header, i) => (
-                <th key={`th-${i}`}>{formatInline(header)}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {tableRows.map((row, ri) => (
-              <tr key={`tr-${ri}`}>
-                {row.map((cell, ci) => (
-                  <td key={`td-${ri}-${ci}`}>{formatInline(cell)}</td>
+        // Таблицы регулярно приходят в ответах LLM, поэтому это переполнение
+        // прилетает на любой странице с разбором. У .markdown-table своя рамка
+        // и border-radius, обычный .ui-table-wrap дал бы вторую — отсюда --plain.
+        <div key={`table-${elements.length}`} className="ui-table-wrap ui-table-wrap--plain">
+          <table className="markdown-table">
+            <thead>
+              <tr>
+                {tableHeaders.map((header, i) => (
+                  <th key={`th-${i}`}>{formatInline(header)}</th>
                 ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {tableRows.map((row, ri) => (
+                <tr key={`tr-${ri}`}>
+                  {row.map((cell, ci) => (
+                    <td key={`td-${ri}-${ci}`}>{formatInline(cell)}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       );
       tableRows = [];
       tableHeaders = [];

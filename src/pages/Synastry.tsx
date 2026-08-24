@@ -493,7 +493,7 @@ function Synastry() {
                   ожидания (см. LiveSkyFrame и INSIGHTS.md). */}
               <div className="ui-row" style={{ justifyContent: 'center' }}>
                 {chart1Data && chart2Data && (
-                  <LiveSkyFrame active={loading}>
+                  <LiveSkyFrame active={loading} maxWidth={700}>
                     <SynastryChartComponent chart1={chart1Data} chart2={chart2Data} aspects={synastry.aspects} size={700} name1={personNames.p1} name2={personNames.p2} />
                   </LiveSkyFrame>
                 )}
