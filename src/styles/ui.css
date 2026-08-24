@@ -516,7 +516,9 @@
   justify-content: center;
   z-index: var(--z-modal);
   padding: var(--space-4);
-  animation: ui-fade-in var(--duration-fast) var(--ease-out) both;
+  /* Именно -plain, не ui-fade-in: transform в последнем кадре сделал бы оверлей
+     containing block'ом для окна внутри. См. комментарий у @keyframes. */
+  animation: ui-fade-in-plain var(--duration-fast) var(--ease-out) both;
   backdrop-filter: blur(2px);
 }
 
@@ -633,13 +635,17 @@
     /* 2026-08-24, второй заход. Окно НЕ должно быть `position: fixed`.
        Раньше здесь стояло `position: fixed; bottom: 0`, и от какой коробки
        считается этот bottom — было неопределённо: у .ui-modal-overlay
-       `animation: ui-fade-in ... both` держит transform последнего кадра
-       навечно и делает оверлей containing block'ом (INSIGHTS.md, 2026-08-23),
-       но `html { overflow-x: clip }` (index.css, добавлен тем же коммитом
-       адаптива) делает clip-контейнером сам <html>. Кто выигрывал — зависело
-       от модалки: анализ планет вставал по центру, а модалка удаления карты
-       улетала в подвал страницы, и модалка ухода с анализа — в самый верх
-       документа.
+       `animation: ui-fade-in ... both` держал transform последнего кадра
+       навечно и делал оверлей containing block'ом (INSIGHTS.md, 2026-08-23),
+       а `html { overflow-x: clip }` (index.css) делал clip-контейнером сам
+       <html>. Кто выигрывал — зависело от модалки: анализ планет вставал по
+       центру, модалка удаления карты улетала в подвал страницы, а модалка
+       ухода с анализа — в самый верх документа.
+
+       Оба подозреваемых с тех пор убраны (оверлей переведён на
+       @keyframes ui-fade-in-plain, `overflow-x: clip` снят — см. index.css),
+       но правило ниже сохранено: оно и было настоящим фиксом, потому что не
+       зависит от того, кто из них был виноват.
 
        Обычный поток внутри flex-оверлея снимает вопрос целиком: элемент без
        position: fixed/absolute не зависит ни от какого containing block'а,
@@ -767,6 +773,21 @@
 @keyframes ui-fade-in {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Тот же выход, но БЕЗ transform. Нужен там, где элемент не должен становиться
+   containing block'ом для своих `position: fixed` потомков.
+
+   Механика, стоившая двух сессий отладки (INSIGHTS.md, 2026-08-23): последний
+   кадр ui-fade-in — `transform: translateY(0)`, а `animation-fill-mode: both`
+   оставляет последний кадр применённым НАВСЕГДА. Элемент вечно держит
+   трансформацию, хотя анимация отыграла за 0.4s, и любой fixed-потомок
+   отсчитывается от него, а не от экрана. На .ui-modal-overlay это ровно тот
+   случай: он растянут во весь экран и его собственный сдвиг на 8px всё равно
+   не виден, а вот окно внутри он ломал. */
+@keyframes ui-fade-in-plain {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 .ui-fade-in { animation: ui-fade-in var(--duration-slow) var(--ease-out) both; }
