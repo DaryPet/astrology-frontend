@@ -1,17 +1,7 @@
-/* =============================================================================
-   UI primitives — общий слой для всего приложения.
+/* UI primitives, imported once in main.jsx. Everything is built from the :root
+   tokens in index.css — a hard-coded colour or size here means a token is missing. */
 
-   Импортируется один раз в main.jsx, поэтому доступен везде без per-file
-   импортов. Префикс `ui-` — чтобы не столкнуться ни с глобальными классами
-   index.css (.btn, .card, .loading, .error), ни с dashboard-специфичными `db-`.
-
-   Всё оформление берётся из токенов :root в index.css. Хардкод цвета или
-   размера здесь — повод завести токен, а не написать значение.
-   ============================================================================= */
-
-/* ---------------------------------------------------------------------------
-   Карточки и секции
-   --------------------------------------------------------------------------- */
+/* --- Cards and sections --- */
 
 .ui-card {
   background: var(--bg-card);
@@ -77,9 +67,7 @@
 .ui-muted { color: var(--text-secondary); }
 .ui-accent { color: var(--accent); }
 
-/* ---------------------------------------------------------------------------
-   Раскладка
-   --------------------------------------------------------------------------- */
+/* --- Layout --- */
 
 .ui-row {
   display: flex;
@@ -99,9 +87,7 @@
 
 .ui-stack--loose { gap: var(--space-4); }
 
-/* ---------------------------------------------------------------------------
-   Кнопки
-   --------------------------------------------------------------------------- */
+/* --- Buttons --- */
 
 .ui-btn {
   display: inline-flex;
@@ -161,9 +147,7 @@
 
 .ui-btn--block { width: 100%; }
 
-/* ---------------------------------------------------------------------------
-   Поля ввода
-   --------------------------------------------------------------------------- */
+/* --- Inputs --- */
 
 .ui-field { margin-bottom: var(--space-4); }
 
@@ -188,8 +172,7 @@
 .ui-input:disabled,
 .ui-select:disabled { opacity: 0.5; cursor: not-allowed; }
 
-/* Подсказка «здесь можно кликнуть». Пунктирная линия слева читается как
-   приглашение к действию и не спорит с заголовком секции. */
+/* The dashed left rule reads as "clickable" without competing with the heading. */
 .ui-hint-clickable {
   margin: 0 0 var(--space-5) 0;
   padding-left: var(--space-3);
@@ -205,22 +188,17 @@
   margin-top: var(--space-1);
 }
 
-/* ---------------------------------------------------------------------------
-   Таблицы. Обёртка обязательна: на узком экране таблица скроллится внутри
-   себя, а не растягивает страницу по горизонтали.
-   --------------------------------------------------------------------------- */
+/* --- Tables. The wrapper is required: it lets a wide table scroll inside itself
+   instead of stretching the whole page sideways. --- */
 
 .ui-table-wrap {
   overflow-x: auto;
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
   -webkit-overflow-scrolling: touch;
-  /* Аффорданса прокрутки: тень у правого края, пока есть что листать.
-     На тач-устройстве полосы прокрутки нет вовсе, и без этого признака
-     «таблицу можно двигать вбок» приходится угадывать.
-     Приём — две пары фонов: непрозрачные «маски» цвета подложки прибиты к
-     краям через background-attachment: local, а тени — scroll. Когда контейнер
-     прокручен в край, маска накрывает тень. Чистый CSS, без слушателей.  */
+  /* Scroll affordance without JS: opaque masks pinned to the edges with
+     background-attachment: local, shadows with scroll — at either end the mask
+     covers the shadow. */
   background-color: var(--bg-card);
   background-image:
     linear-gradient(to right, var(--bg-card) 30%, rgba(0, 0, 0, 0)),
@@ -233,15 +211,12 @@
   background-attachment: local, local, scroll, scroll;
 }
 
-/* Фон переехал на обёртку, иначе непрозрачная таблица накрыла бы тени.
-   Цвет тот же (--bg-card), поэтому вид таблиц не меняется. */
+/* The background lives on the wrapper; an opaque table would cover the shadows. */
 .ui-table-wrap > table {
   background: transparent;
 }
 
-/* Для таблиц, у которых своей рамки не было и появление её было бы видимым
-   изменением оформления (напр. таблица аспектов в DailyForecastPanel).
-   Нужна только прокрутка, не оправа. */
+/* For tables that had no border of their own — scrolling only, no frame. */
 .ui-table-wrap--plain {
   border: none;
   border-radius: 0;
@@ -284,7 +259,7 @@
 .ui-table__center { text-align: center; }
 .ui-table__strong { font-weight: 700; color: var(--text-primary); }
 
-/* Кнопка-строка списка (история анализов, выбор записи) */
+/* Row-button in a list (analysis history, record picker) */
 .ui-listbtn {
   text-align: left;
   padding: var(--space-2) var(--space-3);
@@ -305,7 +280,7 @@
   font-weight: 600;
 }
 
-/* Кнопка, выглядящая ссылкой */
+/* Button that looks like a link */
 .ui-linklike {
   margin-left: var(--space-2);
   background: none;
@@ -320,7 +295,7 @@
 .ui-linklike:hover { color: var(--accent-glow); }
 .ui-linklike:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-/* Списки аспектов / планет */
+/* Aspect / planet lists */
 .ui-list {
   margin: 0;
   padding-left: var(--space-5);
@@ -339,9 +314,7 @@
   margin-left: var(--space-2);
 }
 
-/* ---------------------------------------------------------------------------
-   Чипы, бейджи, показатели
-   --------------------------------------------------------------------------- */
+/* --- Chips, badges, metrics --- */
 
 .ui-chip {
   display: inline-flex;
@@ -372,7 +345,7 @@
   color: var(--text-primary);
 }
 
-/* Сетка плиток (планеты, аспекты) */
+/* Tile grid (planets, aspects) */
 .ui-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -380,9 +353,8 @@
 }
 .ui-grid--loose { gap: var(--space-4); }
 
-/* Двое партнёров в синастрии — строго две колонки, слева и справа.
-   ui-grid здесь не подходит: auto-fill minmax(280px, 1fr) в широком
-   контейнере создаёт больше двух колонок, и оба блока прижимаются влево. */
+/* Exactly two columns. ui-grid does not fit: auto-fill makes more than two in a
+   wide container and pushes both blocks to the left. */
 .synastry-people {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -402,7 +374,7 @@
   color: var(--text-secondary);
 }
 
-/* Кружок-маркер перед заголовком секции */
+/* Dot marker before a section heading */
 .ui-dot {
   width: 24px;
   height: 24px;
@@ -421,9 +393,7 @@
   .ui-grid3 { grid-template-columns: 1fr 1fr; }
 }
 
-/* ---------------------------------------------------------------------------
-   Состояния: загрузка, пусто, ошибка
-   --------------------------------------------------------------------------- */
+/* --- States: loading, empty, error --- */
 
 .ui-skeleton {
   background: linear-gradient(90deg, var(--bg-secondary) 25%, var(--border) 50%, var(--bg-secondary) 75%);
@@ -499,16 +469,12 @@
   color: var(--error);
 }
 
-/* ---------------------------------------------------------------------------
-   Модальные окна. До этой правки каждая из шести модалок описывала оверлей и
-   контейнер своим inline-стилем — отсюда разные затемнения (0.5 против 0.7),
-   разные радиусы и разная ширина.
-   --------------------------------------------------------------------------- */
+/* --- Modals --- */
 
 .ui-modal-overlay {
   position: fixed;
   inset: 0;
-  /* Нижняя кромка модалки не должна попадать под «домашнюю полоску». */
+  /* Keeps the modal's bottom edge clear of the home indicator. */
   padding-bottom: max(var(--space-4), env(safe-area-inset-bottom));
   background: var(--overlay-bg);
   display: flex;
@@ -516,8 +482,8 @@
   justify-content: center;
   z-index: var(--z-modal);
   padding: var(--space-4);
-  /* Именно -plain, не ui-fade-in: transform в последнем кадре сделал бы оверлей
-     containing block'ом для окна внутри. См. комментарий у @keyframes. */
+  /* -plain, not ui-fade-in: a transform in the last frame would make the overlay a
+     containing block for the window inside it. */
   animation: ui-fade-in-plain var(--duration-fast) var(--ease-out) both;
   backdrop-filter: blur(2px);
 }
@@ -588,39 +554,21 @@
 }
 .ui-btn--danger:hover:not(:disabled) { transform: translateY(-2px); box-shadow: var(--shadow-md); }
 
-/* --- Модалки на узком экране -----------------------------------------------
-   До 600px окно занимает всю ширину экрана и почти всю высоту. Причина не в
-   моде на bottom-sheet: в PlanetAnalysisModal и AspectAnalysisModal идёт
-   длинный текст стрима, и `max-width: 400px` + `max-height: 80vh` посреди
-   экрана оставляли на него узкую форточку.
-
-   По вертикали окно центрируется — ровно так же, как на десктопе. Раньше оно
-   было прижато к низу (`position: fixed; bottom: 0`), и это и было источником
-   бага: см. комментарий у .ui-modal ниже. */
+/* --- Modals on narrow screens: full width, centred vertically as on desktop.
+   The stream text in the analysis modals needs the height. --- */
 @media (max-width: 599px) {
-  /* Оверлей остаётся flex-контейнером и центрирует окно сам. Прежняя причина
-     перевести его в `display: block` — у flex-элемента `min-width: auto`, то
-     есть окно не может стать уже своего min-content, и любой широкий потомок
-     раздувал его шире экрана — закрыта явными `min-width: 0` у .ui-modal и у
-     всех её потомков (правила ниже). Ширина окна при этом задана явным
-     пикселем (--ui-modal-w) и от содержимого не зависит вообще. */
+  /* Stays a flex container; the explicit min-width: 0 below is what stops a wide
+     child from blowing the window past the screen edge. */
   .ui-modal-overlay {
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 0;
-    /* backdrop-filter создаёт containing block для fixed-потомков — ровно та
-       же механика, что увела шесть модалок вниз страницы (INSIGHTS.md,
-       2026-08-23). На мобильном размытие подложки и без того дорого. */
+    /* backdrop-filter would make the overlay a containing block for fixed children —
+       the bug from INSIGHTS.md, 2026-08-23. */
     backdrop-filter: none;
-    /* 2026-08-24: на длинной странице (репорт — модалка удаления карты)
-       `position: fixed; inset: 0` здесь вёл себя так, будто приклеен не к
-       экрану, а ко всему документу — окно внутри пряталось в самом низу
-       страницы вместо того чтобы появиться перед глазами. Через
-       useModalWidthVar координаты считает JS (scrollY/visualViewport) и
-       кладёт их сюда явным пикселем — это не зависит от того, что именно
-       сбивало fixed. Прямоугольник оверлея после этого точно совпадает с
-       видимой областью экрана, поэтому центр оверлея = центр экрана. */
+    /* position: fixed behaved here as if anchored to the document rather than the
+       screen; useModalViewport writes the visible rect in explicit pixels instead. */
     position: absolute;
     top: var(--ui-modal-overlay-top, 0);
     left: 0;
@@ -632,82 +580,40 @@
 
   .ui-modal,
   .ui-modal--wide {
-    /* 2026-08-24, второй заход. Окно НЕ должно быть `position: fixed`.
-       Раньше здесь стояло `position: fixed; bottom: 0`, и от какой коробки
-       считается этот bottom — было неопределённо: у .ui-modal-overlay
-       `animation: ui-fade-in ... both` держал transform последнего кадра
-       навечно и делал оверлей containing block'ом (INSIGHTS.md, 2026-08-23),
-       а `html { overflow-x: clip }` (index.css) делал clip-контейнером сам
-       <html>. Кто выигрывал — зависело от модалки: анализ планет вставал по
-       центру, модалка удаления карты улетала в подвал страницы, а модалка
-       ухода с анализа — в самый верх документа.
-
-       Оба подозреваемых с тех пор убраны (оверлей переведён на
-       @keyframes ui-fade-in-plain, `overflow-x: clip` снят — см. index.css),
-       но правило ниже сохранено: оно и было настоящим фиксом, потому что не
-       зависит от того, кто из них был виноват.
-
-       Обычный поток внутри flex-оверлея снимает вопрос целиком: элемент без
-       position: fixed/absolute не зависит ни от какого containing block'а,
-       его кладёт flex родителя. Оверлей же выставлен по видимой области
-       экрана явным пикселем (см. выше).
-
-       Ширина не меняется: `width: var(--ui-modal-w, 100%)` — JS
-       (`useModalWidthVar`) мерит честный documentElement.clientWidth, потому
-       что вьюпорт умел раздуваться (см. .header-panel-clip в index.css). */
+    /* Not position: fixed — which box its offsets resolved against was ambiguous, and
+       the window landed differently per modal. Normal flow in a flex overlay
+       removes the question instead of answering it. */
     position: relative;
     left: auto;
     right: auto;
     bottom: auto;
     width: var(--ui-modal-w, 100%);
     max-width: var(--ui-modal-w, 100%);
-    /* Без этого flex-элемент не сможет стать уже своего min-content и
-       широкий потомок снова раздует окно за край экрана. */
+    /* Without this a flex item cannot shrink below its min-content, and a wide child
+       pushes the window past the screen edge. */
     min-width: 0;
     flex: 0 0 auto;
     max-height: 92vh;
     max-height: 92dvh;
     overflow-y: auto;
     overflow-x: auto;
-    /* overflow-x: hidden раньше обрезал таблицы и длинные строки LLM-текста
-       без возможности прокрутить — контент вылазил за экран. auto даёт
-       горизонтальный скролл, когда нужно, и убирает его, когда всё помещается.
-       Ширину окна содержимое при этом не задаёт: она задана явно выше. */
-    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-    border-bottom: none;
-    padding: var(--space-6) var(--gutter) calc(var(--space-8) + env(safe-area-inset-bottom));
+    /* auto, not hidden: hidden clipped wide tables and long LLM lines with no way to
+       scroll them into view. */
+    /* All four corners: the window floats mid-screen, it is not a bottom sheet. */
+    border-radius: var(--radius-xl);
+    padding: var(--space-6) var(--gutter);
   }
 
-  /* Длинное слово или ссылка без пробелов иначе задаёт min-content шире экрана
-     и возвращает ту же болезнь через содержимое. */
+  /* A long unbroken word would otherwise set min-content wider than the screen. */
   .ui-modal * {
     min-width: 0;
     overflow-wrap: break-word;
   }
-
-  /* Полоска-хват над заголовком. */
-  .ui-modal::before {
-    content: '';
-    display: block;
-    width: 36px;
-    height: 4px;
-    margin: 0 auto var(--space-4);
-    border-radius: var(--radius-full);
-    background: var(--border);
-  }
 }
 
 
-/* ---------------------------------------------------------------------------
-   Фоновое небо (StarfieldBackground)
-
-   Слой лежит под всем контентом через z-index: -1 — это ставит его выше
-   градиента body, но ниже любого элемента страницы, и не требует трогать
-   z-index у самого контента.
-
-   Показывается только в тёмной теме: на светлом фоне звёзды читаются как
-   грязь. Все анимации переиспользованы из index.css.
-   --------------------------------------------------------------------------- */
+/* --- Background sky (StarfieldBackground). Dark theme only: on a light
+   background the stars read as dirt. --- */
 
 .starfield {
   display: none;
@@ -722,10 +628,8 @@
   pointer-events: none;
 }
 
-/* Орбита кометы — окружность заметно больше экрана, чтобы комета обходила
-   страницу по краю. Пунктирная рамка, которая есть у .live-sky-orbit вокруг
-   колеса, здесь не нужна: на всю страницу это был бы кривой круг поверх
-   контента. */
+/* A circle much larger than the screen, so the comet travels around the page
+   edge. No dashed ring here — at page scale it would sit over the content. */
 .starfield__orbit {
   position: absolute;
   top: 50%;
@@ -738,8 +642,7 @@
   will-change: transform;
 }
 
-/* Звёзды на фоне тусклее, чем вокруг колеса: там они акцент ожидания,
-   здесь — фон, который не должен спорить с текстом. */
+/* Dimmer than the stars around the wheel: background here, not an accent. */
 .starfield__star {
   opacity: 0.1;
 }
@@ -748,10 +651,8 @@
   top: 14%;
 }
 
-/* На узком экране половина звёзд лишняя — и по виду, и по кадрам.
-   Первые 20 в массиве покрывают экран сами по себе. */
-/* 768, а не 899, намеренно: это эвристика нагрузки, а не точка слома
-   раскладки — на планшете лишние звёзды по кадрам не мешают. */
+/* Half the stars are redundant on a narrow screen; the first 20 already cover it. */
+/* 768 rather than 899 on purpose: a load heuristic, not a layout breakpoint. */
 @media (max-width: 768px) {
   .starfield__star:nth-of-type(n + 21) { display: none; }
   .starfield__orbit { width: 150vmax; height: 150vmax; margin: -75vmax 0 0 -75vmax; }
@@ -766,25 +667,16 @@
   .starfield__shooting-star { opacity: 0; }
 }
 
-/* ---------------------------------------------------------------------------
-   Появление
-   --------------------------------------------------------------------------- */
+/* --- Entrance --- */
 
 @keyframes ui-fade-in {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Тот же выход, но БЕЗ transform. Нужен там, где элемент не должен становиться
-   containing block'ом для своих `position: fixed` потомков.
-
-   Механика, стоившая двух сессий отладки (INSIGHTS.md, 2026-08-23): последний
-   кадр ui-fade-in — `transform: translateY(0)`, а `animation-fill-mode: both`
-   оставляет последний кадр применённым НАВСЕГДА. Элемент вечно держит
-   трансформацию, хотя анимация отыграла за 0.4s, и любой fixed-потомок
-   отсчитывается от него, а не от экрана. На .ui-modal-overlay это ровно тот
-   случай: он растянут во весь экран и его собственный сдвиг на 8px всё равно
-   не виден, а вот окно внутри он ломал. */
+/* Same fade without transform. `animation-fill-mode: both` keeps the last frame
+   forever, so a transform there would permanently make the element a containing
+   block for fixed children (INSIGHTS.md, 2026-08-23). */
 @keyframes ui-fade-in-plain {
   from { opacity: 0; }
   to   { opacity: 1; }
@@ -792,9 +684,7 @@
 
 .ui-fade-in { animation: ui-fade-in var(--duration-slow) var(--ease-out) both; }
 
-/* ---------------------------------------------------------------------------
-   Мобильный
-   --------------------------------------------------------------------------- */
+/* --- Mobile --- */
 
 @media (max-width: 899px) {
   .ui-card { padding: var(--space-4) var(--gutter); }
@@ -803,17 +693,15 @@
   .ui-table td { padding: var(--space-2) var(--space-3); }
 }
 
-/* ---------------------------------------------------------------------------
-   Тач: размеры и hover
-   --------------------------------------------------------------------------- */
+/* --- Touch: hit areas and hover --- */
 
 @media (pointer: coarse) {
-  /* Крестик модалки был padding: 4px вокруг иконки — около 24px. */
+  /* The modal close button was padding: 4px around the icon — about 24px. */
   .ui-modal__close {
     padding: var(--space-3);
   }
 
-  /* Кнопка-ссылка вообще не имела площади (padding: 0). */
+  /* The link-button had no hit area at all (padding: 0). */
   .ui-linklike {
     padding: var(--space-2) 0;
   }
@@ -829,9 +717,7 @@
   .ui-listbtn:hover { border-color: var(--border); background: none; }
 }
 
-/* ---------------------------------------------------------------------------
-   Уважение к настройке «меньше движения»
-   --------------------------------------------------------------------------- */
+/* --- Respect "reduce motion" --- */
 
 @media (prefers-reduced-motion: reduce) {
   .ui-skeleton { animation: none; }

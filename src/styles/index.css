@@ -1,6 +1,7 @@
 :root {
-  /* --- Цвета. Имена и значения этих десяти не менялись: на них завязано
-         1700 строк ниже по файлу (openspec: premium-design-system, Decision 6) --- */
+  /* --- Colours. The names and values of these ten have not changed: 1700 lines
+         further down this file depend on them (openspec: premium-design-system,
+         Decision 6) --- */
   --bg-primary: #f8f9fc;
   --bg-secondary: #eef1f7;
   --bg-card: #ffffff;
@@ -12,8 +13,8 @@
   --success: #10b981;
   --error: #ef4444;
 
-  /* --- Производные от акцента: раньше эти значения были рассыпаны
-         хардкодом по dashboard.css в трёх десятках мест --- */
+  /* --- Derived from the accent colour: these values used to be scattered as
+         hard-coded literals across three dozen places in dashboard.css --- */
   --accent-2: #6366f1;
   --accent-soft: rgba(124, 58, 237, 0.07);
   --accent-soft-hover: rgba(124, 58, 237, 0.12);
@@ -23,10 +24,10 @@
   --accent-grad-warm: linear-gradient(135deg, #7c3aed 0%, #9333ea 100%);
   --focus-ring: #c084fc;
 
-  /* Партнёры в синастрии. Один источник цвета на форму и легенду.
-     Колесо (SynastryChartComponentV2: #243b6b / #8a4b1f) намеренно оставлено
-     как есть — там цвета подобраны под читаемость линий на светлом чертеже,
-     см. plans/home-synastry-design.md. */
+  /* Synastry partners. A single source of colour for the form and the legend.
+     The wheel (SynastryChartComponentV2: #243b6b / #8a4b1f) is deliberately
+     left alone — its colours are tuned for line legibility on the light
+     drawing, see plans/home-synastry-design.md. */
   --person-1: #7c3aed;
   --person-2: #0ea5a4;
   --warning: #f59e0b;
@@ -36,21 +37,22 @@
   --error-soft: rgba(239, 68, 68, 0.08);
   --error-border: rgba(239, 68, 68, 0.3);
   --overlay-bg: rgba(26, 29, 46, 0.45);
-  /* Хедер тёмный в ОБЕИХ темах — так было и до редизайна. Вынесено в токены,
-     чтобы это было решением, а не случайностью: раньше цвет был захардкожен
-     в .header, а белый текст навигации дописан отдельным правилом для
-     светлой темы. Сделать хедер светлым = поменять эти две строки. */
+  /* The header is dark in BOTH themes — as it was before the redesign. Pulled
+     out into tokens so that this is a decision rather than an accident: the
+     colour used to be hard-coded in .header, with white nav text bolted on by
+     a separate light-theme rule. Making the header light = changing these two
+     lines. */
   --header-bg: rgba(10, 10, 15, 0.8);
   --header-fg: #ffffff;
 
-  /* --- Шрифты ---
-     Антиква на заголовках была отвергнута: Cormorant Garamond при том же
-     кегле читается мельче и тоньше гротеска. Заголовки и интерфейс — один
-     шрифт. Чтобы вернуть парный шрифт, достаточно поменять --font-display. */
+  /* --- Fonts ---
+     A serif for headings was rejected: at the same size Cormorant Garamond
+     reads smaller and thinner than the sans. Headings and UI share one family.
+     To go back to a font pairing, change --font-display and nothing else. */
   --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
   --font-display: var(--font-ui);
 
-  /* --- Шкала отступов, шаг 4px --- */
+  /* --- Spacing scale, 4px step --- */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -64,7 +66,7 @@
   --space-11: 80px;
   --space-12: 96px;
 
-  /* --- Радиусы --- */
+  /* --- Radii --- */
   --radius-xs: 4px;
   --radius-sm: 6px;
   --radius-md: 10px;
@@ -72,13 +74,13 @@
   --radius-xl: 20px;
   --radius-full: 999px;
 
-  /* --- Типографика ---
-     Шкала резиновая: между 320 и 1200 кегли едут плавно, без ступенек на
-     брейкпоинтах. ВЕРХНЯЯ ГРАНИЦА КАЖДОГО clamp РАВНА ПРЕЖНЕМУ ПИКСЕЛЬНОМУ
-     ЗНАЧЕНИЮ — на ширине ≥1200 (и вообще везде, где предпочтительное значение
-     упирается в максимум) типографика та же, что была (Decision 3).
-     Формула предпочтительного значения выведена по двум точкам: минимум на
-     320px, максимум на 1200px. */
+  /* --- Typography ---
+     A fluid scale: between 320 and 1200 the sizes travel smoothly, with no
+     steps at the breakpoints. THE UPPER BOUND OF EVERY clamp EQUALS THE
+     PREVIOUS PIXEL VALUE — at ≥1200 (and anywhere else the preferred value
+     hits the maximum) the typography is exactly what it was (Decision 3).
+     The preferred value is derived from two points: the minimum at 320px and
+     the maximum at 1200px. */
   --text-xs: clamp(10px, 9.6px + 0.13vw, 11px);
   --text-sm: clamp(12px, 11.6px + 0.11vw, 13px);
   --text-base: clamp(13px, 12.6px + 0.11vw, 14px);
@@ -95,22 +97,22 @@
   --tracking-wide: 0.08em;
   --tracking-caps: 0.12em;
 
-  /* --- Тени. В светлой теме чёрный с низкой альфой почти не виден,
-         поэтому значения здесь и в тёмной теме заметно разные --- */
+  /* --- Shadows. In the light theme black at low alpha is barely visible,
+         which is why the values here and in the dark theme differ noticeably --- */
   --shadow-sm: 0 1px 3px rgba(26, 29, 46, 0.08);
   --shadow-md: 0 4px 14px rgba(26, 29, 46, 0.10);
   --shadow-lg: 0 12px 32px rgba(26, 29, 46, 0.14);
   --shadow-glow: 0 2px 10px rgba(124, 58, 237, 0.35);
   --shadow-glow-lg: 0 6px 22px rgba(124, 58, 237, 0.5);
 
-  /* --- Длительности --- */
+  /* --- Durations --- */
   --duration-fast: 120ms;
   --duration-base: 200ms;
   --duration-slow: 320ms;
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 
-  /* --- Слои. Значения совпадают с уже использовавшимися в коде,
-         чтобы ничего не переехало --- */
+  /* --- Layers. The values match the ones already used in the code,
+         so that nothing shifts --- */
   --z-sidebar: 50;
   --z-overlay: 55;
   --z-burger: 58;
@@ -119,34 +121,35 @@
   --z-float: 100;
   --z-modal: 1000;
 
-  /* --- Размеры оболочки ---
-     `--header-h` — высота шапки. До этого токена число 65 было захардкожено
-     в шести местах dashboard.css (top сайдбара и оверлея, три calc(100vh - 65px))
-     плюс 73 = 65 + 8 у бургера. Десктопное значение намеренно оставлено ровно
-     65px: оно описывает сегодняшнее поведение, а менять внешний вид на ≥1200
-     этот change не имеет права (design.md, Decision 3). На мобильном шапка
-     получает собственную высоту — см. переопределение ниже по файлу. */
+  /* --- Shell dimensions ---
+     `--header-h` is the header height. Before this token the number 65 was
+     hard-coded in six places in dashboard.css (the sidebar and overlay `top`,
+     three `calc(100vh - 65px)`) plus 73 = 65 + 8 on the burger. The desktop
+     value is deliberately kept at exactly 65px: it describes today's behaviour,
+     and this change is not allowed to alter the appearance at ≥1200
+     (design.md, Decision 3). On mobile the header gets its own height — see
+     the override further down this file. */
   --header-h: 65px;
 
-  /* `--gutter` — единое боковое поле страницы. До него их было четыре разных:
-     20px у .container, 16px у .db-content на мобильном, 16px у .ui-card и
-     18/16px у .db-planet-section — на узком экране левые края блоков не
-     совпадали между собой. */
+  /* `--gutter` is the single horizontal page inset. There used to be four
+     different ones: 20px on .container, 16px on .db-content on mobile, 16px on
+     .ui-card and 18/16px on .db-planet-section — on a narrow screen the left
+     edges of these blocks did not line up with each other. */
   --gutter: 20px;
 }
 
 /* =============================================================================
-   ТАБЛИЦА БРЕЙКПОИНТОВ — единственный источник правды на три CSS-файла.
-   Заведена в openspec/changes/adaptive-layout (Decision 2). Новых значений не
-   изобретать; 560 выведен из обихода, он не совпадал ни с чем.
+   BREAKPOINT TABLE — the single source of truth for all three CSS files.
+   Established in openspec/changes/adaptive-layout (Decision 2). Do not invent
+   new values; 560 has been retired, it did not match anything.
 
-     XS   320–599   одна колонка; --gutter 12–16; колесо во всю ширину
-     MD   600–899   две колонки в формах, партнёрах синастрии, статах карты
-     LG   900–1199  возвращается сайдбар 268px; мобильная шапка выключается
-     XL   ≥1200     текущий десктоп — не меняется (Decision 3)
+     XS   320–599   single column; --gutter 12–16; wheel spans the full width
+     MD   600–899   two columns in forms, synastry partners, chart stats
+     LG   900–1199  the 268px sidebar returns; the mobile header switches off
+     XL   ≥1200     the current desktop — unchanged (Decision 3)
 
-   Размеры едут через clamp(), брейкпоинты меняют только расстановку. Если
-   размер прыгает на брейкпоинте — это ошибка, его место в clamp().
+   Sizes travel via clamp(); breakpoints only change the arrangement. If a size
+   jumps at a breakpoint, that is a bug — it belongs in a clamp().
    ============================================================================= */
 
 @media (max-width: 413px) {
@@ -181,30 +184,29 @@
   box-sizing: border-box;
 }
 
-/* 2026-08-24: ЗДЕСЬ БЫЛО `html { overflow-x: clip }` — СНЯТО НАРОЧНО.
-   Прежде чем возвращать, прочитайте это.
+/* A safety net against horizontal overflow — on HTML, NOT on body.
+   When the root element's overflow is `visible`, the browser TAKES the value
+   from body, propagates it to the viewport and assigns `visible` to body
+   itself — meaning a rule on body clips nothing at all.
 
-   Ставилось страховочной сеткой от горизонтального переполнения под конкретную
-   причину: закрытая панель мобильного меню (.header-panel, `translateX(100%)`)
-   висела за правым краем и расширяла вьюпорт с 430 до 750, из-за чего модалка
-   анализа — честно занимавшая весь вьюпорт — выглядела обрезанной. В том же
-   комментарии тогда и было записано: «сетка не заменяет исправление причины».
+   `clip` specifically, not `hidden`: `hidden` would create a scroll container
+   and break `position: sticky` on .header. `clip` creates no scroll container,
+   and `overflow-x: clip` alongside `overflow-y: visible` leaves vertical
+   scrolling untouched.
 
-   Причину с тех пор исправили root-cause'ом: .header-panel-clip ниже —
-   статичная коробка с `overflow: hidden` ровно по месту панели, она поглощает
-   overflow-вклад анимируемого потомка на месте. Плюс широкие таблицы убраны в
-   .ui-table-wrap (ui.css). Сетка после этого страховала уже закрытую дыру.
+   2026-08-24: the rule was removed as an experiment, testing the hypothesis
+   that it was what broke `position: fixed` on the modal overlay. The hypothesis
+   did not hold, and a new bug surfaced immediately (the planet-analysis modal
+   started opening somewhere other than where the user clicked), so the line is
+   back. The real cause of the shift turned out to be unlocked page scrolling —
+   fixed in useModalViewport.ts.
 
-   Цена, из-за которой снимаем: `overflow: clip` на корневом элементе делает
-   <html> clip-контейнером, и это один из двух подозреваемых в том, почему
-   `position: fixed` у оверлея модалок вёл себя как привязанный к документу, а
-   не к экрану (второй — `animation ... both` с transform в последнем кадре,
-   он обезврежен отдельно, см. ui-fade-in-plain в ui.css). Пока сетка висит,
-   проверить `fixed` честно невозможно, а из-за неё в проекте живёт
-   JS-заплатка useModalWidthVar на ~90 строк.
-
-   Если горизонтальный скролл вернётся — искать элемент-виновник и чинить его,
-   а не возвращать сетку. Диагностика: см. INSIGHTS.md. */
+   A safety net is not a substitute for fixing the cause: the specific culprit
+   behind an overflow is tracked down separately (that is how .header-panel-clip
+   below was found). */
+html {
+  overflow-x: clip;
+}
 
 body {
   font-family: var(--font-ui);
@@ -214,8 +216,8 @@ body {
   min-height: 100dvh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  /* В светлой теме верхнее пятно было тёмно-синим (rgba(26,26,46,.3)) —
-     наследие тёмной темы, из-за него верх страницы уходил в грязь. */
+  /* In the light theme the top blotch used to be dark blue (rgba(26,26,46,.3)) —
+     a leftover from the dark theme that turned the top of the page muddy. */
   background-image:
     radial-gradient(ellipse at top, rgba(124, 58, 237, 0.06) 0%, transparent 55%),
     radial-gradient(circle at 20% 80%, rgba(124, 58, 237, 0.07) 0%, transparent 30%),
@@ -238,10 +240,10 @@ body {
 .container {
   max-width: 1200px;
   margin: 0 auto;
-  /* Единое боковое поле (--gutter) вместо прежних 20px: на узком экране левые
-     края .container, .db-content, .ui-card и .db-planet-section обязаны
-     совпадать. max() с safe-area — для альбомной ориентации на iPhone, где
-     контент иначе уезжает под «уши». */
+  /* One shared horizontal inset (--gutter) instead of the previous 20px: on a
+     narrow screen the left edges of .container, .db-content, .ui-card and
+     .db-planet-section must line up. The max() with safe-area is for landscape
+     on iPhone, where content otherwise slides under the notch. */
   padding: 0 var(--gutter);
   padding-left: max(var(--gutter), env(safe-area-inset-left));
   padding-right: max(var(--gutter), env(safe-area-inset-right));
@@ -289,12 +291,13 @@ body {
   transition: color 0.2s;
 }
 
-/* --- Мобильное меню шапки -------------------------------------------------
-   Разметка одна на все ширины. На десктопе .header-panel объявлена
-   `display: contents`, то есть в раскладке её как будто нет: .nav и
-   .language-dropdown остаются прямыми flex-детьми .header-content ровно как
-   до этой правки. Ниже 900px та же обёртка становится выездной панелью.
-   Бургер, кнопка закрытия и оверлей на десктопе не существуют вовсе. */
+/* --- Mobile header menu ----------------------------------------------------
+   One piece of markup for every width. On desktop .header-panel is declared
+   `display: contents`, i.e. it is absent from layout: .nav and
+   .language-dropdown remain direct flex children of .header-content exactly as
+   they were before this change. Below 900px that same wrapper becomes a slide-
+   out panel. The burger, the close button and the overlay do not exist at all
+   on desktop. */
 .header-panel,
 .header-panel-clip {
   display: contents;
@@ -306,11 +309,12 @@ body {
   display: none;
 }
 
-/* Кнопка темы. Значения — ровно те, что были в inline-стиле кнопки до правки,
-   поэтому на десктопе она рендерится байт-в-байт как раньше. Перенесены в
-   класс по одной причине: inline-стиль невозможно переопределить в @media,
-   а на мобильном кнопке нужен тач-размер 44px. Шрифт намеренно НЕ задан —
-   в inline-стиле его тоже не было, кнопка берёт браузерный по умолчанию. */
+/* Theme button. The values are exactly the ones that were in the button's
+   inline style before this change, so on desktop it renders byte for byte as
+   before. They moved into a class for one reason: an inline style cannot be
+   overridden in @media, and on mobile the button needs a 44px touch target.
+   The font is deliberately NOT set — it was not set in the inline style
+   either, so the button uses the browser default. */
 .header-icon-btn {
   display: flex;
   align-items: center;
@@ -326,14 +330,15 @@ body {
   line-height: 1;
 }
 
-/* Было inline-стилем на .language-dropdown. Вынесено, чтобы в @media его
-   можно было снять без !important. */
+/* Used to be an inline style on .language-dropdown. Extracted so that it can
+   be removed in @media without !important. */
 .language-dropdown {
   margin-left: 20px;
 }
 
-/* Выпадающее меню языка. Значения перенесены из inline-стиля один в один
-   (z-index 1000 — это ровно --z-modal), поэтому на десктопе меню то же самое. */
+/* Language dropdown. The values are carried over from the inline style one
+   for one (z-index 1000 is exactly --z-modal), so on desktop the menu is
+   unchanged. */
 .language-menu {
   position: absolute;
   top: 100%;
@@ -351,13 +356,14 @@ body {
   color: var(--text-primary);
 }
 
-/* --- Шапка ниже 900px -----------------------------------------------------
-   Логотип слева, справа две круглые кнопки 44px: тема и бургер. Навигация,
-   аккаунт и выбор языка уезжают в правую панель. Порог 900, а не 768: см.
+/* --- Header below 900px ---------------------------------------------------
+   Logo on the left, two round 44px buttons on the right: theme and burger.
+   Navigation, account and language selection move into the right-hand panel.
+   The threshold is 900 rather than 768: see
    openspec/changes/adaptive-layout/design.md, Decision 2. */
 @media (max-width: 899px) {
-  /* Шапка сама задаёт свою высоту, поэтому токен здесь не измерение, а
-     объявление: 64px включают нижнюю границу (box-sizing: border-box). */
+  /* The header sets its own height, so the token here is not a measurement but
+     a declaration: 64px includes the bottom border (box-sizing: border-box). */
   :root {
     --header-h: 64px;
   }
@@ -372,8 +378,9 @@ body {
     gap: var(--space-2);
   }
 
-  /* Прижимает пару кнопок вправо без изменения разметки: панель и оверлей
-     из потока выпадают, в строке остаются логотип, тема и бургер. */
+  /* Pushes the pair of buttons to the right without changing the markup: the
+     panel and the overlay drop out of flow, leaving the logo, theme and burger
+     on the line. */
   .logo {
     margin-right: auto;
     font-size: 1.25rem;
@@ -402,9 +409,9 @@ body {
     font-size: 18px;
   }
 
-  /* Открытая панель накрыла бы бургер, поэтому он убирается флагом из JSX —
-     комбинатора «следующий соседний с состоянием» в CSS нет. Тот же приём,
-     что у .db-sidebar-burger--hidden. */
+  /* An open panel would cover the burger, so it is removed by a flag from JSX —
+     CSS has no "next sibling with state" combinator. Same trick as
+     .db-sidebar-burger--hidden. */
   .header-burger--hidden {
     display: none;
   }
@@ -415,19 +422,19 @@ body {
     outline-offset: 2px;
   }
 
-  /* Статичный клиппер: сама коробка не анимируется и transform не имеет,
-     поэтому её собственные границы не могут никуда «утечь». Ровно то же
-     место, что раньше занимала .header-panel (top/right/width/height/z-index) —
-     снаружи ничего не сдвинулось.
+  /* A static clipper: the box itself is never animated and has no transform, so
+     its own bounds cannot leak anywhere. It occupies exactly the place
+     .header-panel used to (top/right/width/height/z-index) — nothing moved on
+     the outside.
 
-     ЗАКРЫТАЯ ПАНЕЛЬ ОБЯЗАНА ИСЧЕЗАТЬ ИЗ РАСКЛАДКИ, а не уезжать за край:
-     прежний вариант (transform: translateX(100%) + visibility: hidden) не
-     убирал коробку из потока, и панель шириной 320px висела за границей
-     экрана, растягивая вьюпорт с 430 до 750 (window.innerWidth). Всё
-     привязанное к вьюпорту (position: fixed — оверлей и окно модалки
-     анализа) занимало эти же 750, из-за чего модалка выглядела обрезанной.
-     display: none закрывает это по определению: нет коробки — нет
-     переполнения. */
+     A CLOSED PANEL MUST DISAPPEAR FROM LAYOUT rather than slide off the edge:
+     the previous approach (transform: translateX(100%) + visibility: hidden)
+     did not remove the box from flow, so a 320px-wide panel hung past the edge
+     of the screen and stretched the viewport from 430 to 750
+     (window.innerWidth). Everything anchored to the viewport (position: fixed —
+     the overlay and the analysis modal window) then occupied those same 750,
+     which is why the modal looked cropped. display: none closes this by
+     definition: no box, no overflow. */
   .header-panel-clip {
     display: none;
     position: absolute;
@@ -437,16 +444,16 @@ body {
     height: calc(100vh - var(--header-h));
     height: calc(100dvh - var(--header-h));
     z-index: var(--z-drawer);
-    /* Та же болезнь возвращалась через анимацию ОТКРЫТИЯ: первый кадр
-       @keyframes header-panel-in ниже — transform: translateX(100%) —
-       временно ставит панель целиком за экран. Транформированный блок всё
-       равно засчитывается в scrollable overflow ближайшего предка без
-       своего overflow, а такого предка на пути до документа не было —
-       innerWidth раздувался до 750 на время анимации и, что хуже, не
-       схлопывался обратно сам (держалось до настоящего resize/поворота
-       экрана — один открытый бургер ломал модалки до конца сессии).
-       overflow: hidden здесь — статичная граница, которая эту утечку
-       перехватывает на месте, не пропуская выше по дереву. */
+    /* The same disease came back through the OPENING animation: the first frame
+       of @keyframes header-panel-in below — transform: translateX(100%) —
+       temporarily puts the panel entirely off screen. A transformed box still
+       counts towards the scrollable overflow of the nearest ancestor that has
+       its own overflow, and there was no such ancestor on the way up to the
+       document — innerWidth inflated to 750 for the duration of the animation
+       and, worse, did not collapse back on its own (it persisted until a real
+       resize or device rotation — one opened burger broke modals for the rest
+       of the session). overflow: hidden here is a static boundary that catches
+       that leak in place instead of letting it travel up the tree. */
     overflow: hidden;
   }
 
@@ -454,9 +461,9 @@ body {
     display: block;
   }
 
-  /* Сама панель заполняет клиппер и остаётся тем, чем была: колонкой с
-     анимацией выезда. Position/размеры перешли на .header-panel-clip выше —
-     здесь она просто 100% × 100% родителя. */
+  /* The panel itself fills the clipper and remains what it was: a column with a
+     slide-in animation. Position and size moved to .header-panel-clip above —
+     here it is simply 100% × 100% of its parent. */
   .header-panel {
     display: none;
     flex-direction: column;
@@ -472,9 +479,10 @@ body {
 
   .header-panel--open {
     display: flex;
-    /* Появление анимируется через animation, а не transition: из display: none
-       переход не стартует. Закрытие мгновенное — осознанный размен на
-       гарантию, что закрытая панель не существует в раскладке вообще. */
+    /* The appearance is animated with `animation` rather than `transition`: a
+       transition never starts out of display: none. Closing is instant — a
+       deliberate trade for the guarantee that a closed panel does not exist in
+       layout at all. */
     animation: header-panel-in var(--duration-slow) var(--ease-out);
   }
 
@@ -510,10 +518,11 @@ body {
     gap: var(--space-1);
   }
 
-  /* Навигация в шапке белая в обеих темах (--header-fg), а фон панели —
-     var(--bg-card), в светлой теме белый. Без этого правила ссылки были бы
-     белым по белому. Специфичность поднята выше `[data-theme="light"] .nav-link`
-     намеренно, а не за счёт порядка правил. */
+  /* Header navigation is white in both themes (--header-fg), while the panel
+     background is var(--bg-card), which is white in the light theme. Without
+     this rule the links would be white on white. The specificity is raised
+     above `[data-theme="light"] .nav-link` deliberately, rather than relying on
+     rule order. */
   .header-panel .nav-link,
   .header-panel .user-name,
   [data-theme="light"] .header-panel .nav-link,
@@ -545,7 +554,7 @@ body {
     text-align: center;
   }
 
-  /* Язык прижат к низу панели: это настройка, а не навигация. */
+  /* Language sits at the bottom of the panel: it is a setting, not navigation. */
   .header-panel .language-dropdown {
     margin-left: 0;
     margin-top: auto;
@@ -558,9 +567,9 @@ body {
     justify-content: space-between;
   }
 
-  /* Внутри панели меню разворачивается в потоке, а не absolute'ом: панель
-     скроллится (overflow-y: auto), и выпадающий вниз absolute обрезался бы
-     по её нижнему краю — селектор языка стоит последним. */
+  /* Inside the panel the menu expands in flow rather than absolutely: the panel
+     scrolls (overflow-y: auto), and an absolutely positioned dropdown would be
+     clipped by its bottom edge — the language selector is the last item. */
   .header-panel .language-menu {
     position: static;
     width: 100%;
@@ -585,8 +594,8 @@ body {
   .header-panel--open {
     animation: none !important;
   }
-  /* .chart-fullscreen и .live-sky-expand — в конце файла, рядом со своими
-     базовыми правилами: здесь они работали только за счёт !important. */
+  /* .chart-fullscreen and .live-sky-expand live at the end of the file, next to
+     their base rules: here they only worked thanks to !important. */
 }
 
 /* Hero */
@@ -596,8 +605,9 @@ body {
 }
 
 .hero h1 {
-  /* Было 3.5rem с одной ступенькой в 2rem на 768 — между 320 и 768 не менялось
-     ничего. Теперь плавно: 32px на 320, 56px на 1200 и выше (Decision 3). */
+  /* Used to be 3.5rem with a single 2rem step at 768 — nothing changed between
+     320 and 768. Now it is fluid: 32px at 320, 56px at 1200 and above
+     (Decision 3). */
   font-size: clamp(2rem, 23.3px + 2.73vw, 3.5rem);
   margin-bottom: 20px;
   background: linear-gradient(135deg, var(--text-primary), var(--accent-glow));
@@ -676,16 +686,16 @@ body {
 .btn:active:not(:disabled) { transform: translateY(0); }
 
 .btn-primary {
-  /* Градиент оставлен ровно тот, что был до рефакторинга: accent -> accent-glow
-     (фиолетовый в светло-фиолетовый). Попытка свести его к --accent-grad
-     уводила кнопку в индиго — заметно другой цвет. */
+  /* The gradient is kept exactly as it was before the refactor: accent ->
+     accent-glow (purple into light purple). Folding it into --accent-grad
+     pushed the button towards indigo — a noticeably different colour. */
   background: linear-gradient(135deg, var(--accent), var(--accent-glow));
   color: white;
   width: 100%;
-  /* border и border-radius обязаны быть здесь, а не только в .btn:
-     .btn-primary применяют и без .btn (`btn-primary btn-auth` на входе,
-     регистрации, восстановлении и смене пароля) — без этого у кнопки
-     оставались прямые углы и рамка браузера по умолчанию. */
+  /* border and border-radius must live here, not only in .btn: .btn-primary is
+     also used without .btn (`btn-primary btn-auth` on sign-in, sign-up,
+     password recovery and password reset) — without this the button kept
+     square corners and the browser's default border. */
   border: none;
   border-radius: var(--radius-md);
   font-family: inherit;
@@ -730,10 +740,10 @@ body {
   margin-bottom: 40px;
 }
 
-/* Было 400px жёстко и 300px на ≤768 — второе всё равно шире доступных на 320
-   288px, то есть мобильное значение само давало горизонтальный скролл.
-   aspect-ratio сохраняет квадрат без второй величины, которую надо было бы
-   держать синхронной с первой. */
+/* Used to be a hard 400px, and 300px at ≤768 — the latter is still wider than
+   the 288px available at 320, i.e. the mobile value itself produced horizontal
+   scrolling. aspect-ratio keeps the square without a second dimension that
+   would have to be kept in sync with the first. */
 .wheel-container {
   position: relative;
   width: min(100%, 400px);
@@ -822,7 +832,7 @@ body {
   margin: 20px 0;
 }
 
-/* Каретка стримингового натального анализа (см. streamApi.ts) */
+/* Caret for the streaming natal analysis (see streamApi.ts) */
 .typing-cursor {
   display: inline-block;
   color: var(--text-secondary);
@@ -1159,31 +1169,33 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  /* Резина: рамка занимает доступную ширину, а предел ставит сцена ниже —
-     через проп maxWidth, равный эталонному размеру колеса. */
+  /* Fluid: the frame takes the available width, and the limit is set by the
+     stage below it — through the maxWidth prop, equal to the wheel's reference
+     size. */
   width: 100%;
 }
 
 .live-sky-stage {
   position: relative;
-  /* Было inline-flex (shrink-to-fit). С резиновым колесом это давало цикл:
-     ребёнок с width:100% внутри контейнера, который меряется по ребёнку.
-     max-width приходит инлайном из LiveSkyFrame. */
+  /* Used to be inline-flex (shrink-to-fit). With a fluid wheel that created a
+     cycle: a child with width:100% inside a container measured by its child.
+     max-width arrives inline from LiveSkyFrame. */
   display: flex;
   width: 100%;
   aspect-ratio: 1;
 }
 
-/* Колесо тянется на всю сцену. Ограничение по ширине живёт на сцене, чтобы
-   звёзды и орбита кометы, привязанные к её краям, не отрывались от чертежа. */
+/* The wheel stretches across the whole stage. The width limit lives on the
+   stage so that the stars and the comet's orbit, which are anchored to its
+   edges, do not detach from the drawing. */
 .chart-wheel-fluid {
   width: 100%;
 }
 
-/* Перебивает пиксельные атрибуты width/height, которые @astrodraw/astrochart
-   ставит корню SVG. У презентационных атрибутов минимальная специфичность,
-   поэтому одного правила достаточно — библиотеку патчить не нужно, а viewBox
-   она проставляет сама. Для синастрического колеса viewBox добавлен вручную. */
+/* Overrides the pixel width/height attributes that @astrodraw/astrochart sets
+   on the SVG root. Presentational attributes have the lowest specificity, so a
+   single rule is enough — no need to patch the library, and it sets viewBox
+   itself. For the synastry wheel viewBox is added by hand. */
 .chart-wheel-fluid > svg {
   display: block;
   width: 100%;
@@ -1217,9 +1229,9 @@ body {
 }
 
 .live-sky-drag-hint {
-  /* Орбита кометы выходит за габариты колеса (.live-sky-sky растянут на
-     inset: -16px), поэтому 10px не хватало — подсказка попадала прямо на
-     траекторию кометы. */
+  /* The comet's orbit extends beyond the wheel's bounds (.live-sky-sky is
+     stretched to inset: -16px), so 10px was not enough — the hint landed
+     directly on the comet's path. */
   margin-top: 34px;
   font-size: 12px;
   color: var(--text-secondary);
@@ -1433,9 +1445,9 @@ body {
   color: var(--accent-glow);
 }
 
-/* --- Полноэкранный просмотр колеса ----------------------------------------
-   Кнопка живёт в углу сцены; на десктопе она проявляется по наведению, на
-   тач-устройствах видна всегда (там hover не существует). */
+/* --- Full-screen wheel view -----------------------------------------------
+   The button lives in the corner of the stage; on desktop it appears on hover,
+   on touch devices it is always visible (there is no hover there). */
 .live-sky-expand {
   position: absolute;
   top: var(--space-2);
@@ -1488,8 +1500,9 @@ body {
   background: var(--overlay-bg);
   backdrop-filter: blur(2px);
   animation: ui-fade-in var(--duration-fast) var(--ease-out) both;
-  /* Нативный пинч-зум вместо библиотеки: чертёж можно увеличить пальцами,
-     а `overflow: auto` даёт возможность довести его до нужного угла. */
+  /* Native pinch-zoom instead of a library: the drawing can be enlarged with
+     two fingers, and `overflow: auto` makes it possible to bring the part you
+     want into view. */
   touch-action: pinch-zoom;
   overflow: auto;
 }
@@ -1525,9 +1538,10 @@ body {
   outline-offset: 2px;
 }
 
-/* Карусель ожидания на узком экране: паддинг 44+44 оставлял тексту 200px из
-   288 доступных. Стрелки при этом выросли до 44px под палец, поэтому текст
-   уводится от них не паддингом, а отдельной строкой. */
+/* The waiting carousel on a narrow screen: 44+44 of padding left the text
+   200px out of the 288 available. The arrows grew to 44px for touch at the same
+   time, so the text is moved away from them with its own line rather than with
+   padding. */
 @media (max-width: 599px) {
   .live-sky-card {
     padding-left: var(--space-4);
@@ -1539,57 +1553,60 @@ body {
   .live-sky-card-arrow--next { left: 50%; margin-left: 8px; top: auto; bottom: 6px; transform: none; }
 }
 
-/* --- Дорогое оформление на слабых устройствах -------------------------------- */
+/* --- Expensive decoration on low-powered devices ---------------------------- */
 @media (pointer: coarse) {
-  /* Размытие подложки у липкой шапки пересчитывается на каждом кадре скролла.
-     На среднем Android это самая дорогая строка во всём файле, а выигрыш —
-     эффект, которого на маленьком экране почти не видно. */
+  /* The backdrop blur on the sticky header is recomputed on every frame of
+     scrolling. On a mid-range Android this is the single most expensive line in
+     the file, and the payoff is an effect that is barely visible on a small
+     screen. */
   .header {
     backdrop-filter: none;
   }
 }
 
-/* --- Тач-таргеты ------------------------------------------------------------
-   Всё, что мельче пальца, доводится до 40–44px там, где курсора нет.
-   Условие по указателю, а не по ширине (design.md, Decision 8). */
+/* --- Touch targets ----------------------------------------------------------
+   Anything smaller than a fingertip is brought up to 40–44px wherever there is
+   no cursor. The condition is on the pointer, not on the width
+   (design.md, Decision 8). */
 @media (pointer: coarse) {
-  /* Стрелки карусели и глифы планет — были 32×32. */
+  /* Carousel arrows and planet glyphs — used to be 32×32. */
   .live-sky-card-arrow,
   .live-sky-chip {
     width: 44px;
     height: 44px;
   }
 
-  /* Карточка карусели ужимается ровно на столько, на сколько выросли стрелки,
-     чтобы текст не оказался под ними. */
+  /* The carousel card shrinks by exactly as much as the arrows grew, so that
+     the text does not end up underneath them. */
   .live-sky-card {
     padding-left: 52px;
     padding-right: 52px;
   }
 }
 
-/* --- Колесо на тач-устройствах ---------------------------------------------
-   Два правила, оба про палец, а не про ширину экрана (design.md, Decision 8). */
+/* --- The wheel on touch devices ---------------------------------------------
+   Two rules, both about the finger rather than the screen width
+   (design.md, Decision 8). */
 @media (pointer: coarse) {
-  /* `touch-action: none` на квадрате во весь экран отнимал у страницы
-     вертикальную прокрутку: провести пальцем по колесу во время ожидания
-     анализа (около минуты) значило не проскроллить, а покрутить чертёж.
-     Вращение мышью на десктопе при этом остаётся. */
+  /* `touch-action: none` on a full-width square took vertical scrolling away
+     from the page: swiping across the wheel while waiting for the analysis
+     (about a minute) rotated the drawing instead of scrolling. Mouse rotation
+     on desktop is unaffected. */
   .live-sky-stage--draggable {
     touch-action: auto;
     cursor: default;
   }
 
-  /* Единственный дорогой эффект Live Sky: анимирует filter: drop-shadow,
-     то есть перерисовывает весь SVG каждый кадр вместо композитинга на GPU
-     (INSIGHTS.md, 2026-08-21). На мобильном GPU это заметно, а идёт оно всю
-     минуту ожидания. Звёзды, орбита и падающая звезда остаются — они на
-     transform/opacity и стоят копейки. */
+  /* The one expensive Live Sky effect: it animates filter: drop-shadow, i.e. it
+     repaints the whole SVG every frame instead of compositing on the GPU
+     (INSIGHTS.md, 2026-08-21). On a mobile GPU this is noticeable, and it runs
+     for the entire minute of waiting. The stars, the orbit and the shooting
+     star stay — they run on transform/opacity and cost next to nothing. */
   .chart-wheel-live--active {
     animation: none;
   }
 
-  /* Подсказка «колесо можно покрутить» без вращения была бы враньём. */
+  /* The "you can spin the wheel" hint would be a lie without the rotation. */
   .live-sky-drag-hint {
     display: none;
   }
@@ -1711,9 +1728,10 @@ body {
   display: none;
 }
 
-/* Responsive. Порог 899 — граница LG по таблице брейкпоинтов вверху файла. */
+/* Responsive. The 899 threshold is the LG boundary from the breakpoint table
+   at the top of this file. */
 @media (max-width: 899px) {
-  /* .hero h1 здесь больше не переопределяется: кегль резиновый через clamp(). */
+  /* .hero h1 is no longer overridden here: the size is fluid via clamp(). */
 
   .form-card {
     padding: 24px;
@@ -1722,18 +1740,19 @@ body {
   .synastry-form {
     grid-template-columns: 1fr;
   }
-  /* .wheel-container больше не переопределяется здесь: базовое правило
-     min(100%, 400px) уже резиновое, а прежние 300px были шире доступных
-     на 320 288px и сами давали горизонтальный скролл. */
+  /* .wheel-container is no longer overridden here: the base rule
+     min(100%, 400px) is already fluid, while the previous 300px was wider than
+     the 288px available at 320 and produced horizontal scrolling by itself. */
 }
 
 /* Form Rows.
-   Две колонки — исключение, а не база: на 320 пара «дата + время» получала бы
-   по ~128px на поле, а нативный input[type=date] в iOS Safari шире по
-   min-content и распирал .form-card вместе со всей страницей. Соседний
-   .synastry-form схлопывался на 768, а этот блок забыли.
-   Локальный min-width здесь допустим по design.md, Decision 1: на ≥600px
-   раскладка ровно та же, что была, десктоп не двигается. */
+   Two columns are the exception, not the default: at 320 the "date + time" pair
+   would get about 128px per field, and the native input[type=date] in iOS
+   Safari is wider than that by min-content and blew out .form-card along with
+   the whole page. The neighbouring .synastry-form collapsed at 768; this block
+   was forgotten.
+   A local min-width is acceptable here per design.md, Decision 1: at ≥600px the
+   layout is exactly what it was, the desktop does not move. */
 .form-row {
   display: grid;
   grid-template-columns: 1fr;
@@ -1954,7 +1973,7 @@ body {
 }
 
 /* ============================================
-   Аутентификация
+   Authentication
    ============================================ */
 
 .auth-buttons {
@@ -2020,7 +2039,7 @@ body {
   font-weight: 500;
 }
 
-/* Стили для ссылок в Header */
+/* Styles for the links in Header */
 .nav-link {
   background: none;
   border: none;
@@ -2037,7 +2056,7 @@ body {
   background: rgba(255, 255, 255, 0.05);
 }
 
-/* Страницы аутентификации */
+/* Authentication pages */
 .auth-page {
   min-height: 100vh;
   min-height: 100dvh;
@@ -2160,14 +2179,14 @@ body {
   text-decoration: underline;
 }
 
-/* Стили для Formik ошибок */
+/* Styles for Formik errors */
 .field-error {
   color: var(--error);
   font-size: 12px;
   margin-top: 5px;
 }
 
-/* Страница выхода */
+/* Sign-out page */
 .logout-page {
   min-height: 100vh;
   min-height: 100dvh;
@@ -2458,20 +2477,20 @@ button[style*="transparent"]:hover {
 }
 
 /* =============================================================================
-   Адаптивные переопределения, которым обязательно быть в конце файла.
+   Responsive overrides that must live at the end of the file.
 
-   У этих правил та же специфичность, что у базовых, поэтому решает порядок.
-   Стояли выше по файлу — и молча не работали: `.auth-card` не сжимался в
-   альбомной ориентации, а `.feature` продолжал подниматься по «наведению»
-   на тач-устройстве. Ровно та же ошибка была допущена с bottom-sheet-модалками
-   в ui.css. Проверять это глазами бесполезно — нужен обход файла.
+   These rules have the same specificity as the base ones, so order decides.
+   They used to sit higher up the file — and silently did nothing: `.auth-card`
+   would not shrink in landscape, and `.feature` kept lifting on "hover" on
+   touch devices. Exactly the same mistake was made with the bottom-sheet modals
+   in ui.css. Checking this by eye is useless — it takes a walk through the file.
    ============================================================================= */
 
-/* --- Телефон в альбомной ориентации -----------------------------------------
-   Высота 320–500px: вертикальные отступы, рассчитанные на портрет, съедают
-   весь экран — до формы расчёта приходилось скроллить, хотя она главное на
-   странице. Условие по ВЫСОТЕ, а не по ширине: 568×320 и 812×375 — это тот же
-   телефон, просто повёрнутый. */
+/* --- Phone in landscape -----------------------------------------------------
+   Height 320–500px: vertical spacing designed for portrait eats the whole
+   screen — the calculation form, the main thing on the page, had to be scrolled
+   to. The condition is on HEIGHT, not width: 568×320 and 812×375 are the same
+   phone, just rotated. */
 @media (max-height: 500px) and (orientation: landscape) {
   .hero {
     padding: var(--space-6) 0;
@@ -2490,9 +2509,9 @@ button[style*="transparent"]:hover {
   }
 }
 
-/* --- Hover только там, где есть курсор --------------------------------------
-   На iOS :hover «залипает» после тапа и держится до нажатия в другом месте:
-   карточка планеты остаётся приподнятой с тенью, будто выбрана. */
+/* --- Hover only where there is a cursor -------------------------------------
+   On iOS :hover "sticks" after a tap and stays until you tap elsewhere: the
+   planet card remains raised with its shadow, as though it were selected. */
 @media (hover: none) {
   .btn-primary:hover,
   .btn-register:hover,
