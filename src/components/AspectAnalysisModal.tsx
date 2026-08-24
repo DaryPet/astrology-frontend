@@ -4,6 +4,10 @@ import ProcessingMessage from './ProcessingMessage';
 import MarkdownContent from './MarkdownContent';
 import type { StreamPhase } from '../hooks/useStreamedText';
 import { createPortal } from 'react-dom';
+// Root-cause фикс меню (.header-panel-clip, index.css) не покрыл все случаи
+// обреза модалки — 2026-08-24, повторный репорт после отключения этой
+// заплатки. Включена обратно, JS-фикс снова активен.
+import { useModalWidthVar } from '../hooks/useModalWidthVar';
 
 interface AspectData {
   planet1?: string;
@@ -26,6 +30,9 @@ interface AspectAnalysisModalProps {
 
 const AspectAnalysisModal = ({ aspect, analysis, displayedText = '', phase = 'idle', isOpen, onClose, loading, error }: AspectAnalysisModalProps) => {
   const { t, i18n } = useTranslation();
+
+  // До раннего return: хук обязан вызываться на каждом рендере.
+  useModalWidthVar(isOpen);
 
   if (!isOpen) return null;
 

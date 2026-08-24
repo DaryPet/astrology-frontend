@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
+import { useModalWidthVar } from '../hooks/useModalWidthVar';
 
 interface UnsavedAnalysisModalProps {
   isOpen: boolean;
@@ -25,6 +26,12 @@ const UnsavedAnalysisModal: React.FC<UnsavedAnalysisModalProps> = ({
 }) => {
   const { t } = useTranslation();
 
+  // До раннего return: хук обязан вызываться на каждом рендере.
+  // Без него на мобильном у оверлея не выставлен --ui-modal-overlay-top,
+  // он падает на 0 — то есть на верх ДОКУМЕНТА, а не экрана, и окно
+  // прилипало к самому верху страницы.
+  useModalWidthVar(isOpen);
+
   if (!isOpen) return null;
 
   // Портал в body: у модалки position: fixed, а он отсчитывается от экрана
@@ -33,11 +40,11 @@ const UnsavedAnalysisModal: React.FC<UnsavedAnalysisModalProps> = ({
   // у обёртки уводила окно вниз. Портал снимает зависимость от предков.
   return createPortal(
     <div className="ui-modal-overlay">
-      <div style={{
-        background: 'var(--bg-card)', borderRadius: '16px',
-        padding: '32px', maxWidth: '420px', width: '90%',
-        border: '1px solid var(--border)'
-      }}>
+      {/* Раньше здесь была своя коробка на инлайновых стилях (width: 90%,
+          maxWidth: 420px) — единственная модалка мимо .ui-modal. В оверлее
+          это был обычный блок, который не центрировался ни по горизонтали,
+          ни по вертикали. Теперь коробка общая, как у остальных пяти. */}
+      <div className="ui-modal">
         <h3 style={{ margin: '0 0 12px 0', color: 'var(--text-primary)' }}>
           ⚠️ {title ?? t('unsavedModal.title')}
         </h3>

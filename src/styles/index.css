@@ -289,7 +289,8 @@ body {
    .language-dropdown остаются прямыми flex-детьми .header-content ровно как
    до этой правки. Ниже 900px та же обёртка становится выездной панелью.
    Бургер, кнопка закрытия и оверлей на десктопе не существуют вовсе. */
-.header-panel {
+.header-panel,
+.header-panel-clip {
   display: contents;
 }
 
@@ -408,34 +409,59 @@ body {
     outline-offset: 2px;
   }
 
-  .header-panel {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-2);
+  /* Статичный клиппер: сама коробка не анимируется и transform не имеет,
+     поэтому её собственные границы не могут никуда «утечь». Ровно то же
+     место, что раньше занимала .header-panel (top/right/width/height/z-index) —
+     снаружи ничего не сдвинулось.
+
+     ЗАКРЫТАЯ ПАНЕЛЬ ОБЯЗАНА ИСЧЕЗАТЬ ИЗ РАСКЛАДКИ, а не уезжать за край:
+     прежний вариант (transform: translateX(100%) + visibility: hidden) не
+     убирал коробку из потока, и панель шириной 320px висела за границей
+     экрана, растягивая вьюпорт с 430 до 750 (window.innerWidth). Всё
+     привязанное к вьюпорту (position: fixed — оверлей и окно модалки
+     анализа) занимало эти же 750, из-за чего модалка выглядела обрезанной.
+     display: none закрывает это по определению: нет коробки — нет
+     переполнения. */
+  .header-panel-clip {
+    display: none;
     position: absolute;
     top: 100%;
     right: 0;
     width: min(320px, 86vw);
     height: calc(100vh - var(--header-h));
     height: calc(100dvh - var(--header-h));
+    z-index: var(--z-drawer);
+    /* Та же болезнь возвращалась через анимацию ОТКРЫТИЯ: первый кадр
+       @keyframes header-panel-in ниже — transform: translateX(100%) —
+       временно ставит панель целиком за экран. Транформированный блок всё
+       равно засчитывается в scrollable overflow ближайшего предка без
+       своего overflow, а такого предка на пути до документа не было —
+       innerWidth раздувался до 750 на время анимации и, что хуже, не
+       схлопывался обратно сам (держалось до настоящего resize/поворота
+       экрана — один открытый бургер ломал модалки до конца сессии).
+       overflow: hidden здесь — статичная граница, которая эту утечку
+       перехватывает на месте, не пропуская выше по дереву. */
+    overflow: hidden;
+  }
+
+  .header-panel-clip--open {
+    display: block;
+  }
+
+  /* Сама панель заполняет клиппер и остаётся тем, чем была: колонкой с
+     анимацией выезда. Position/размеры перешли на .header-panel-clip выше —
+     здесь она просто 100% × 100% родителя. */
+  .header-panel {
+    display: none;
+    flex-direction: column;
+    gap: var(--space-2);
+    width: 100%;
+    height: 100%;
     padding: var(--space-4);
     overflow-y: auto;
     background: var(--bg-card);
     border-left: 1px solid var(--border);
     box-shadow: var(--shadow-lg);
-    z-index: var(--z-drawer);
-    /* ЗАКРЫТАЯ ПАНЕЛЬ ОБЯЗАНА ИСЧЕЗАТЬ ИЗ РАСКЛАДКИ, а не уезжать за край.
-       Прежний вариант (transform: translateX(100%) + visibility: hidden)
-       выглядел рабочим и был неверен: ни transform, ни visibility не убирают
-       элемент из потока — панель шириной 320px продолжала висеть справа за
-       границей экрана и растягивала вьюпорт с 430 до 750. После этого
-       window.innerWidth возвращал 750, и всё привязанное к вьюпорту
-       (position: fixed — оверлей и окно модалки анализа) занимало 750,
-       из-за чего модалка выглядела обрезанной. Симптом вылезал далеко от
-       причины и трижды увёл диагностику не туда.
-       display: none закрывает это по определению: нет коробки — нет
-       переполнения, нет и обхода Tab по невидимому меню. */
-    display: none;
   }
 
   .header-panel--open {
@@ -804,12 +830,22 @@ body {
 /* Table Styles */
 .markdown-table {
   width: 100%;
+  max-width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   margin: 16px 0;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 8px;
   overflow: hidden;
+}
+
+.markdown-table th,
+.markdown-table td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .markdown-table thead {

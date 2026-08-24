@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
+import { useModalWidthVar } from '../hooks/useModalWidthVar';
 
 interface DuplicateChartModalProps {
   isOpen: boolean;
@@ -10,6 +11,9 @@ interface DuplicateChartModalProps {
 
 function DuplicateChartModal({ isOpen, chartName, onClose, onConfirm }: DuplicateChartModalProps) {
   const { t } = useTranslation();
+
+  // До раннего return: хук обязан вызываться на каждом рендере.
+  useModalWidthVar(isOpen);
 
   if (!isOpen) return null;
 

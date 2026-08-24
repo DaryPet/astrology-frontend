@@ -79,92 +79,110 @@ const Header: React.FC<HeaderProps> = ({ hasUnsavedAnalysis = false, onProtected
             прямыми flex-детьми .header-content — раскладка десктопа не меняется
             ни на пиксель. Ниже 900px эта же обёртка становится выездной
             панелью. Дублировать навигацию в двух местах не требуется. */}
-        <div
-          id="header-menu"
-          className={`header-panel${menuOpen ? ' header-panel--open' : ''}`}
-        >
-          <button
-            type="button"
-            className="header-panel__close"
-            onClick={closeMenu}
-            aria-label={t('nav.closeMenu')}
+        {/* Клиппер выездной панели. Первопричина обреза модалок анализа
+            (2026-08-24): анимация открытия ниже стартует с `transform:
+            translateX(100%)` — панель в первом кадре целиком за экраном.
+            По спецификации трансформированный блок всё равно засчитывается
+            в scrollable overflow ближайшего предка без своего overflow —
+            а такого предка на пути до документа не было. На время анимации
+            `window.innerWidth` раздувался с 430 до 750, и это НЕ схлопывалось
+            обратно само — держалось до настоящего resize/поворота экрана.
+            Всё, что позиционируется от вьюпорта (`position: fixed` — оверлей
+            и окно модалок анализа аспектов/планет), занимало эти же 750,
+            из-за чего окно резалось по правому краю экрана.
+            `.header-panel-clip` — статичная коробка без transform, с
+            `overflow: hidden` ровно по месту панели; она поглощает
+            overflow-вклад анимируемого потомка на месте, не давая ему
+            всплыть выше по дереву. Видимо снаружи ничего не меняется —
+            панель всё так же выезжает справа, тем же таймингом. */}
+        <div className={`header-panel-clip${menuOpen ? ' header-panel-clip--open' : ''}`}>
+          <div
+            id="header-menu"
+            className={`header-panel${menuOpen ? ' header-panel--open' : ''}`}
           >
-            <X size={18} strokeWidth={2} />
-          </button>
-
-          <nav className="nav">
-            <Link to={`/${currentLangCode}/`} className="nav-link" onClick={handleNavClick(`/${currentLangCode}/`)}>{t('nav.home')}</Link>
-            <Link to={`/${currentLangCode}/synastry`} className="nav-link" onClick={handleNavClick(`/${currentLangCode}/synastry`)}>{t('nav.synastry')}</Link>
-            {/* v1.2: event analysis temporarily hidden from the header, do not delete
-            <Link to={`/${currentLangCode}/event-analysis`} className="nav-link" onClick={handleNavClick(`/${currentLangCode}/event-analysis`)}>{t('nav.eventAnalysis')}</Link>
-            */}
-            {isAuthenticated ? (
-              <>
-                <Link to={`/${currentLangCode}/dashboard`} className="nav-link" onClick={closeMenu}>{t('nav.dashboard')}</Link>
-                <div className="user-info">
-                  <span className="user-name">{(user as { user_metadata?: { name?: string }; email?: string })?.user_metadata?.name || (user as { email?: string })?.email}</span>
-                  <button className="btn-logout" onClick={() => { closeMenu(); handleLogout(); }}>{t('nav.logout')}</button>
-                </div>
-              </>
-            ) : (
-              <div className="auth-buttons">
-                <Link to={`/${currentLangCode}/login`} className="btn-login" onClick={closeMenu}>{t('nav.login')}</Link>
-                <Link to={`/${currentLangCode}/register`} className="btn-register" onClick={closeMenu}>{t('nav.register')}</Link>
-              </div>
-            )}
-          </nav>
-          <div className="language-dropdown" style={{ position: 'relative' }}>
             <button
-              onClick={() => setLangOpen(!langOpen)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '8px 12px',
-                background: 'var(--bg-secondary)',
-                color: 'var(--text-primary)',
-                border: '1px solid var(--border)',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '14px'
-              }}
+              type="button"
+              className="header-panel__close"
+              onClick={closeMenu}
+              aria-label={t('nav.closeMenu')}
             >
-            🌐 {currentLang.name}
-              <span style={{ fontSize: '10px' }}>▼</span>
+              <X size={18} strokeWidth={2} />
             </button>
-            {/* Стили переехали в класс .language-menu значение-в-значение.
-                Причина та же, что у кнопки темы: inline не переопределить в
-                @media, а внутри drawer'а (overflow-y: auto) выпадающее вниз
-                absolute-меню обрезалось бы по нижнему краю панели. */}
-            {langOpen && (
-              <div className="language-menu">
-                {languages.map(lang => (
-                  <button
-                    key={lang.code}
-                    onClick={() => changeLanguage(lang.code)}
-                    style={{
-                      display: 'block',
-                      width: '100%',
-                      padding: '10px 16px',
-                      background: currentLangCode === lang.code ? 'var(--accent)' : 'transparent',
-                      color: currentLangCode === lang.code ? '#fff' : 'var(--text-primary)',
-                      border: 'none',
-                      textAlign: 'left',
-                      cursor: 'pointer',
-                      fontSize: '14px'
-                    }}
-                    onMouseEnter={(e) => {
-                      if (currentLangCode !== lang.code) e.currentTarget.style.background = 'var(--bg-secondary)';
-                    }}
-                    onMouseLeave={(e) => {
-                      if (currentLangCode !== lang.code) e.currentTarget.style.background = 'transparent';
-                    }}
-                  >
-                    {lang.name}
-                  </button>
-                ))}
-              </div>
-            )}
+
+            <nav className="nav">
+              <Link to={`/${currentLangCode}/`} className="nav-link" onClick={handleNavClick(`/${currentLangCode}/`)}>{t('nav.home')}</Link>
+              <Link to={`/${currentLangCode}/synastry`} className="nav-link" onClick={handleNavClick(`/${currentLangCode}/synastry`)}>{t('nav.synastry')}</Link>
+              {/* v1.2: event analysis temporarily hidden from the header, do not delete
+              <Link to={`/${currentLangCode}/event-analysis`} className="nav-link" onClick={handleNavClick(`/${currentLangCode}/event-analysis`)}>{t('nav.eventAnalysis')}</Link>
+              */}
+              {isAuthenticated ? (
+                <>
+                  <Link to={`/${currentLangCode}/dashboard`} className="nav-link" onClick={closeMenu}>{t('nav.dashboard')}</Link>
+                  <div className="user-info">
+                    <span className="user-name">{(user as { user_metadata?: { name?: string }; email?: string })?.user_metadata?.name || (user as { email?: string })?.email}</span>
+                    <button className="btn-logout" onClick={() => { closeMenu(); handleLogout(); }}>{t('nav.logout')}</button>
+                  </div>
+                </>
+              ) : (
+                <div className="auth-buttons">
+                  <Link to={`/${currentLangCode}/login`} className="btn-login" onClick={closeMenu}>{t('nav.login')}</Link>
+                  <Link to={`/${currentLangCode}/register`} className="btn-register" onClick={closeMenu}>{t('nav.register')}</Link>
+                </div>
+              )}
+            </nav>
+            <div className="language-dropdown" style={{ position: 'relative' }}>
+              <button
+                onClick={() => setLangOpen(!langOpen)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '8px 12px',
+                  background: 'var(--bg-secondary)',
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--border)',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+              🌐 {currentLang.name}
+                <span style={{ fontSize: '10px' }}>▼</span>
+              </button>
+              {/* Стили переехали в класс .language-menu значение-в-значение.
+                  Причина та же, что у кнопки темы: inline не переопределить в
+                  @media, а внутри drawer'а (overflow-y: auto) выпадающее вниз
+                  absolute-меню обрезалось бы по нижнему краю панели. */}
+              {langOpen && (
+                <div className="language-menu">
+                  {languages.map(lang => (
+                    <button
+                      key={lang.code}
+                      onClick={() => changeLanguage(lang.code)}
+                      style={{
+                        display: 'block',
+                        width: '100%',
+                        padding: '10px 16px',
+                        background: currentLangCode === lang.code ? 'var(--accent)' : 'transparent',
+                        color: currentLangCode === lang.code ? '#fff' : 'var(--text-primary)',
+                        border: 'none',
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                        fontSize: '14px'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (currentLangCode !== lang.code) e.currentTarget.style.background = 'var(--bg-secondary)';
+                      }}
+                      onMouseLeave={(e) => {
+                        if (currentLangCode !== lang.code) e.currentTarget.style.background = 'transparent';
+                      }}
+                    >
+                      {lang.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

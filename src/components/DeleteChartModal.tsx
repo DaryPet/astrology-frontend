@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { chartsApi } from '../services/chartsApi';
 import ConfirmDeleteModal from './ConfirmDeleteModal';
 import { createPortal } from 'react-dom';
+import { useModalWidthVar } from '../hooks/useModalWidthVar';
 
 interface ChartItem {
   id: string | number;
@@ -81,6 +82,9 @@ function DeleteChartModal({ isOpen, onClose, onDeleted }: DeleteChartModalProps)
       setDeleting(false);
     }
   };
+
+  // До раннего return: хук обязан вызываться на каждом рендере.
+  useModalWidthVar(isOpen);
 
   if (!isOpen) return null;
 

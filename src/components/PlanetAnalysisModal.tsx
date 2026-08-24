@@ -4,6 +4,9 @@ import ProcessingMessage from './ProcessingMessage';
 import MarkdownContent from './MarkdownContent';
 import type { StreamPhase } from '../hooks/useStreamedText';
 import { createPortal } from 'react-dom';
+// Root-cause фикс меню не покрыл все случаи — см. тот же комментарий в
+// AspectAnalysisModal.tsx. Включена обратно.
+import { useModalWidthVar } from '../hooks/useModalWidthVar';
 
 interface PlanetAnalysisModalProps {
   planet?: {
@@ -24,6 +27,9 @@ interface PlanetAnalysisModalProps {
 
 const PlanetAnalysisModal = ({ planet, analysis, displayedText = '', phase = 'idle', isOpen, onClose, loading, error }: PlanetAnalysisModalProps) => {
   const { t } = useTranslation();
+
+  // До раннего return: хук обязан вызываться на каждом рендере.
+  useModalWidthVar(isOpen);
 
   if (!isOpen) return null;
 
