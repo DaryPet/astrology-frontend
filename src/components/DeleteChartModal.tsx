@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { chartsApi } from '../services/chartsApi';
 import ConfirmDeleteModal from './ConfirmDeleteModal';
-import { createPortal } from 'react-dom';
+import Modal from './Modal';
 
 interface ChartItem {
   id: string | number;
@@ -102,19 +102,9 @@ function DeleteChartModal({ isOpen, onClose, onDeleted }: DeleteChartModalProps)
     return new Date(dateStr).toLocaleDateString();
   };
 
-  // Портал в body: у модалки position: fixed, а он отсчитывается от экрана
-  // только если ни у одного предка нет transform / filter / will-change.
-  // Модалки рендерятся глубоко внутри страницы, и любая анимация появления
-  // у обёртки уводила окно вниз. Портал снимает зависимость от предков.
-  return createPortal(
-    <div
-      className="ui-modal-overlay"
-      onClick={onClose}
-    >
-      <div
-        className="ui-modal"
-        onClick={(e) => e.stopPropagation()}
-      >
+  return (
+    <>
+      <Modal isOpen={isOpen} onClose={onClose}>
         <h3 style={{ marginBottom: '8px' }}>
           {t('history.limitReached')}
         </h3>
@@ -180,7 +170,7 @@ function DeleteChartModal({ isOpen, onClose, onDeleted }: DeleteChartModalProps)
             {deleting ? '...' : t('history.delete')}
           </button>
         </div>
-      </div>
+      </Modal>
 
       <ConfirmDeleteModal
         isOpen={confirmDeleteInModal}
@@ -189,9 +179,7 @@ function DeleteChartModal({ isOpen, onClose, onDeleted }: DeleteChartModalProps)
         chartName={charts.find(c => c.id === selectedId)?.name}
         deleting={deleting}
       />
-    </div>
-    ,
-    document.body,
+    </>
   );
 }
 

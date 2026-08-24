@@ -10,7 +10,10 @@
     "dashboard": "Dashboard",
     "login": "Login",
     "register": "Register",
-    "logout": "Logout"
+    "logout": "Logout",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "menu": "Menu"
   },
   "header": {
     "greeting": "Hello, {{name}}"
@@ -527,6 +530,8 @@
   "liveSky": {
     "greeting": "Welcome, dear soul… The Universe is already reading your chart",
     "dragHint": "✨ You can spin the wheel — just drag it",
+    "expand": "Open the wheel full screen",
+    "collapse": "Close",
     "carousel": {
       "prev": "Previous card",
       "next": "Next card",

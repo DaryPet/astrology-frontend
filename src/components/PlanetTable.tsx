@@ -68,6 +68,14 @@ interface PlanetItem {
   sign: string;
 }
 
+// На тач-устройствах `mouseenter` эмулируется при тапе, и приподнятая карточка
+// остаётся такой до нажатия в другом месте — выглядит как «выбрана». Отключить
+// это медиазапросом нельзя: обработчик пишет inline-стиль, а он специфичнее
+// любого CSS. Проверка разовая, внутри обработчика — это не подписка на
+// matchMedia (design.md, Non-Goals).
+const canHover = () =>
+  typeof window !== 'undefined' && window.matchMedia('(hover: hover)').matches;
+
 const PlanetTable = ({ planets, houses, onPlanetClick }: PlanetTableProps) => {
   const { t } = useTranslation();
 
@@ -179,6 +187,7 @@ const PlanetTable = ({ planets, houses, onPlanetClick }: PlanetTableProps) => {
               is_retrograde: planet.speed < 0
             })}
             onMouseEnter={(e) => {
+              if (!canHover()) return;
               (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)';
               (e.currentTarget as HTMLDivElement).style.boxShadow = `0 6px 16px ${planet.color}30`;
             }}

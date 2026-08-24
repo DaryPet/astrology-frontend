@@ -35,6 +35,10 @@ const AnalysisTabs: React.FC<AnalysisTabsProps> = ({ active, onChange, showProgr
       role="tablist"
       style={{
         display: 'flex',
+        // Без переноса три вкладки («Натальная карта / Прогрессии / Транзиты»)
+        // дают min-content ≈370px при доступных на 320 экране 288 — то есть
+        // горизонтальный скролл всей страницы.
+        flexWrap: 'wrap',
         gap: '4px',
         marginTop: '28px',
         padding: '4px',
@@ -53,7 +57,10 @@ const AnalysisTabs: React.FC<AnalysisTabsProps> = ({ active, onChange, showProgr
             aria-selected={isActive}
             onClick={() => onChange(tab.id)}
             style={{
-              flex: 1,
+              flex: '1 1 auto',
+              // min-width: auto у flex-элемента запрещает сжиматься ниже
+              // min-content, поэтому одного flexWrap на родителе мало.
+              minWidth: 0,
               padding: '10px 16px',
               border: 'none',
               borderRadius: '9px',
