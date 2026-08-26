@@ -9,8 +9,6 @@ import type { StreamPhase } from '../hooks/useStreamedText';
 import Header from '../components/Header';
 import StarfieldBackground from '../components/StarfieldBackground';
 import LocationInput from '../components/LocationInput';
-// СТАРЫЙ рендер синастрии (D3, чёрный центр). Не удалять — вернуть при необходимости:
-// import SynastryChartComponent from '../components/SynastryChartComponent-draft';
 import SynastryChartComponent from '../components/SynastryChartComponentV2';
 import LiveSkyFrame from '../components/LiveSkyFrame';
 import AspectGrid from '../components/AspectGrid';
@@ -80,9 +78,7 @@ function Synastry() {
   const selectedAspectKeyRef = useRef<string | null>(null);
   const [aspectAnalysis, setAspectAnalysis] = useState<string | null>(null);
   const [aspectLoading, setAspectLoading] = useState(false);
-  // Своя ячейка на каждую карточку аспекта (ключ — planet1_planet2_aspect), плюс
-  // номер поколения на повторный клик по той же карточке — карточки кликаются
-  // параллельно и независимо, ничего не отменяем (см. Dashboard.tsx).
+  // Separate stream for each aspect card (key: planet1_planet2_aspect), plus generation counter for re-clicks—cards are clicked in parallel and independently, nothing is cancelled (see Dashboard.tsx).
   const [aspectLiveStreams, setAspectLiveStreams] = useState<Record<string, { phase: StreamPhase; text: string }>>({});
   const aspectGenerationRef = useRef<Record<string, number>>({});
   const [isNavigating, setIsNavigating] = useState(false);
@@ -227,8 +223,7 @@ function Synastry() {
 
     let accumulated = '';
     await streamSynastryAspectAnalysis(
-      // mode не берём из analysisMode: как и в нестрим-версии выше — здесь он не был
-      // прокинут, дефолт 'simple' сохраняем, чтобы не менять поведение попутно.
+      // mode not taken from analysisMode: as in the non-stream version above, it was not passed here; keeping default 'simple' to avoid changing behavior incidentally.
       { ...aspectPayload, mode: 'simple' },
       {
         onStage: (stage) => {
@@ -374,11 +369,7 @@ function Synastry() {
       <Header />
 
       <div className="container" style={{ padding: 'var(--space-8) 0' }}>
-        {/* Та же разметка, что в hero главной (.hero / .hero h1 / .hero p),
-            чтобы обе страницы выглядели одинаково без второго набора стилей.
-            heroTitle/heroSubtitle — отдельные ключи: synastry.title ниже
-            переиспользуется как заголовок над готовой картой, вопрос там
-            неуместен (см. plans/home-synastry-design.md). */}
+        {/* Same markup as hero on home (.hero / .hero h1 / .hero p) so both pages look identical without duplicate styles. heroTitle/heroSubtitle are separate keys: synastry.title below is reused as heading over completed chart, question would be out of place (see plans/home-synastry-design.md). */}
         <div className="hero">
           <h1>{t('synastry.heroTitle')}</h1>
           <p>{t('synastry.heroSubtitle')}</p>
@@ -487,10 +478,7 @@ function Synastry() {
                 </div>
               </div>
 
-              {/* Колесо в живом небе — тем же компонентом, что на дашборде.
-                  Звёзды и комета крутятся вокруг колеса всегда; `active`
-                  добавляет только пульс свечения и перетаскивание на время
-                  ожидания (см. LiveSkyFrame и INSIGHTS.md). */}
+              {/* Wheel in live sky uses same component as dashboard. Stars and comet rotate around wheel always; `active` adds only glow pulse and dragging during wait time (see LiveSkyFrame and INSIGHTS.md). */}
               <div className="ui-row" style={{ justifyContent: 'center' }}>
                 {chart1Data && chart2Data && (
                   <LiveSkyFrame active={loading} maxWidth={700}>
@@ -584,8 +572,7 @@ function Synastry() {
               )}
             </div>
 
-            {/* Рамку рисует сам AspectGrid (.ui-card) — внешний result-card
-                давал бы вторую рамку поверх первой. */}
+            {/* Frame is drawn by AspectGrid (.ui-card)—outer result-card would add a second frame on top. */}
             <div style={{ marginTop: 'var(--space-5)' }}>
               <AspectGrid aspects={synastry.aspects} onAspectClick={handleAspectClick} />
             </div>

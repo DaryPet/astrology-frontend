@@ -3,19 +3,17 @@ import { useTranslation } from 'react-i18next';
 import * as d3 from 'd3';
 
 /**
- * SynastryChartComponentV2 — двойное колесо синастрии (bi-wheel) в стиле Astro-Seek.
+ * SynastryChartComponentV2 — synastry bi-wheel, Astro-Seek style.
  *
- * ДВА ПОЛНОЦЕННЫХ КОЛЕСА на одном зодиаке (повёрнут по ASC Партнёра 1):
- *  - Внутреннее кольцо  = Партнёр 1: планеты + ПОЛНАЯ сетка домов (ASC/IC/DSC/MC).
- *  - Внешнее кольцо      = Партнёр 2: планеты + СВОЁ домовое кольцо (ASC/IC/DSC/MC).
- *  - Центр: межкартные аспекты (красный = напряжённые, синий = гармоничные,
- *    зелёный = соединение). Тонкие линии на белом фоне.
+ * Two full wheels on one zodiac (rotated to Partner 1's ASC):
+ *  - Inner ring = Partner 1: planets + full house grid (ASC/IC/DSC/MC).
+ *  - Outer ring = Partner 2: planets + own house ring (ASC/IC/DSC/MC).
+ *  - Center: inter-chart aspects (red = hard, blue = soft, green = conjunction).
  *
- * Позиции считает бэкенд (astrology_v2.py). Старый рендер сохранён в
- * SynastryChartComponent-draft.tsx (не удалять).
+ * Positions are computed by the backend (astrology_v2.py).
  */
 
-// U+FE0E — variation selector: рендерит символ как ТЕКСТ, а не эмодзи (macOS)
+// U+FE0E variation selector: renders as a text glyph, not an emoji (macOS)
 const T = (s: string) => s + '︎';
 
 const ZODIAC_SYMBOLS = ['♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓'];
@@ -47,8 +45,8 @@ const PLANET_NAME: Record<string, string> = {
   SouthNode: 'Юж.Узел', Chiron: 'Хирон', Lilith: 'Лилит', Vertex: 'Вертекс',
 };
 
-const P1_COLOR = '#243b6b'; // тёмно-синий  — Партнёр 1 (внутреннее кольцо)
-const P2_COLOR = '#8a4b1f'; // бронза       — Партнёр 2 (внешнее кольцо)
+const P1_COLOR = '#243b6b'; // dark blue — Partner 1 (inner ring)
+const P2_COLOR = '#8a4b1f'; // bronze — Partner 2 (outer ring)
 
 interface ChartPlanet {
   full_degree?: number;
@@ -115,15 +113,15 @@ const SynastryChartComponentV2 = ({
 
     const cx = size / 2, cy = size / 2, fs = size / 700;
 
-    // Радиусы (доля от size), снаружи внутрь:
-    const R_OUT        = size * 0.485; // внешний контур зодиака
-    const R_SIGN_IN    = size * 0.420; // внутренняя граница зодиака
-    const R_P2_PLANET  = size * 0.392; // глифы Партнёра 2
-    const R_P2_HOUSE_O = size * 0.366; // внешний край домового кольца П2
-    const R_P2_HOUSE_I = size * 0.336; // внутренний край домового кольца П2
-    const R_P1_PLANET  = size * 0.298; // глифы Партнёра 1
-    const R_P1_HOUSE_N = size * 0.262; // номера домов П1
-    const R_ASPECT     = size * 0.235; // аспектный круг (белый центр)
+    // Radii (fraction of size), outer to inner:
+    const R_OUT        = size * 0.485; // zodiac outer edge
+    const R_SIGN_IN    = size * 0.420; // zodiac inner edge
+    const R_P2_PLANET  = size * 0.392; // Partner 2 glyphs
+    const R_P2_HOUSE_O = size * 0.366; // Partner 2 house ring outer edge
+    const R_P2_HOUSE_I = size * 0.336; // Partner 2 house ring inner edge
+    const R_P1_PLANET  = size * 0.298; // Partner 1 glyphs
+    const R_P1_HOUSE_N = size * 0.262; // Partner 1 house numbers
+    const R_ASPECT     = size * 0.235; // aspect circle (white center)
 
     const ascLon = chart1.houses?.[1]?.cusp_longitude ?? chart1.houses?.['1']?.cusp_longitude ?? 0;
     const rel = (lon: number) => ((lon - ascLon) % 360 + 360) % 360;
@@ -132,10 +130,10 @@ const SynastryChartComponentV2 = ({
       svg.append('circle').attr('cx', cx).attr('cy', cy).attr('r', r)
         .attr('fill', fill).attr('stroke', stroke).attr('stroke-width', w);
 
-    // ---- Светлый фон только под самим колесом (круг, без квадратной карточки) ----
+    // ---- Light background under the wheel only (circle, no square card) ----
     circle(R_OUT + 2, 'none', 0, '#f8f8fb');
 
-    // Кольцо-подложка домов П2 (чтобы визуально читалось как отдельное колесо)
+    // Backing ring for Partner 2 houses (reads as a separate wheel visually)
     svg.append('circle').attr('cx', cx).attr('cy', cy).attr('r', R_P2_HOUSE_O)
       .attr('fill', P2_COLOR).attr('fill-opacity', 0.05).attr('stroke', 'none');
 
@@ -145,7 +143,7 @@ const SynastryChartComponentV2 = ({
     circle(R_P2_HOUSE_I, '#cbb7a3', 0.8);
     circle(R_ASPECT, '#c9c9d4', 0.9, '#ffffff');
 
-    // ---- Зодиак: пастельные сектора + текстовые глифы ----
+    // ---- Zodiac: pastel sectors + text glyphs ----
     for (let i = 0; i < 12; i++) {
       const start = i * 30 - ascLon;
       const steps = 24;
@@ -165,7 +163,7 @@ const SynastryChartComponentV2 = ({
         .text(T(ZODIAC_SYMBOLS[i]));
     }
 
-    // ---- Градусная шкала ----
+    // ---- Degree scale ----
     for (let deg = 0; deg < 360; deg++) {
       const isMajor = deg % 30 === 0, isMed = deg % 10 === 0;
       const len = isMajor ? size * 0.020 : isMed ? size * 0.013 : size * 0.007;
@@ -176,9 +174,9 @@ const SynastryChartComponentV2 = ({
         .attr('stroke-width', isMajor ? 0.9 : isMed ? 0.6 : 0.4);
     }
 
-    // ---- Универсальная отрисовка домов ----
-    // mode 'full'  — П1: куспиды от центра, оси через всё колесо, номера у центра.
-    // mode 'band'  — П2: короткие насечки в своём кольце, номера в кольце, оси-метки в кольце.
+    // ---- Generic house drawing ----
+    // mode 'full' — Partner 1: cusps from center, axes across the whole wheel, numbers near center.
+    // mode 'band' — Partner 2: short ticks in its own ring, numbers in the ring, axis labels in the ring.
     const drawHouses = (
       houses: Record<string, ChartHouse>,
       mode: 'full' | 'band',
@@ -204,7 +202,7 @@ const SynastryChartComponentV2 = ({
             .attr('stroke-width', isAngle ? 1.5 : 0.7)
             .attr('stroke-dasharray', isAngle ? 'none' : '3,3');
         } else {
-          // band: короткая насечка в домовом кольце П2
+          // band: short tick in Partner 2's house ring
           const pIn = polarToCart(cx, cy, R_P2_HOUSE_I, deg);
           const pOut = polarToCart(cx, cy, R_P2_HOUSE_O, deg);
           svg.append('line').attr('x1', pIn.x).attr('y1', pIn.y).attr('x2', pOut.x).attr('y2', pOut.y)
@@ -212,7 +210,7 @@ const SynastryChartComponentV2 = ({
             .attr('stroke-width', isAngle ? 1.5 : 0.7);
         }
 
-        // номер дома посередине сектора
+        // house number, mid-sector
         const idx = nums.indexOf(n);
         const nextDeg = cuspDeg(nums[(idx + 1) % nums.length]) ?? deg + 30;
         const mid = deg + (((nextDeg - deg) + 360) % 360) / 2;
@@ -225,7 +223,7 @@ const SynastryChartComponentV2 = ({
           .attr('opacity', mode === 'full' ? 1 : 0.85).text(n);
       });
 
-      // оси ASC/IC/DSC/MC
+      // ASC/IC/DSC/MC axes
       ([['ASC', 1], ['IC', 4], ['DSC', 7], ['MC', 10]] as Array<[string, number]>).forEach(([label, n]) => {
         const deg = cuspDeg(n);
         if (deg === null) return;
@@ -239,11 +237,11 @@ const SynastryChartComponentV2 = ({
       });
     };
 
-    // Дома обоих партнёров
-    if (chart1.houses) drawHouses(chart1.houses, 'full', P1_COLOR); // П1 — полная сетка
-    if (chart2.houses) drawHouses(chart2.houses, 'band', P2_COLOR); // П2 — внешнее кольцо
+    // Both partners' houses
+    if (chart1.houses) drawHouses(chart1.houses, 'full', P1_COLOR); // Partner 1 — full grid
+    if (chart2.houses) drawHouses(chart2.houses, 'band', P2_COLOR); // Partner 2 — outer ring
 
-    // ---- Аспекты (тонкие, в центре) ----
+    // ---- Aspects (thin lines, center) ----
     const aspGroup = svg.append('g');
     aspects.forEach(asp => {
       const pd1 = chart1.planets![asp.planet1], pd2 = chart2.planets![asp.planet2];
@@ -272,7 +270,7 @@ const SynastryChartComponentV2 = ({
         });
     });
 
-    // ---- Планеты: поводок + глиф ----
+    // ---- Planets: leader line + glyph ----
     const drawPlanets = (
       planetsObj: Record<string, ChartPlanet>,
       trackR: number, tickR: number, color: string, whoName: string,
@@ -310,8 +308,8 @@ const SynastryChartComponentV2 = ({
       });
     };
 
-    drawPlanets(chart1.planets!, R_P1_PLANET, R_P2_HOUSE_I, P1_COLOR, name1); // внутри
-    drawPlanets(chart2.planets!, R_P2_PLANET, R_SIGN_IN, P2_COLOR, name2);    // снаружи
+    drawPlanets(chart1.planets!, R_P1_PLANET, R_P2_HOUSE_I, P1_COLOR, name1); // inner
+    drawPlanets(chart2.planets!, R_P2_PLANET, R_SIGN_IN, P2_COLOR, name2);    // outer
 
     // i18n.language: the tooltip text is baked into the d3 mouseover handler
     // at draw time, so a language switch has to redraw the wheel — without it
@@ -321,10 +319,10 @@ const SynastryChartComponentV2 = ({
   if (!chart1 || !chart2) return null;
 
   return (
-    /* `size` остаётся эталонным разрешением: вся геометрия ниже считается от
-       него как от логических единиц, а на экране колесо тянется по ширине
-       контейнера через viewBox. Это не требует ни перезапуска d3-эффекта, ни
-       ResizeObserver — масштабирует браузер. */
+    /* `size` stays the reference resolution: all geometry above is computed
+       from it as logical units, while on screen the wheel stretches to the
+       container width via viewBox — the browser scales it, no d3-effect
+       restart or ResizeObserver needed. */
     <div className="chart-wheel-fluid" style={{ position: 'relative' }}>
       <svg
         ref={svgRef}
