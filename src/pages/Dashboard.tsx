@@ -54,7 +54,7 @@ const MAX_TRANSITS_ANALYSIS_PER_DAY = 5;
 // in the history list (plans/transits-analysis-history-list.md) — each
 // entry's full text lives under its own localStorage key, so an unbounded
 // list would grow storage without limit at a 20/day cap.
-const MAX_TRANSITS_HISTORY = 15;
+const MAX_TRANSITS_HISTORY = 5;
 
 interface TransitsHistoryEntry {
   cacheKey: string;
@@ -3014,31 +3014,31 @@ const Dashboard = () => {
             && !(chartLoading && chartIdFromUrl)
             && !(chartDataForAnalysis && isAuthenticated && !fullAnalysis && !savedChartId)
             && (
-            <div className="db-empty-state">
-              <div className="db-empty-state__icon"><Sparkles size={28} strokeWidth={1.6} /></div>
-              <p className="db-empty-state__text">
-                {t('dashboard.emptyState.selectChart')}
-              </p>
-              <div className="db-action-bar" style={{ justifyContent: 'center' }}>
-                <button
-                  type="button"
-                  onClick={() => protectedNavigate(`/${currentLang}/`)}
-                  className="db-btn-primary"
-                >
-                  <Sparkles size={16} strokeWidth={2.2} />
-                  {t('dashboard.actions.newChart')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => protectedNavigate(`/${currentLang}/synastry`)}
-                  className="db-btn-ghost"
-                >
-                  <Users size={16} strokeWidth={2} />
-                  {t('dashboard.actions.synastry')}
-                </button>
+              <div className="db-empty-state">
+                <div className="db-empty-state__icon"><Sparkles size={28} strokeWidth={1.6} /></div>
+                <p className="db-empty-state__text">
+                  {t('dashboard.emptyState.selectChart')}
+                </p>
+                <div className="db-action-bar" style={{ justifyContent: 'center' }}>
+                  <button
+                    type="button"
+                    onClick={() => protectedNavigate(`/${currentLang}/`)}
+                    className="db-btn-primary"
+                  >
+                    <Sparkles size={16} strokeWidth={2.2} />
+                    {t('dashboard.actions.newChart')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => protectedNavigate(`/${currentLang}/synastry`)}
+                    className="db-btn-ghost"
+                  >
+                    <Users size={16} strokeWidth={2} />
+                    {t('dashboard.actions.synastry')}
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
+            )}
           {chartDataForAnalysis && isAuthenticated && !fullAnalysis && !savedChartId && !showFullAnalysis && (
             <div style={{ textAlign: 'center' }}>
               <AnalysisModeToggle

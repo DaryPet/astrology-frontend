@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Header from '../components/Header';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
 const ConfirmEmail = () => {
@@ -9,10 +9,27 @@ const ConfirmEmail = () => {
   const { t, i18n } = useTranslation();
   const [status, setStatus] = useState<string>('');
   const [isError, setIsError] = useState(false);
+  const [searchParams] = useSearchParams();
 
   const currentLang = i18n.language || 'ru';
 
   useEffect(() => {
+    const token = searchParams.get('token');
+    const email = searchParams.get('email');
+
+    if (token && email) {
+      supabase.auth.verifyOtp({ email, token, type: 'signup' }).then(({ data, error }) => {
+        if (error || !data.session) {
+          setIsError(true);
+          setStatus(t('confirm.error'));
+        } else {
+          setStatus(t('confirm.success'));
+          setTimeout(() => navigate(`/${currentLang}/dashboard`), 2000);
+        }
+      });
+      return;
+    }
+
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
         setStatus(t('confirm.success'));

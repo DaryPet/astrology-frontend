@@ -17,6 +17,17 @@ const Logout = () => {
         localStorage.removeItem('savedFullAnalysis');
         localStorage.removeItem('chartDataForAnalysis');
         localStorage.removeItem('savedChartId');
+        localStorage.removeItem('savedChartData');
+        localStorage.removeItem('savedFullAnalysis_simple');
+        localStorage.removeItem('savedFullAnalysis_advanced');
+        localStorage.removeItem('savedSynastry');
+        localStorage.removeItem('savedPersonNames');
+        localStorage.removeItem('synastryRelationshipContext');
+        Object.keys(localStorage).forEach(key => {
+          if (key.startsWith('planetAnalysis_') || key.startsWith('aspectAnalysis_')) {
+            localStorage.removeItem(key);
+          }
+        });
         await signOut();
       } catch {
       } finally {
