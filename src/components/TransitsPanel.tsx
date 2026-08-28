@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import ErrorWithRetry from './ErrorWithRetry';
 import MarkdownContent from './MarkdownContent';
 import ProcessingMessage from './ProcessingMessage';
 import LiveSkyCarousel from './LiveSkyCarousel';
@@ -31,6 +32,7 @@ interface TransitsPanelProps {
   phase?: StreamPhase;
   loading: boolean;
   error: string;
+  onRetry?: () => void;
   selectedDate: string; // YYYY-MM-DD
   onDateChange: (date: string) => void;
   onLocationChange?: (location: Location | null) => void;
@@ -61,7 +63,7 @@ const PLANET_ORDER = [
 ];
 
 const TransitsPanel: React.FC<TransitsPanelProps> = ({
-  data, analysis, transitsReady, displayedText = '', phase = 'idle', loading, error, selectedDate, onDateChange, onLocationChange, transitsLocation, birthPlace, analysisLocation, analysisDate,
+  data, analysis, transitsReady, displayedText = '', phase = 'idle', loading, error, onRetry, selectedDate, onDateChange, onLocationChange, transitsLocation, birthPlace, analysisLocation, analysisDate,
   onRunAnalysis, transitsRemaining, transitsLimit, generationLocked, history = [], viewingCacheKey, onSelectHistoryEntry,
   currentEntry, onSelectCurrent
 }) => {
@@ -262,9 +264,7 @@ const TransitsPanel: React.FC<TransitsPanelProps> = ({
       )}
 
       {error && (
-        <div className="ui-error">
-          {error}
-        </div>
+        <ErrorWithRetry message={error} onRetry={onRetry} />
       )}
 
       {/* Daily AI analysis: shown only after an explicit run (transitsReady),

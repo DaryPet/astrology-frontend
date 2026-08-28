@@ -305,7 +305,8 @@
     "email": "Email",
     "googleSignIn": "Войти через Google",
     "or": "или",
-    "scrollTop": "Наверх"
+    "scrollTop": "Наверх",
+    "retry": "Повторить"
   },
   "forgotPassword": {
     "title": "Забыли пароль?",

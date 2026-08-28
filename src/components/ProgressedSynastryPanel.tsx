@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import ErrorWithRetry from './ErrorWithRetry';
 import MarkdownContent from './MarkdownContent';
 import ProcessingMessage from './ProcessingMessage';
 import LiveSkyCarousel from './LiveSkyCarousel';
@@ -15,11 +16,12 @@ interface ProgressedSynastryPanelProps {
   phase?: StreamPhase;
   loading: boolean;
   error: string;
+  onRetry?: () => void;
   name1?: string;
   name2?: string;
 }
 
-const ProgressedSynastryPanel: React.FC<ProgressedSynastryPanelProps> = ({ data, analysis, displayedText = '', phase = 'idle', loading, error, name1, name2 }) => {
+const ProgressedSynastryPanel: React.FC<ProgressedSynastryPanelProps> = ({ data, analysis, displayedText = '', phase = 'idle', loading, error, onRetry, name1, name2 }) => {
   const { t, i18n } = useTranslation();
 
   const name1Label = name1 || t('dashboard.progressedSynastry.partner1');
@@ -112,9 +114,7 @@ const ProgressedSynastryPanel: React.FC<ProgressedSynastryPanelProps> = ({ data,
       )}
 
       {error && (
-        <div className="ui-error" style={{ marginTop: 'var(--space-4)' }}>
-          {error}
-        </div>
+        <ErrorWithRetry message={error} onRetry={onRetry} style={{ marginTop: 'var(--space-4)' }} />
       )}
 
       {/* AI analysis: sits right where the spinner is — above the partner cards and planet tables. */}
