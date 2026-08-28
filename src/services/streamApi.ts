@@ -126,6 +126,7 @@ export interface ProgressedSynastryAnalysisPayload {
   progressed_synastry_data: Record<string, unknown>;
   language: string;
   mode: string;
+  relationship_context?: string;
 }
 
 export interface ProgressedSynastryStreamFinal {

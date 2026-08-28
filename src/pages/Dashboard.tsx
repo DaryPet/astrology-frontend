@@ -1279,7 +1279,13 @@ const Dashboard = () => {
         };
 
         await streamProgressedSynastryAnalysis(
-          { progressed_synastry_data: data as unknown as Record<string, unknown>, language: i18n.language || 'ru', mode },
+          {
+            progressed_synastry_data: data as unknown as Record<string, unknown>,
+            language: i18n.language || 'ru',
+            mode,
+            // Chosen once when the synastry was created — never re-asked here.
+            relationship_context: chartDataForAnalysis.relationship_context as string | undefined,
+          },
           {
             onStage: progressionsStream.handleStage,
             onDelta: (text) => {
@@ -1313,7 +1319,8 @@ const Dashboard = () => {
                 try {
                   const result = await astrologyAPI.getProgressedSynastryAnalysis({
                     progressed_synastry_data: data,
-                    language: i18n.language || 'ru'
+                    language: i18n.language || 'ru',
+                    relationship_context: chartDataForAnalysis.relationship_context as string | undefined
                   }, mode);
                   setProgressedSynastryAnalysis(result.analysis);
                   if (mode === 'simple') setProgressedSynastrySimpleAnalysis(result.analysis);
