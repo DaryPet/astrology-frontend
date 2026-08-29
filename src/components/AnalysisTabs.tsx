@@ -10,19 +10,20 @@ interface AnalysisTabsProps {
   showTransits?: boolean;
   showDailyForecast?: boolean;
   firstTabLabel?: string;
+  firstTabHint?: string;
 }
 
-const AnalysisTabs: React.FC<AnalysisTabsProps> = ({ active, onChange, showProgressions, showTransits, showDailyForecast, firstTabLabel }) => {
+const AnalysisTabs: React.FC<AnalysisTabsProps> = ({ active, onChange, showProgressions, showTransits, showDailyForecast, firstTabLabel, firstTabHint }) => {
   const { t } = useTranslation();
 
-  const tabs: Array<{ id: AnalysisTabId; icon: string; label: string }> = [
-    { id: 'natal', icon: '☉', label: firstTabLabel || t('dashboard.tabs.natal') },
+  const tabs: Array<{ id: AnalysisTabId; icon: string; label: string; hint?: string }> = [
+    { id: 'natal', icon: '☉', label: firstTabLabel || t('dashboard.tabs.natal'), hint: firstTabHint || t('dashboard.tabs.natalHint') },
   ];
   if (showProgressions) {
-    tabs.push({ id: 'progressions', icon: '📈', label: t('dashboard.tabs.progressions') });
+    tabs.push({ id: 'progressions', icon: '📈', label: t('dashboard.tabs.progressions'), hint: t('dashboard.tabs.progressionsHint') });
   }
   if (showTransits) {
-    tabs.push({ id: 'transits', icon: '🌌', label: t('dashboard.tabs.transits') });
+    tabs.push({ id: 'transits', icon: '🌌', label: t('dashboard.tabs.transits'), hint: t('dashboard.tabs.transitsHint') });
   }
   if (showDailyForecast) {
     tabs.push({ id: 'dailyForecast', icon: '🎯', label: t('dashboard.tabs.dailyForecast') });
@@ -61,16 +62,17 @@ const AnalysisTabs: React.FC<AnalysisTabsProps> = ({ active, onChange, showProgr
               // min-width: auto у flex-элемента запрещает сжиматься ниже
               // min-content, поэтому одного flexWrap на родителе мало.
               minWidth: 0,
-              padding: '10px 16px',
+              padding: '8px 16px',
               border: 'none',
               borderRadius: '9px',
               fontSize: '14px',
               fontWeight: 600,
               cursor: 'pointer',
               display: 'flex',
+              flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '8px',
+              gap: '2px',
               transition: 'all 0.15s',
               background: isActive
                 ? 'linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%)'
@@ -84,8 +86,15 @@ const AnalysisTabs: React.FC<AnalysisTabsProps> = ({ active, onChange, showProgr
               if (!isActive) e.currentTarget.style.color = 'var(--text-secondary)';
             }}
           >
-            <span>{tab.icon}</span>
-            {tab.label}
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span>{tab.icon}</span>
+              {tab.label}
+            </span>
+            {tab.hint && (
+              <span style={{ fontSize: '14px', fontWeight: 500 }}>
+                {tab.hint}
+              </span>
+            )}
           </button>
         );
       })}

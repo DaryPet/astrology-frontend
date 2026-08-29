@@ -3327,6 +3327,7 @@ const Dashboard = () => {
                 <AnalysisTabs
                   active={analysisTab}
                   firstTabLabel={chartDataForAnalysis?.type === 'synastry' ? t('dashboard.tabs.synastryMain') : undefined}
+                  firstTabHint={chartDataForAnalysis?.type === 'synastry' ? t('dashboard.tabs.synastryMainHint') : undefined}
                   showProgressions={!!(savedChartId && fullAnalysis)}
                   showTransits={!!(savedChartId && fullAnalysis && chartDataForAnalysis?.type !== 'synastry')}
                   // v1.2: daily forecast temporarily hidden from the natal chart, do not delete

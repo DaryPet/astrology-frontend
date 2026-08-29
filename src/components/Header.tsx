@@ -111,7 +111,9 @@ const Header: React.FC<HeaderProps> = ({ hasUnsavedAnalysis = false, onProtected
 
             <nav className="nav">
               <Link to={`/${currentLangCode}/`} className="nav-link" onClick={handleNavClick(`/${currentLangCode}/`)}>{t('nav.home')}</Link>
-              <Link to={`/${currentLangCode}/synastry`} className="nav-link" onClick={handleNavClick(`/${currentLangCode}/synastry`)}>{t('nav.synastry')}</Link>
+              <Link to={`/${currentLangCode}/synastry`} className="nav-link" onClick={handleNavClick(`/${currentLangCode}/synastry`)}>
+                {t('nav.synastry')} <span style={{ opacity: 0.65, fontWeight: 400 }}>({t('nav.synastryHint')})</span>
+              </Link>
               {/* v1.2: event analysis temporarily hidden from the header, do not delete
               <Link to={`/${currentLangCode}/event-analysis`} className="nav-link" onClick={handleNavClick(`/${currentLangCode}/event-analysis`)}>{t('nav.eventAnalysis')}</Link>
               */}

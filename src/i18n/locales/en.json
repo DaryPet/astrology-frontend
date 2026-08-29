@@ -6,6 +6,7 @@
   "nav": {
     "home": "Home",
     "synastry": "Synastry",
+    "synastryHint": "compatibility",
     "eventAnalysis": "Event Analysis",
     "dashboard": "Dashboard",
     "login": "Login",
@@ -225,6 +226,7 @@
     },
     "progressedSynastry": {
       "title": "Progressed Synastry",
+      "hint": "Right now",
       "subtitle": "Both partners' progressions for the current period: how their inner processes overlay each other right now",
       "period": "Period",
       "age": "Age",
@@ -252,9 +254,13 @@
     },
     "tabs": {
       "natal": "Natal Chart",
+      "natalHint": "Who you are",
       "synastryMain": "Synastry",
+      "synastryMainHint": "Compatibility",
       "progressions": "Progressions",
+      "progressionsHint": "Right now",
       "transits": "Transits",
+      "transitsHint": "Your day",
       "dailyForecast": "Daily Forecast"
     },
     "transits": {
