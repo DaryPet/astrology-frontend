@@ -35,6 +35,7 @@ import AspectAnalysisModal from '../components/AspectAnalysisModal';
 import AnalysisModeToggle from '../components/AnalysisModeToggle';
 import UnsavedAnalysisModal from '../components/UnsavedAnalysisModal';
 import ProgressionsPanel from '../components/ProgressionsPanel';
+import ErrorWithRetry from '../components/ErrorWithRetry';
 import ProgressedSynastryPanel from '../components/ProgressedSynastryPanel';
 import AnalysisTabs, { AnalysisTabId } from '../components/AnalysisTabs';
 import TransitsPanel from '../components/TransitsPanel';
@@ -704,7 +705,10 @@ const Dashboard = () => {
         localStorage.setItem(`savedFullAnalysis_${targetChartId}_${mode}`, analysis);
         const isSynastry = chartDataForAnalysis?.type === 'synastry';
         const type = isSynastry ? `synastry_${mode}` : `full_${mode}`;
-        chartsApi.saveInterpretation(Number(targetChartId), type, analysis).catch(() => {});
+        // Awaited so the finally below doesn't clear the in-flight marker
+        // before the row is in the DB — a reconnected instance reads it the
+        // moment that key clears.
+        await chartsApi.saveInterpretation(Number(targetChartId), type, analysis).catch(() => {});
       }
     } catch (err) {
       const errorDetail = (err as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
@@ -786,10 +790,19 @@ const Dashboard = () => {
         if (targetChartId) {
           localStorage.setItem(`savedFullAnalysis_${targetChartId}_${mode}`, result.analysis);
           const type = isSynastry ? `synastry_${mode}` : `full_${mode}`;
-          chartsApi.saveInterpretation(Number(targetChartId), type, result.analysis).catch(() => {});
+          // Clear the in-flight marker only once the row is actually in the DB:
+          // a reconnected instance reads it the moment this key clears, and a
+          // still-in-flight save leaves it reading an empty result.
+          chartsApi.saveInterpretation(Number(targetChartId), type, result.analysis)
+            .catch(() => {})
+            .finally(() => {
+              if (registryKey) clearStreamText(registryKey);
+              if (registryKey) clearInFlight(registryKey);
+            });
+        } else {
+          if (registryKey) clearStreamText(registryKey);
+          if (registryKey) clearInFlight(registryKey);
         }
-        if (registryKey) clearStreamText(registryKey);
-        if (registryKey) clearInFlight(registryKey);
 
         verifiedTextRef.current = result.analysis;
         finalTextRef.current = result.analysis;
@@ -1085,6 +1098,54 @@ const Dashboard = () => {
     // unlike a plain useRef, so a background request that's still running
     // after the component unmounted won't get duplicated on return.
     const registryKey = `${isSynastry ? 'progressed-synastry' : 'progressions'}:${savedChartId}:${mode}`;
+    console.log('[DEBUG] loadProgressions', registryKey, 'inFlight=', isInFlight(registryKey), new Error().stack);
+
+    // Pure ephemeris calculation (no LLM, no in-flight tracking of its own) —
+    // shared by the reconnect branch below and the first-run branch further
+    // down, so both populate progressedSynastryData (carousel + partner
+    // cards + planet tables) the same way. Safe to call again on reconnect:
+    // it's deterministic and isn't part of what registryKey guards against
+    // duplicating (that's only the AI text generation).
+    const fetchProgressedSynastryData = async () => {
+      if (!isSynastry) return null;
+      const { chart1, chart2 } = chartDataForAnalysis;
+      if (!chart1?.birth_date || !chart2?.birth_date) return null;
+      const buildPersonInput = (c: NonNullable<typeof chart1>) => ({
+        birth_date: c.birth_date,
+        birth_time: c.birth_time,
+        birth_place: c.birth_place,
+        latitude: c.latitude,
+        longitude: c.longitude,
+        timezone: c.timezone,
+        house_system: c.house_system || 'Placidus'
+      });
+      return astrologyAPI.calculateProgressedSynastry({
+        chart1: buildPersonInput(chart1),
+        chart2: buildPersonInput(chart2),
+        house_system: chart1.house_system || 'Placidus'
+      });
+    };
+
+    // The natal-progressions counterpart of fetchProgressedSynastryData:
+    // progressionsData (progressed planets, lunar phase, aspects_to_natal)
+    // also lives only in component state and comes back null on a remount,
+    // so the reconnect branch below recomputes it the same way the first-run
+    // branch does — otherwise a returning panel would show a bare spinner
+    // with no carousel/planet table/aspects until the AI text is done.
+    const fetchNatalProgressionsData = async () => {
+      if (isSynastry) return null;
+      const meta = chartDataForAnalysis.meta;
+      if (!meta?.birth_date) return null;
+      return astrologyAPI.calculateProgressions({
+        birth_date: meta.birth_date,
+        birth_place: meta.birth_place,
+        latitude: meta.latitude,
+        longitude: meta.longitude,
+        timezone: meta.timezone,
+        house_system: (chartDataForAnalysis.houses_meta as { house_system?: string } | undefined)?.house_system || 'Placidus'
+      });
+    };
+
     if (isInFlight(registryKey)) {
       // Blocked because a background request from a previous visit to this
       // chart is still running — it belongs to an unmounted instance, but it
@@ -1098,6 +1159,21 @@ const Dashboard = () => {
       setProgressionsLoading(true);
       setProgressionsError('');
       progressionsStream.reset();
+
+      // The carousel/cards/tables depend on progressedSynastryData, which —
+      // unlike the AI text — was never persisted anywhere for a remounted
+      // instance to pick back up; it just came back null with the fresh
+      // component. Recompute it right away so the panel isn't left showing
+      // only a spinner/typewriter with everything else blank.
+      fetchProgressedSynastryData()
+        .then((restored) => { if (restored) setProgressedSynastryData(restored); })
+        .catch((err) => console.error('Progressed synastry: failed to restore data on reconnect:', err));
+      // Same story for natal progressions: progressionsData never survived
+      // the remount either, and nothing on this path restored it — leaving
+      // the panel with only the spinner, no carousel and no aspects list.
+      fetchNatalProgressionsData()
+        .then((restored) => { if (restored) setProgressionsData(restored); })
+        .catch((err) => console.error('Progressions: failed to restore data on reconnect:', err));
       let seenLength = 0;
       const replay = () => {
         const current = getStreamText(registryKey);
@@ -1139,14 +1215,16 @@ const Dashboard = () => {
             // The background attempt cleared without saving anything (it
             // failed) — surface that instead of silently starting another
             // real generation.
+            console.error(`${isSynastry ? 'Progressed synastry' : 'Progressions'}: reconnect found no cached result after registry cleared.`);
             progressionsStream.handleError();
             setProgressionsLoading(false);
-            setProgressionsError(t('dashboard.progressions.error'));
+            setProgressionsError(t(isSynastry ? 'dashboard.progressedSynastry.error' : 'dashboard.progressions.error'));
           }
-        } catch {
+        } catch (err) {
+          console.error(`${isSynastry ? 'Progressed synastry' : 'Progressions'}: reconnect cache lookup failed:`, err);
           progressionsStream.handleError();
           setProgressionsLoading(false);
-          setProgressionsError(t('dashboard.progressions.error'));
+          setProgressionsError(t(isSynastry ? 'dashboard.progressedSynastry.error' : 'dashboard.progressions.error'));
         }
       }, {
         // Progressions/progressed-synastry generation genuinely runs several
@@ -1156,10 +1234,11 @@ const Dashboard = () => {
         intervalMs: 5000,
         maxAttempts: 150,
         onTimeout: () => {
+          console.error(`${isSynastry ? 'Progressed synastry' : 'Progressions'}: reconnect gave up waiting for the background request to clear.`);
           window.clearInterval(replayInterval);
           progressionsStream.handleError();
           setProgressionsLoading(false);
-          setProgressionsError(t('dashboard.progressions.error'));
+          setProgressionsError(t(isSynastry ? 'dashboard.progressedSynastry.error' : 'dashboard.progressions.error'));
         },
       });
       return;
@@ -1179,22 +1258,17 @@ const Dashboard = () => {
           return;
         }
 
-        const buildPersonInput = (c: NonNullable<typeof chart1>) => ({
-          birth_date: c.birth_date,
-          birth_time: c.birth_time,
-          birth_place: c.birth_place,
-          latitude: c.latitude,
-          longitude: c.longitude,
-          timezone: c.timezone,
-          house_system: c.house_system || 'Placidus'
-        });
-
-        const data = await astrologyAPI.calculateProgressedSynastry({
-          chart1: buildPersonInput(chart1),
-          chart2: buildPersonInput(chart2),
-          house_system: chart1.house_system || 'Placidus'
-        });
+        const data = await fetchProgressedSynastryData();
+        if (!data) {
+          setProgressionsError(t('dashboard.progressions.noBirthData'));
+          setProgressionsLoading(false);
+          clearInFlight(registryKey);
+          return;
+        }
         setProgressedSynastryData(data);
+        // DB cache key: YYYY-MM, same format the natal progressions branch and
+        // the reconnect branch above use. data.period is YYYY-MM-DD (backend).
+        const cachePeriod = new Date().toISOString().slice(0, 7);
 
         // Already fetched this mode client-side — switch instantly, no DB
         // round-trip, no regeneration.
@@ -1211,7 +1285,7 @@ const Dashboard = () => {
           return;
         }
 
-        const cached = await chartsApi.getProgressedSynastryAnalysis(Number(savedChartId), mode, data.period);
+        const cached = await chartsApi.getProgressedSynastryAnalysis(Number(savedChartId), mode, cachePeriod);
         if (cached) {
           setProgressedSynastryAnalysis(cached);
           if (mode === 'simple') setProgressedSynastrySimpleAnalysis(cached);
@@ -1231,7 +1305,13 @@ const Dashboard = () => {
         };
 
         await streamProgressedSynastryAnalysis(
-          { progressed_synastry_data: data as unknown as Record<string, unknown>, language: i18n.language || 'ru', mode },
+          {
+            progressed_synastry_data: data as unknown as Record<string, unknown>,
+            language: i18n.language || 'ru',
+            mode,
+            // Chosen once when the synastry was created — never re-asked here.
+            relationship_context: chartDataForAnalysis.relationship_context as string | undefined,
+          },
           {
             onStage: progressionsStream.handleStage,
             onDelta: (text) => {
@@ -1242,14 +1322,22 @@ const Dashboard = () => {
             },
             onFinal: (result) => {
               // See the non-synastry branch's onFinal below — same reasoning:
-              // persist and clear the in-flight marker immediately, not gated
-              // behind the typewriter catch-up which stalls whenever the tab
-              // is backgrounded or the component has unmounted.
-              chartsApi.saveProgressedSynastryAnalysis(Number(savedChartId), mode, data.period, result.analysis).catch(err => {
-                console.error('Failed to save progressed synastry analysis:', err);
-              });
-              clearStreamText(registryKey);
-              clearInFlight(registryKey);
+              // persist here, not gated behind the typewriter catch-up which
+              // stalls whenever the tab is backgrounded or the component has
+              // unmounted.
+              console.log('[DEBUG] progressed synastry onFinal, saving', `progressed_synastry_${mode}`, cachePeriod, 'chart=', savedChartId, 'len=', result.analysis?.length);
+              // Clear the in-flight marker only once the row is actually in the DB:
+              // a reconnected instance reads it the moment this key clears, and a
+              // still-in-flight save leaves it reading an empty result.
+              chartsApi.saveProgressedSynastryAnalysis(Number(savedChartId), mode, cachePeriod, result.analysis)
+                .then(() => console.log('[DEBUG] progressed synastry SAVED OK', `progressed_synastry_${mode}`, cachePeriod))
+                .catch(err => {
+                  console.error('[DEBUG] Failed to save progressed synastry analysis:', err?.message, err);
+                })
+                .finally(() => {
+                  clearStreamText(registryKey);
+                  clearInFlight(registryKey);
+                });
               progressionsStream.handleFinal(result.analysis);
             },
             onError: async (detail) => {
@@ -1257,17 +1345,19 @@ const Dashboard = () => {
                 try {
                   const result = await astrologyAPI.getProgressedSynastryAnalysis({
                     progressed_synastry_data: data,
-                    language: i18n.language || 'ru'
+                    language: i18n.language || 'ru',
+                    relationship_context: chartDataForAnalysis.relationship_context as string | undefined
                   }, mode);
                   setProgressedSynastryAnalysis(result.analysis);
                   if (mode === 'simple') setProgressedSynastrySimpleAnalysis(result.analysis);
                   else setProgressedSynastryAdvancedAnalysis(result.analysis);
-                  chartsApi.saveProgressedSynastryAnalysis(Number(savedChartId), mode, data.period, result.analysis).catch(err => {
+                  chartsApi.saveProgressedSynastryAnalysis(Number(savedChartId), mode, cachePeriod, result.analysis).catch(err => {
                     console.error('Failed to save progressed synastry analysis:', err);
                   });
                 } catch (err) {
                   const errorDetail = (err as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
-                  setProgressionsError(typeof errorDetail === 'string' ? errorDetail : t('dashboard.progressions.error'));
+                  console.error('Progressed synastry: fallback fetch failed after empty stream error:', detail, err);
+                  setProgressionsError(typeof errorDetail === 'string' ? errorDetail : t('dashboard.progressedSynastry.error'));
                 } finally {
                   setProgressionsLoading(false);
                   clearStreamText(registryKey);
@@ -1275,11 +1365,46 @@ const Dashboard = () => {
                 }
                 return;
               }
-              progressionsStream.handleError();
-              setProgressionsError(detail || t('dashboard.progressions.error'));
-              setProgressionsLoading(false);
-              clearStreamText(registryKey);
-              clearInFlight(registryKey);
+              // The stream connection itself dropped (proxy/network hiccup)
+              // mid-generation — text had already started printing, so the
+              // backend is mid-flight and, per observed behaviour, keeps
+              // generating and saves the result on its own regardless of
+              // whether the client is still listening. Failing immediately
+              // here throws away a result that's usually only seconds away.
+              // Poll the DB for it (same idea as the isInFlight reconnect
+              // branch above, but self-driven since nothing will ever flip
+              // isInFlight(registryKey) back to false on its own — the fetch
+              // that would have cleared it is the one that just errored).
+              console.error('Progressed synastry stream dropped after partial text, polling DB before giving up:', detail);
+              const deadline = Date.now() + 3 * 60 * 1000; // ~3 min, matches remaining generation time
+              const poll = async () => {
+                try {
+                  const cached = await chartsApi.getProgressedSynastryAnalysis(Number(savedChartId), mode, cachePeriod);
+                  if (cached) {
+                    setProgressedSynastryAnalysis(cached);
+                    if (mode === 'simple') setProgressedSynastrySimpleAnalysis(cached);
+                    else setProgressedSynastryAdvancedAnalysis(cached);
+                    progressionsStream.handleFinal(cached);
+                    setProgressionsLoading(false);
+                    clearStreamText(registryKey);
+                    clearInFlight(registryKey);
+                    return;
+                  }
+                } catch (err) {
+                  console.error('Progressed synastry: DB poll after stream drop failed, retrying:', err);
+                }
+                if (Date.now() >= deadline) {
+                  console.error('Progressed synastry: gave up polling DB after stream drop, original detail:', detail);
+                  progressionsStream.handleError();
+                  setProgressionsError(detail || t('dashboard.progressedSynastry.error'));
+                  setProgressionsLoading(false);
+                  clearStreamText(registryKey);
+                  clearInFlight(registryKey);
+                  return;
+                }
+                window.setTimeout(poll, 5000);
+              };
+              poll();
             },
           }
         );
@@ -1310,14 +1435,13 @@ const Dashboard = () => {
       }
 
       const period = new Date().toISOString().slice(0, 7); // YYYY-MM
-      const data = await astrologyAPI.calculateProgressions({
-        birth_date: meta.birth_date,
-        birth_place: meta.birth_place,
-        latitude: meta.latitude,
-        longitude: meta.longitude,
-        timezone: meta.timezone,
-        house_system: (chartDataForAnalysis.houses_meta as { house_system?: string } | undefined)?.house_system || 'Placidus'
-      });
+      const data = await fetchNatalProgressionsData();
+      if (!data) {
+        setProgressionsError(t('dashboard.progressions.noBirthData'));
+        setProgressionsLoading(false);
+        clearInFlight(registryKey);
+        return;
+      }
       setProgressionsData(data);
 
       const cached = await chartsApi.getProgressionsAnalysis(Number(savedChartId), mode, period);
@@ -1363,11 +1487,17 @@ const Dashboard = () => {
             // out 80s later with a false "Не вдалося розрахувати прогресії"
             // error, even though the backend finished successfully (see
             // inFlightRegistry.ts).
-            chartsApi.saveProgressionsAnalysis(Number(savedChartId), mode, period, result.analysis).catch(err => {
-              console.error('Failed to save progressions analysis:', err);
-            });
-            clearStreamText(registryKey);
-            clearInFlight(registryKey);
+            // Clear the in-flight marker only once the row is actually in the DB:
+            // a reconnected instance reads it the moment this key clears, and a
+            // still-in-flight save leaves it reading an empty result.
+            chartsApi.saveProgressionsAnalysis(Number(savedChartId), mode, period, result.analysis)
+              .catch(err => {
+                console.error('Failed to save progressions analysis:', err);
+              })
+              .finally(() => {
+                clearStreamText(registryKey);
+                clearInFlight(registryKey);
+              });
             progressionsStream.handleFinal(result.analysis);
           },
           onError: async (detail) => {
@@ -2104,13 +2234,17 @@ const Dashboard = () => {
             content: result.answer || t('dashboard.chat.noAnswer'),
             relevant_chunks: result.relevant_chunks || []
           };
-          chartsApi.appendChatMessages(chartIdAtSend, userId, [botMessage]).catch(err => {
-            console.error('Failed to save chat message:', err);
-          });
+          // finishPending() only once the message is actually in the DB: a
+          // reconnected instance reloads the history the moment this key
+          // clears, and a still-in-flight save leaves it without this answer.
+          chartsApi.appendChatMessages(chartIdAtSend, userId, [botMessage])
+            .catch(err => {
+              console.error('Failed to save chat message:', err);
+            })
+            .finally(finishPending);
           if (Number(savedChartIdRef.current) === chartIdAtSend) {
             setChatHistory(prev => [...prev, botMessage]);
           }
-          finishPending();
         },
         onError: async (detail) => {
           if (!chatStream.hasDelta()) {
@@ -3224,11 +3358,13 @@ const Dashboard = () => {
                       phase={progressionsStream.phase}
                       loading={progressionsLoading}
                       error={progressionsError}
+                      onRetry={() => loadProgressions()}
                       name1={chartDataForAnalysis.person1_name}
                       name2={chartDataForAnalysis.person2_name}
                     />
                   ) : (
                     <ProgressionsPanel
+                      onRetry={() => loadProgressions()}
                       data={progressionsData}
                       analysis={progressionsAnalysis}
                       displayedText={progressionsStream.displayedText}
@@ -3258,6 +3394,7 @@ const Dashboard = () => {
                     analysisLocation={transitsPanelAnalysisLocation}
                     analysisDate={transitsPanelAnalysisDate}
                     onRunAnalysis={() => { setHistoryViewOverride(null); runTransitsAnalysis(); }}
+                    onRetry={() => { setHistoryViewOverride(null); runTransitsAnalysis(); }}
                     transitsRemaining={transitsRemaining}
                     transitsLimit={MAX_TRANSITS_ANALYSIS_PER_DAY}
                     generationLocked={transitsGenerationLocked}
@@ -3301,9 +3438,7 @@ const Dashboard = () => {
                   )}
 
                   {analysisError && (
-                    <div className="db-error">
-                      {analysisError}
-                    </div>
+                    <ErrorWithRetry message={analysisError} onRetry={() => loadFullAnalysis()} className="db-error" />
                   )}
 
                   {(fullAnalysis || streamPhase === 'typing') && (
@@ -3326,7 +3461,22 @@ const Dashboard = () => {
                             {!chatVisible && (
                               <div className="db-chat__open-row">
                                 <button
-                                  onClick={() => setChatVisible(true)}
+                                  onClick={() => {
+                                    setChatVisible(true);
+                                    // Expanding this button in place doesn't move the page —
+                                    // with existing history the panel can render taller than
+                                    // the viewport, leaving the last message (what the user
+                                    // came back to read) below the fold. Scroll it into view
+                                    // once the panel has rendered. A brand-new chat (no
+                                    // history yet) has nothing below the fold to reveal, so
+                                    // leave that case as-is.
+                                    if (chatHistory.length > 0) {
+                                      setTimeout(() => {
+                                        document.querySelector('#chat-section .db-chat')
+                                          ?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                                      }, 100);
+                                    }
+                                  }}
                                   className="db-btn-primary"
                                   style={{ maxWidth: '300px', width: '100%' }}
                                   disabled={!fullAnalysis}

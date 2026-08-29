@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import ErrorWithRetry from './ErrorWithRetry';
 import MarkdownContent from './MarkdownContent';
 import ProcessingMessage from './ProcessingMessage';
 import LiveSkyCarousel from './LiveSkyCarousel';
@@ -15,9 +16,10 @@ interface ProgressionsPanelProps {
   phase?: StreamPhase;
   loading: boolean;
   error: string;
+  onRetry?: () => void;
 }
 
-const ProgressionsPanel: React.FC<ProgressionsPanelProps> = ({ data, analysis, displayedText = '', phase = 'idle', loading, error }) => {
+const ProgressionsPanel: React.FC<ProgressionsPanelProps> = ({ data, analysis, displayedText = '', phase = 'idle', loading, error, onRetry }) => {
   const { t, i18n } = useTranslation();
 
   const planetName = (key: string) => t(`planets.names.${key}`, { defaultValue: key });
@@ -67,9 +69,7 @@ const ProgressionsPanel: React.FC<ProgressionsPanelProps> = ({ data, analysis, d
       )}
 
       {error && (
-        <div className="ui-error" style={{ marginTop: 'var(--space-4)' }}>
-          {error}
-        </div>
+        <ErrorWithRetry message={error} onRetry={onRetry} style={{ marginTop: 'var(--space-4)' }} />
       )}
 
       {/* AI analysis: sits right where the spinner is — above the planet table and aspect lists. */}

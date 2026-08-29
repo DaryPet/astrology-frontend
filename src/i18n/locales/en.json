@@ -305,7 +305,8 @@
     "email": "Email",
     "googleSignIn": "Sign in with Google",
     "or": "or",
-    "scrollTop": "Back to top"
+    "scrollTop": "Back to top",
+    "retry": "Retry"
   },
   "forgotPassword": {
     "title": "Forgot Password?",
