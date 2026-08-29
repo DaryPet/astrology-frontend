@@ -46,7 +46,7 @@ import type { Location } from '../components/LocationInput';
 import { isNearLimit, isAtLimit, MAX_MESSAGES, type ChatMessage } from '../services/chatStorage';
 import { isInFlight, markInFlight, clearInFlight, waitForClear } from '../utils/inFlightRegistry';
 import { appendStreamText, getStreamText, clearStreamText } from '../utils/streamTextRegistry';
-import { Sparkles, Users, Orbit, Table2, ArrowUp } from 'lucide-react';
+import { Sparkles, Users, Orbit, Table2, ArrowUp, Calendar } from 'lucide-react';
 import ScrollAnchor from '../components/ScrollAnchor';
 import '../styles/dashboard.css';
 
@@ -3205,23 +3205,40 @@ const Dashboard = () => {
           {showFullAnalysis && (
             <>
               <div className="db-section-header">
-                <h2 className="db-section-title">
-                  {chartDataForAnalysis?.type === 'synastry' ? (
-                    <>
-                      {chartDataForAnalysis.person1_name} / {chartDataForAnalysis.person2_name}:{' '}
-                      {t('synastry.fullAnalysis.title')}
-                    </>
-                  ) : (
-                    <>
-                      {chartDataForAnalysis?.name && (
-                        <span style={{ fontWeight: '500', marginRight: '10px' }}>
-                          {chartDataForAnalysis.name}
-                        </span>
-                      )}
-                      {t('dashboard.fullAnalysis.title')}
-                    </>
-                  )}
-                </h2>
+                <div>
+                  <h2 className="db-section-title">
+                    {chartDataForAnalysis?.type === 'synastry' ? (
+                      <>
+                        {chartDataForAnalysis.person1_name} / {chartDataForAnalysis.person2_name}:{' '}
+                        {t('synastry.fullAnalysis.title')}
+                      </>
+                    ) : (
+                      <>
+                        {chartDataForAnalysis?.name && (
+                          <span style={{ fontWeight: '500', marginRight: '10px' }}>
+                            {chartDataForAnalysis.name}
+                          </span>
+                        )}
+                        {t('dashboard.fullAnalysis.title')}
+                      </>
+                    )}
+                  </h2>
+                  {(() => {
+                    const isSynastry = chartDataForAnalysis?.type === 'synastry';
+                    const dateDisplay = isSynastry
+                      ? [chartDataForAnalysis?.chart1?.birth_date?.split('T')[0], chartDataForAnalysis?.chart2?.birth_date?.split('T')[0]]
+                        .filter(Boolean)
+                        .join(' / ')
+                      : chartDataForAnalysis?.meta?.birth_date?.split('T')[0];
+                    if (!dateDisplay) return null;
+                    return (
+                      <div className="ui-meta" style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
+                        <Calendar size={13} strokeWidth={2} />
+                        <span>{dateDisplay}</span>
+                      </div>
+                    );
+                  })()}
+                </div>
                 <AnalysisModeToggle
                   value={analysisMode}
                   onChange={(val) => {
