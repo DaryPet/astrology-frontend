@@ -1126,6 +1126,26 @@ const Dashboard = () => {
       });
     };
 
+    // The natal-progressions counterpart of fetchProgressedSynastryData:
+    // progressionsData (progressed planets, lunar phase, aspects_to_natal)
+    // also lives only in component state and comes back null on a remount,
+    // so the reconnect branch below recomputes it the same way the first-run
+    // branch does — otherwise a returning panel would show a bare spinner
+    // with no carousel/planet table/aspects until the AI text is done.
+    const fetchNatalProgressionsData = async () => {
+      if (isSynastry) return null;
+      const meta = chartDataForAnalysis.meta;
+      if (!meta?.birth_date) return null;
+      return astrologyAPI.calculateProgressions({
+        birth_date: meta.birth_date,
+        birth_place: meta.birth_place,
+        latitude: meta.latitude,
+        longitude: meta.longitude,
+        timezone: meta.timezone,
+        house_system: (chartDataForAnalysis.houses_meta as { house_system?: string } | undefined)?.house_system || 'Placidus'
+      });
+    };
+
     if (isInFlight(registryKey)) {
       // Blocked because a background request from a previous visit to this
       // chart is still running — it belongs to an unmounted instance, but it
@@ -1148,6 +1168,12 @@ const Dashboard = () => {
       fetchProgressedSynastryData()
         .then((restored) => { if (restored) setProgressedSynastryData(restored); })
         .catch((err) => console.error('Progressed synastry: failed to restore data on reconnect:', err));
+      // Same story for natal progressions: progressionsData never survived
+      // the remount either, and nothing on this path restored it — leaving
+      // the panel with only the spinner, no carousel and no aspects list.
+      fetchNatalProgressionsData()
+        .then((restored) => { if (restored) setProgressionsData(restored); })
+        .catch((err) => console.error('Progressions: failed to restore data on reconnect:', err));
       let seenLength = 0;
       const replay = () => {
         const current = getStreamText(registryKey);
@@ -1409,14 +1435,13 @@ const Dashboard = () => {
       }
 
       const period = new Date().toISOString().slice(0, 7); // YYYY-MM
-      const data = await astrologyAPI.calculateProgressions({
-        birth_date: meta.birth_date,
-        birth_place: meta.birth_place,
-        latitude: meta.latitude,
-        longitude: meta.longitude,
-        timezone: meta.timezone,
-        house_system: (chartDataForAnalysis.houses_meta as { house_system?: string } | undefined)?.house_system || 'Placidus'
-      });
+      const data = await fetchNatalProgressionsData();
+      if (!data) {
+        setProgressionsError(t('dashboard.progressions.noBirthData'));
+        setProgressionsLoading(false);
+        clearInFlight(registryKey);
+        return;
+      }
       setProgressionsData(data);
 
       const cached = await chartsApi.getProgressionsAnalysis(Number(savedChartId), mode, period);
