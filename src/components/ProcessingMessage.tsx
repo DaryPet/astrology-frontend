@@ -70,7 +70,7 @@ const ProcessingMessage = ({ size = 'md', title, phase, intro }: ProcessingMessa
       icon: { width: '24px', height: '24px' },
       iconSvg: { width: '12px', height: '12px' },
       title: { fontSize: '12px', marginBottom: '2px', display: 'none' },
-      hint: { fontSize: '11px', display: 'none' },
+      hint: { fontSize: '14px', display: 'none' },
       dots: { marginTop: '0px', gap: '4px' },
       dot: { width: '4px', height: '4px' }
     },
@@ -78,8 +78,8 @@ const ProcessingMessage = ({ size = 'md', title, phase, intro }: ProcessingMessa
       container: { padding: '20px', borderRadius: '12px' },
       icon: { width: '40px', height: '40px' },
       iconSvg: { width: '20px', height: '20px' },
-      title: { fontSize: '16px', marginBottom: '4px' },
-      hint: { fontSize: '12px' },
+      title: { fontSize: '18px', marginBottom: '4px' },
+      hint: { fontSize: '14px' },
       dots: { marginTop: '8px', gap: '6px' },
       dot: { width: '6px', height: '6px' }
     },
@@ -87,8 +87,8 @@ const ProcessingMessage = ({ size = 'md', title, phase, intro }: ProcessingMessa
       container: { padding: '40px 20px', borderRadius: '16px' },
       icon: { width: '80px', height: '80px' },
       iconSvg: { width: '40px', height: '40px' },
-      title: { fontSize: '22px', marginBottom: '8px' },
-      hint: { fontSize: '14px' },
+      title: { fontSize: '24px', marginBottom: '8px' },
+      hint: { fontSize: '16px' },
       dots: { marginTop: '20px', gap: '8px' },
       dot: { width: '8px', height: '8px' }
     }

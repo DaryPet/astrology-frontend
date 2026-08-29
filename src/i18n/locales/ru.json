@@ -6,6 +6,7 @@
   "nav": {
     "home": "Главная",
     "synastry": "Синастрия",
+    "synastryHint": "совместимость",
     "eventAnalysis": "Анализ события",
     "dashboard": "Мой кабинет",
     "login": "Войти",
@@ -225,6 +226,7 @@
     },
     "progressedSynastry": {
       "title": "Прогрессивная синастрия",
+      "hint": "Что сейчас",
       "subtitle": "Прогрессии обоих партнёров на текущий период: как их внутренние процессы сейчас накладываются друг на друга",
       "period": "Период",
       "age": "Возраст",
@@ -252,9 +254,13 @@
     },
     "tabs": {
       "natal": "Натальная карта",
+      "natalHint": "Кто ты",
       "synastryMain": "Синастрия",
+      "synastryMainHint": "Совместимость",
       "progressions": "Прогрессии",
+      "progressionsHint": "Что сейчас",
       "transits": "Транзиты",
+      "transitsHint": "Твой день",
       "dailyForecast": "Прогноз дня"
     },
     "transits": {

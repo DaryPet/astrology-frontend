@@ -82,7 +82,10 @@ const ProgressedSynastryPanel: React.FC<ProgressedSynastryPanelProps> = ({ data,
     }}>
       <div className="ui-row ui-row--between ui-row--tight">
         <h3 className="ui-subtitle" style={{ marginBottom: 0 }}>
-          📈 {t('dashboard.progressedSynastry.title')}
+          📈 {t('dashboard.progressedSynastry.title')}{' '}
+          <span className="ui-meta" style={{ fontWeight: 400 }}>
+            ({t('dashboard.progressedSynastry.hint')})
+          </span>
         </h3>
         {data && (
           <span className="ui-meta">

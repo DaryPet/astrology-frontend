@@ -6,6 +6,7 @@
   "nav": {
     "home": "Головна",
     "synastry": "Синастрія",
+    "synastryHint": "сумісність",
     "eventAnalysis": "Аналіз події",
     "dashboard": "Мій кабінет",
     "login": "Увійти",
@@ -225,6 +226,7 @@
     },
     "progressedSynastry": {
       "title": "Прогресивна синастрія",
+      "hint": "Що зараз",
       "subtitle": "Прогресії обох партнерів на поточний період: як їхні внутрішні процеси зараз накладаються одне на одне",
       "period": "Період",
       "age": "Вік",
@@ -252,9 +254,13 @@
     },
     "tabs": {
       "natal": "Натальна карта",
+      "natalHint": "Хто ти",
       "synastryMain": "Синастрія",
+      "synastryMainHint": "Сумісність",
       "progressions": "Прогресії",
+      "progressionsHint": "Що зараз",
       "transits": "Транзити",
+      "transitsHint": "Твій день",
       "dailyForecast": "Прогноз дня"
     },
     "transits": {
