@@ -65,13 +65,22 @@ export const chartsApi = {
   },
 
   async deleteChart(chartId: number) {
-    // Сначала удаляем интерпретации
+    // Delete interpretations first
     await supabase
       .from('chart_interpretations')
       .delete()
       .eq('chart_id', chartId);
 
-    // Потом карту
+    // transits_usage_log.chart_id references natal_charts without ON DELETE CASCADE —
+    // without this cleanup, deleting the chart fails with 409 (FK violation) if
+    // transits were ever calculated for it. No need to touch chat_messages — that one
+    // already has a cascade in the DB.
+    await supabase
+      .from('transits_usage_log')
+      .delete()
+      .eq('chart_id', chartId);
+
+    // Then the chart
     const { error } = await supabase
       .from('natal_charts')
       .delete()
@@ -97,10 +106,10 @@ export const chartsApi = {
   },
 
   /**
-   * Дневной лимит AI-анализов транзитов — считаем реальные строки в
-   * Supabase (тот же приём, что getChartsCount), а не localStorage-счётчик,
-   * который правится в DevTools. Одна строка = один успешно завершённый
-   * анализ; см. openspec/changes/../transits-usage-log-table.sql.
+   * Daily limit for AI transits analyses — counts actual rows in Supabase
+   * (same approach as getChartsCount), not a localStorage counter that can
+   * be edited via DevTools. One row = one successfully completed analysis;
+   * see openspec/changes/../transits-usage-log-table.sql.
    * Not a hard server-side limit — see plans/transits-daily-limit-server-side.md.
    */
   async getTransitsUsageToday(userId: string): Promise<number> {
@@ -231,20 +240,20 @@ export const chartsApi = {
   },
 
   /**
-   * Сохранить AI-анализ прогрессий в chart_interpretations:
-   * type='progressions_simple'/'progressions_advanced', name=период 'YYYY-MM'
-   * (тот же паттерн, что full_simple/full_advanced и планетные анализы)
+   * Save the AI progressions analysis to chart_interpretations:
+   * type='progressions_simple'/'progressions_advanced', name=period 'YYYY-MM'
+   * (same pattern as full_simple/full_advanced and the planet analyses)
    */
   async saveProgressionsAnalysis(chartId: number, mode: string, period: string, analysis: string) {
     return this.saveInterpretation(chartId, `progressions_${mode}`, analysis, period);
   },
 
   /**
-   * Получить сохранённый анализ прогрессий за период (или null)
+   * Get the saved progressions analysis for a period (or null)
    */
   /**
-   * Анализ транзитов: chart_interpretations,
-   * type='transits_simple'/'transits_advanced', name=день 'YYYY-MM-DD'
+   * Transits analysis: chart_interpretations,
+   * type='transits_simple'/'transits_advanced', name=day 'YYYY-MM-DD'
    */
   async saveTransitsAnalysis(chartId: number, mode: string, day: string, analysis: string) {
     return this.saveInterpretation(chartId, `transits_${mode}`, analysis, day);
@@ -280,9 +289,9 @@ export const chartsApi = {
   },
 
   /**
-   * Сохранить/получить AI-анализ прогрессивной синастрии:
-   * type='progressed_synastry_simple'/'progressed_synastry_advanced', name=период 'YYYY-MM'
-   * (отдельный namespace от натальных progressions_* — не пересекается)
+   * Save/get the AI progressed synastry analysis:
+   * type='progressed_synastry_simple'/'progressed_synastry_advanced', name=period 'YYYY-MM'
+   * (separate namespace from the natal progressions_* — no overlap)
    */
   async saveProgressedSynastryAnalysis(chartId: number, mode: string, period: string, analysis: string) {
     return this.saveInterpretation(chartId, `progressed_synastry_${mode}`, analysis, period);
@@ -308,7 +317,7 @@ export const chartsApi = {
   // async saveChartWithInterpretation(userId: string, chartData: Record<string, unknown>, interpretation: string, planetAnalyses: Array<{planetName: string, analysis: string}, simpleAnalysis?: string, advancedAnalysis?: string> = []) {
   async saveChartWithInterpretation(userId: string, chartData: Record<string, unknown>, interpretation: string, planetAnalyses: Array<{planetName: string, analysis: string}> = [], simpleAnalysis?: string, advancedAnalysis?: string) {
     const chart = await this.saveChart(userId, chartData);
-    // Сохраняем ТОЛЬКО режимозависимые типы (simple + advanced), без общего 'full'
+    // Save ONLY the mode-specific types (simple + advanced), no shared 'full'
     if (simpleAnalysis) await this.saveInterpretation(Number(chart.id), 'full_simple', simpleAnalysis);
     if (advancedAnalysis) await this.saveInterpretation(Number(chart.id), 'full_advanced', advancedAnalysis);
 
@@ -322,7 +331,7 @@ export const chartsApi = {
 
   // async saveSynastryWithInterpretation(userId: string, synastryData: Record<string, unknown>, interpretation: string, simpleAnalysis?: string, advancedAnalysis?: string>) {
   async saveSynastryWithInterpretation(userId: string, synastryData: Record<string, unknown>, interpretation: string, simpleAnalysis?: string, advancedAnalysis?: string) {
-    // Если name уже передан (например, при дубликате), используем его
+    // If name is already provided (e.g. for a duplicate), use it
     let name = synastryData.name as string | undefined;
 
     if (!name) {
@@ -355,13 +364,13 @@ export const chartsApi = {
 
     if (error) throw error;
 
-    // Сохраняем ТОЛЬКО режимозависимые типы (simple + advanced), без общего 'synastry'
+    // Save ONLY the mode-specific types (simple + advanced), no shared 'synastry'
     if (simpleAnalysis) await this.saveInterpretation(data.id, 'synastry_simple', simpleAnalysis);
     if (advancedAnalysis) await this.saveInterpretation(data.id, 'synastry_advanced', advancedAnalysis);
     return data;
   },
 
-  // Маппинг сообщения чата в строку таблицы chat_messages
+  // Maps a chat message to a chat_messages table row
   _toChatRow(chartId: number, userId: string, msg: { role: string; content: string; relevant_chunks?: unknown[] }) {
     return {
       chart_id: chartId,
@@ -372,7 +381,7 @@ export const chartsApi = {
     };
   },
 
-  // Добавляет ТОЛЬКО новые сообщения (по одному за обмен) — без дублирования истории
+  // Appends ONLY new messages (one per exchange) — no history duplication
   async appendChatMessages(chartId: number, userId: string, newMessages: Array<{ role: string; content: string; relevant_chunks?: unknown[] }>) {
     if (!chartId || !userId || !newMessages?.length) return;
 
@@ -383,7 +392,7 @@ export const chartsApi = {
     if (error) throw error;
   },
 
-  // Разовая запись всей накопленной истории (используется при первом сохранении карты)
+  // One-off write of the entire accumulated history (used on first chart save)
   async saveChatMessages(chartId: number, userId: string, messages: Array<{ role: string; content: string; relevant_chunks?: unknown[] }>) {
     if (!chartId || !userId || !messages?.length) return;
     await this.appendChatMessages(chartId, userId, messages);
