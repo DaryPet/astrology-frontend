@@ -258,9 +258,9 @@
       "synastryMain": "Синастрия",
       "synastryMainHint": "Совместимость",
       "progressions": "Прогрессии",
-      "progressionsHint": "Что сейчас",
+      "progressionsHint": "Этап жизни",
       "transits": "Транзиты",
-      "transitsHint": "Твой день",
+      "transitsHint": "Что сейчас",
       "dailyForecast": "Прогноз дня"
     },
     "transits": {

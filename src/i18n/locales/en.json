@@ -258,9 +258,9 @@
       "synastryMain": "Synastry",
       "synastryMainHint": "Compatibility",
       "progressions": "Progressions",
-      "progressionsHint": "Right now",
+      "progressionsHint": "Life stage",
       "transits": "Transits",
-      "transitsHint": "Your day",
+      "transitsHint": "Right now",
       "dailyForecast": "Daily Forecast"
     },
     "transits": {
