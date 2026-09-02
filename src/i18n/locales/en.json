@@ -1,6 +1,6 @@
 {
   "meta": {
-    "title": "Astrology — natal chart, synastry and transits",
+    "title": "AstroApp — natal chart, synastry and transits",
     "description": "Natal chart, synastry, transits and progressions with detailed interpretation. Build your chart from date, time and place of birth."
   },
   "nav": {
@@ -384,7 +384,7 @@
       "home": "Home",
       "synastry": "Synastry"
     },
-    "logo": "Astrology",
+    "logo": "AstroApp",
     "notDetermined": "Not determined"
   },
   "synastry": {
