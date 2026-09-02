@@ -16,6 +16,7 @@ import {
   streamChatAnalysis,
 } from '../services/streamApi';
 import { useStreamedText, type StreamPhase } from '../hooks/useStreamedText';
+import { useChatThread } from '../hooks/useChatThread';
 import i18n from '../i18n';
 import Header from '../components/Header';
 import ProcessingMessage from '../components/ProcessingMessage';
@@ -43,11 +44,11 @@ import TransitsPanel from '../components/TransitsPanel';
 // import DailyForecastPanel from '../components/DailyForecastPanel';
 import type { ProgressionsData, TransitsData, ProgressedSynastryData } from '../services/api';
 import type { Location } from '../components/LocationInput';
-import { isNearLimit, isAtLimit, MAX_MESSAGES, type ChatMessage } from '../services/chatStorage';
+import { type ChatMessage } from '../services/chatStorage';
 import { isInFlight, markInFlight, clearInFlight, waitForClear } from '../utils/inFlightRegistry';
 import { appendStreamText, getStreamText, clearStreamText } from '../utils/streamTextRegistry';
 import { Sparkles, Users, Orbit, Table2, ArrowUp, Calendar } from 'lucide-react';
-import ScrollAnchor from '../components/ScrollAnchor';
+import ChatPanel from '../components/ChatPanel';
 import '../styles/dashboard.css';
 
 const MAX_TRANSITS_ANALYSIS_PER_DAY = 5;
@@ -344,6 +345,16 @@ const Dashboard = () => {
   // Cosmetic only (typewriter catch-up) — persistence happens synchronously
   // in sendChatMessage's onFinal instead, see the comment there.
   const chatStream = useStreamedText(() => {});
+  // Independent chat threads for the progressions / progressed-synastry
+  // tabs — same send/persist/reconnect semantics as the natal chat above,
+  // via chat_messages.context_type (see
+  // openspec/changes/add-progressions-chat/design.md). Never both active
+  // for the same chart: progressions is for a natal chart, progressed
+  // synastry for a synastry chart.
+  const progressionsChat = useChatThread('progressions', savedChartIdRef);
+  const progressedSynastryChat = useChatThread('progressed_synastry', savedChartIdRef);
+  const progressionsChatLoading = savedChartId != null && progressionsChat.pendingChartIds.has(Number(savedChartId));
+  const progressedSynastryChatLoading = savedChartId != null && progressedSynastryChat.pendingChartIds.has(Number(savedChartId));
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [historyCharts, setHistoryCharts] = useState<HistoryChart[]>([]);
@@ -475,7 +486,7 @@ const Dashboard = () => {
 
   const loadChatForChart = async (chartId: number | string) => {
     try {
-      const dbMessages = await chartsApi.getChatMessages(Number(chartId));
+      const dbMessages = await chartsApi.getChatMessages(Number(chartId), 'natal');
       if (Number(savedChartIdRef.current) !== Number(chartId)) return;
       setChatHistory(dbMessages as ChatMessage[]);
     } catch (err) {
@@ -517,7 +528,7 @@ const Dashboard = () => {
       window.clearInterval(replayInterval);
       delete chatResumeInFlightRef.current[registryKey];
       try {
-        const dbMessages = await chartsApi.getChatMessages(numericChartId);
+        const dbMessages = await chartsApi.getChatMessages(numericChartId, 'natal');
         if (Number(savedChartIdRef.current) === numericChartId) {
           setChatHistory(dbMessages as ChatMessage[]);
         }
@@ -638,6 +649,12 @@ const Dashboard = () => {
         setChatHistory([]);
         loadChatForChart(chart.id).catch(err => {
           console.error('Failed to load chat history:', err);
+        });
+        progressionsChat.load(chart.id).catch(err => {
+          console.error('Failed to load progressions chat history:', err);
+        });
+        progressedSynastryChat.load(chart.id).catch(err => {
+          console.error('Failed to load progressed synastry chat history:', err);
         });
         setChatInput('');
 
@@ -1024,6 +1041,8 @@ const Dashboard = () => {
     setProgressedSynastryAnalysis(null);
     setProgressedSynastrySimpleAnalysis(null);
     setProgressedSynastryAdvancedAnalysis(null);
+    progressionsChat.reset();
+    progressedSynastryChat.reset();
     setTransitsDate(new Date().toISOString().slice(0, 10));
     setTransitsLocation(null);
     setTransitsData(null);
@@ -1037,7 +1056,7 @@ const Dashboard = () => {
     setTransitsHistory([]);
     setTransitsViewingCacheKey(null);
     setHistoryViewOverride(null);
-  }, []);
+  }, [progressionsChat, progressedSynastryChat]);
 
   const refreshTransitsRemaining = useCallback(async () => {
     if (!user?.id) return;
@@ -2175,7 +2194,7 @@ const Dashboard = () => {
     const currentHistory = [...chatHistory];
     const userMessage = { role: 'user' as const, content: questionText };
     setChatHistory(prev => [...prev, userMessage]);
-    chartsApi.appendChatMessages(chartIdAtSend, userId, [userMessage]).catch(err => {
+    chartsApi.appendChatMessages(chartIdAtSend, userId, 'natal', [userMessage]).catch(err => {
       console.error('Failed to save chat message:', err);
     });
     setChatInput('');
@@ -2237,7 +2256,7 @@ const Dashboard = () => {
           // finishPending() only once the message is actually in the DB: a
           // reconnected instance reloads the history the moment this key
           // clears, and a still-in-flight save leaves it without this answer.
-          chartsApi.appendChatMessages(chartIdAtSend, userId, [botMessage])
+          chartsApi.appendChatMessages(chartIdAtSend, userId, 'natal', [botMessage])
             .catch(err => {
               console.error('Failed to save chat message:', err);
             })
@@ -2255,7 +2274,7 @@ const Dashboard = () => {
                 content: (response as { data?: { answer?: string; relevant_chunks?: unknown[] } })?.data?.answer || t('dashboard.chat.noAnswer'),
                 relevant_chunks: (response as { data?: { relevant_chunks?: unknown[] } })?.data?.relevant_chunks || []
               };
-              chartsApi.appendChatMessages(chartIdAtSend, userId, [botMessage]).catch(err => {
+              chartsApi.appendChatMessages(chartIdAtSend, userId, 'natal', [botMessage]).catch(err => {
                 console.error('Failed to save chat message:', err);
               });
               if (Number(savedChartIdRef.current) === chartIdAtSend) {
@@ -2286,12 +2305,27 @@ const Dashboard = () => {
     );
   }, [chatInput, chatLoading, chartDataForAnalysis, fullAnalysis, savedChartId, chatHistory, user, t, chatStream]);
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendChatMessage();
-    }
-  };
+  const sendProgressionsChatMessage = useCallback(() => {
+    if (!savedChartId || !user || !progressionsData || !progressionsAnalysis) return;
+    progressionsChat.send({
+      chartId: savedChartId,
+      userId: user.id,
+      chartData: progressionsData as unknown as Record<string, unknown>,
+      summary: progressionsAnalysis,
+      language: i18n.language || 'ru',
+    });
+  }, [savedChartId, user, progressionsData, progressionsAnalysis, progressionsChat]);
+
+  const sendProgressedSynastryChatMessage = useCallback(() => {
+    if (!savedChartId || !user || !progressedSynastryData || !progressedSynastryAnalysis) return;
+    progressedSynastryChat.send({
+      chartId: savedChartId,
+      userId: user.id,
+      chartData: progressedSynastryData as unknown as Record<string, unknown>,
+      summary: progressedSynastryAnalysis,
+      language: i18n.language || 'ru',
+    });
+  }, [savedChartId, user, progressedSynastryData, progressedSynastryAnalysis, progressedSynastryChat]);
 
   useEffect(() => {
     if (showFullAnalysis && chartDataForAnalysis && !fullAnalysis && !analysisLoading) {
@@ -2378,7 +2412,7 @@ const Dashboard = () => {
       // Save chat history to database
       if (chatHistory.length > 0) {
         try {
-          await chartsApi.saveChatMessages(Number(saved.id), user.id, chatHistory);
+          await chartsApi.saveChatMessages(Number(saved.id), user.id, 'natal', chatHistory);
         } catch (err) {
           console.error('Failed to save chat history:', err);
         }
@@ -2430,7 +2464,7 @@ const Dashboard = () => {
 
       if (chatHistory.length > 0) {
         try {
-          await chartsApi.saveChatMessages(Number(saved.id), user.id, chatHistory);
+          await chartsApi.saveChatMessages(Number(saved.id), user.id, 'natal', chatHistory);
         } catch (err) {
           console.error('Failed to save chat history:', err);
         }
@@ -2903,6 +2937,12 @@ const Dashboard = () => {
         loadChatForChart(chart.id).catch(err => {
           console.error('Failed to load chat history:', err);
         });
+        progressionsChat.load(chart.id).catch(err => {
+          console.error('Failed to load progressions chat history:', err);
+        });
+        progressedSynastryChat.load(chart.id).catch(err => {
+          console.error('Failed to load progressed synastry chat history:', err);
+        });
         setShowPlanetTable(false);
         setSimpleAnalysis(null);
         setAdvancedAnalysis(null);
@@ -2955,6 +2995,12 @@ const Dashboard = () => {
     setChatHistory([]);
     loadChatForChart(chart.id).catch(err => {
       console.error('Failed to load chat history:', err);
+    });
+    progressionsChat.load(chart.id).catch(err => {
+      console.error('Failed to load progressions chat history:', err);
+    });
+    progressedSynastryChat.load(chart.id).catch(err => {
+      console.error('Failed to load progressed synastry chat history:', err);
     });
     setChatInput('');
     setShowPlanetTable(false);
@@ -3312,24 +3358,6 @@ const Dashboard = () => {
               )}
 
               <div className="db-action-bar" style={{ justifyContent: 'center', marginTop: '16px' }}>
-                {savedChartId && fullAnalysis && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowPlanetTable(false);
-                      setAnalysisTab('natal');
-                      setShowProgressions(false);
-                      setTimeout(() => {
-                        const el = document.getElementById('chat-section');
-                        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                      }, 100);
-                    }}
-                    className="db-btn-primary"
-                    style={{ flex: 1, minWidth: '200px' }}
-                  >
-                    {t('dashboard.chat.open')}
-                  </button>
-                )}
                 <button
                   onClick={handleTogglePlanetTable}
                   className="db-btn-ghost"
@@ -3368,28 +3396,79 @@ const Dashboard = () => {
 
               {analysisTab === 'progressions' && !showPlanetTable && savedChartId && (
                 <div id="progressions-section">
+                  <div className="db-chat__open-row" style={{ marginTop: '20px', marginBottom: '28px' }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const isSynastry = chartDataForAnalysis?.type === 'synastry';
+                        if (isSynastry) {
+                          progressedSynastryChat.setVisible(true);
+                        } else {
+                          progressionsChat.setVisible(true);
+                        }
+                        setTimeout(() => {
+                          const el = document.getElementById(isSynastry ? 'progressed-synastry-chat-section' : 'progressions-chat-section');
+                          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }, 100);
+                      }}
+                      className="db-btn-primary"
+                      style={{ maxWidth: '300px', width: '100%' }}
+                    >
+                      {t('dashboard.chat.openProgressions')}
+                    </button>
+                  </div>
                   {chartDataForAnalysis?.type === 'synastry' ? (
-                    <ProgressedSynastryPanel
-                      data={progressedSynastryData}
-                      analysis={progressedSynastryAnalysis}
-                      displayedText={progressionsStream.displayedText}
-                      phase={progressionsStream.phase}
-                      loading={progressionsLoading}
-                      error={progressionsError}
-                      onRetry={() => loadProgressions()}
-                      name1={chartDataForAnalysis.person1_name}
-                      name2={chartDataForAnalysis.person2_name}
-                    />
+                    <>
+                      <ProgressedSynastryPanel
+                        data={progressedSynastryData}
+                        analysis={progressedSynastryAnalysis}
+                        displayedText={progressionsStream.displayedText}
+                        phase={progressionsStream.phase}
+                        loading={progressionsLoading}
+                        error={progressionsError}
+                        onRetry={() => loadProgressions()}
+                        name1={chartDataForAnalysis.person1_name}
+                        name2={chartDataForAnalysis.person2_name}
+                      />
+                      <ChatPanel
+                        sectionId="progressed-synastry-chat-section"
+                        visible={progressedSynastryChat.visible}
+                        onVisibleChange={progressedSynastryChat.setVisible}
+                        history={progressedSynastryChat.history}
+                        input={progressedSynastryChat.input}
+                        onInputChange={progressedSynastryChat.setInput}
+                        onSend={sendProgressedSynastryChatMessage}
+                        loading={progressedSynastryChatLoading}
+                        phase={progressedSynastryChat.stream.phase}
+                        displayedText={progressedSynastryChat.stream.displayedText}
+                        openDisabled={!progressedSynastryAnalysis}
+                      />
+                    </>
                   ) : (
-                    <ProgressionsPanel
-                      onRetry={() => loadProgressions()}
-                      data={progressionsData}
-                      analysis={progressionsAnalysis}
-                      displayedText={progressionsStream.displayedText}
-                      phase={progressionsStream.phase}
-                      loading={progressionsLoading}
-                      error={progressionsError}
-                    />
+                    <>
+                      <ProgressionsPanel
+                        onRetry={() => loadProgressions()}
+                        data={progressionsData}
+                        analysis={progressionsAnalysis}
+                        displayedText={progressionsStream.displayedText}
+                        phase={progressionsStream.phase}
+                        loading={progressionsLoading}
+                        error={progressionsError}
+                      />
+                      <ChatPanel
+                        sectionId="progressions-chat-section"
+                        visible={progressionsChat.visible}
+                        onVisibleChange={progressionsChat.setVisible}
+                        history={progressionsChat.history}
+                        input={progressionsChat.input}
+                        onInputChange={progressionsChat.setInput}
+                        onSend={sendProgressionsChatMessage}
+                        loading={progressionsChatLoading}
+                        phase={progressionsChat.stream.phase}
+                        displayedText={progressionsChat.stream.displayedText}
+                        openDisabled={!progressionsAnalysis}
+                      />
+                    </>
                   )}
                 </div>
               )}
@@ -3435,6 +3514,24 @@ const Dashboard = () => {
 
               {!showPlanetTable && analysisTab === 'natal' && (
                 <>
+                  {savedChartId && fullAnalysis && (
+                    <div className="db-chat__open-row" style={{ marginTop: '20px', marginBottom: '28px' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setChatVisible(true);
+                          setTimeout(() => {
+                            const el = document.getElementById('chat-section');
+                            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          }, 100);
+                        }}
+                        className="db-btn-primary"
+                        style={{ maxWidth: '300px', width: '100%' }}
+                      >
+                        {t('dashboard.chat.openNatal')}
+                      </button>
+                    </div>
+                  )}
                   {analysisLoading && streamPhase !== 'typing' && !fullAnalysis && (
                     <div className="db-chart-loading">
                       <ProcessingMessage
@@ -3473,96 +3570,21 @@ const Dashboard = () => {
                         <span className="typing-cursor" aria-hidden="true">▍</span>
                       )}
 
-                      <div id="chat-section">
-                        {savedChartId && (
-                          <>
-                            {!chatVisible && (
-                              <div className="db-chat__open-row">
-                                <button
-                                  onClick={() => {
-                                    setChatVisible(true);
-                                    // Expanding this button in place doesn't move the page —
-                                    // with existing history the panel can render taller than
-                                    // the viewport, leaving the last message (what the user
-                                    // came back to read) below the fold. Scroll it into view
-                                    // once the panel has rendered. A brand-new chat (no
-                                    // history yet) has nothing below the fold to reveal, so
-                                    // leave that case as-is.
-                                    if (chatHistory.length > 0) {
-                                      setTimeout(() => {
-                                        document.querySelector('#chat-section .db-chat')
-                                          ?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                                      }, 100);
-                                    }
-                                  }}
-                                  className="db-btn-primary"
-                                  style={{ maxWidth: '300px', width: '100%' }}
-                                  disabled={!fullAnalysis}
-                                >
-                                  {chatHistory.length > 0 ? t('dashboard.chat.open') : t('dashboard.chat.start')}
-                                </button>
-                              </div>
-                            )}
-
-                            {chatVisible && (
-                              <div className="db-chat">
-                                <h3 className="db-chat__header">{t('dashboard.chat.title')}</h3>
-                                <div className="db-chat__history">
-                                  {chatHistory.map((message, index) => (
-                                    <div
-                                      key={index}
-                                      className={`db-chat__bubble ${message.role === 'user' ? 'db-chat__bubble--user' : 'db-chat__bubble--ai'}`}
-                                    >
-                                      <span className={`db-chat__bubble-role ${message.role === 'user' ? 'db-chat__bubble-role--user' : 'db-chat__bubble-role--ai'}`}>
-                                        {message.role === 'user' ? t('dashboard.chat.user') : t('dashboard.chat.assistant')}
-                                      </span>
-                                      <div className="db-chat__bubble-body chat-message-content">
-                                        <MarkdownContent content={message.content} />
-                                      </div>
-                                    </div>
-                                  ))}
-                                  {chatLoading && chatStream.phase === 'typing' && (
-                                    <div className="db-chat__bubble db-chat__bubble--ai">
-                                      <span className="db-chat__bubble-role db-chat__bubble-role--ai">
-                                        {t('dashboard.chat.assistant')}
-                                      </span>
-                                      <div className="db-chat__bubble-body chat-message-content">
-                                        <MarkdownContent content={chatStream.displayedText} />
-                                        <span className="typing-cursor" aria-hidden="true">▍</span>
-                                      </div>
-                                    </div>
-                                  )}
-                                  <ScrollAnchor watch={`${chatHistory.length}:${chatStream.displayedText.length}`} />
-                                </div>
-                                <div className="db-chat__input-area">
-                                  {isNearLimit(chatHistory) && (
-                                    <div className={`db-chat__limit-warning ${isAtLimit(chatHistory) ? 'db-chat__limit-warning--reached' : 'db-chat__limit-warning--near'}`}>
-                                      {isAtLimit(chatHistory) ? t('dashboard.chat.limitReached', { limit: MAX_MESSAGES }) : t('dashboard.chat.messagesLeft', { count: MAX_MESSAGES - chatHistory.length })}
-                                    </div>
-                                  )}
-                                  <textarea
-                                    value={chatInput}
-                                    onChange={(e) => setChatInput(e.target.value)}
-                                    onKeyPress={handleKeyPress}
-                                    onInput={(e: React.ChangeEvent<HTMLTextAreaElement>) => { const textarea = e.target; textarea.style.height = 'auto'; textarea.style.height = textarea.scrollHeight + 'px'; }}
-                                    placeholder={t('dashboard.chat.placeholder')}
-                                    maxLength={200}
-                                    disabled={chatLoading}
-                                    className="db-chat__input"
-                                  />
-                                  <button
-                                    onClick={sendChatMessage}
-                                    disabled={!chatInput.trim() || chatLoading || isAtLimit(chatHistory)}
-                                    className="db-chat__send-btn"
-                                  >
-                                    {chatLoading ? t('dashboard.chat.sending') : t('dashboard.chat.send')}
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-                          </>
-                        )}
-                      </div>
+                      {savedChartId && (
+                        <ChatPanel
+                          sectionId="chat-section"
+                          visible={chatVisible}
+                          onVisibleChange={setChatVisible}
+                          history={chatHistory}
+                          input={chatInput}
+                          onInputChange={setChatInput}
+                          onSend={sendChatMessage}
+                          loading={chatLoading}
+                          phase={chatStream.phase}
+                          displayedText={chatStream.displayedText}
+                          openDisabled={!fullAnalysis}
+                        />
+                      )}
                     </div>
                   )}
                 </>
