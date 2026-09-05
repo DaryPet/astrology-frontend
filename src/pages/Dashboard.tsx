@@ -2526,7 +2526,7 @@ const Dashboard = () => {
           chart.id !== renameChartId ? chart : { ...chart, name: renameChartName.trim() }
         )
       );
-      if (savedChartId !== renameChartId) {
+      if (savedChartId === renameChartId) {
         setChartDataForAnalysis(prev => {
           if (!prev) return prev;
           const updated = { ...prev, name: renameChartName.trim() };
@@ -3209,7 +3209,7 @@ const Dashboard = () => {
                   <h2 className="db-section-title">
                     {chartDataForAnalysis?.type === 'synastry' ? (
                       <>
-                        {chartDataForAnalysis.person1_name} / {chartDataForAnalysis.person2_name}:{' '}
+                        {chartDataForAnalysis.name || `${chartDataForAnalysis.person1_name} / ${chartDataForAnalysis.person2_name}`}:{' '}
                         {t('synastry.fullAnalysis.title')}
                       </>
                     ) : (
