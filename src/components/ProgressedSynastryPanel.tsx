@@ -135,13 +135,13 @@ const ProgressedSynastryPanel: React.FC<ProgressedSynastryPanelProps> = ({ data,
 
       {data && (
         <>
-          {/* Карточки партнёров: возраст, лунная фаза, прогр. Солнце/Луна/асцендент */}
+          {/* Partner cards: age, lunar phase, progressed Sun/Moon/ascendant */}
           <div className="ui-row" style={{ marginTop: 'var(--space-4)', alignItems: 'stretch' }}>
             {renderPersonCard(data.person1, name1Label)}
             {renderPersonCard(data.person2, name2Label)}
           </div>
 
-          {/* Таблицы прогрессивных планет по каждому партнёру */}
+          {/* Progressed planets tables per partner */}
           <div style={{ marginTop: 'var(--space-6)' }}>
             <h4 className="ui-subtitle">
               {t('dashboard.progressedSynastry.planetsTitle')}
@@ -158,7 +158,7 @@ const ProgressedSynastryPanel: React.FC<ProgressedSynastryPanelProps> = ({ data,
             </div>
           </div>
 
-          {/* Динамика периода: что изменилось по сравнению с натальной синастрией */}
+          {/* Period dynamics: what changed against the natal synastry */}
           <div style={{ marginTop: 'var(--space-6)' }}>
             <h4 className="ui-subtitle">
               {t('dashboard.progressedSynastry.dynamicsTitle')}

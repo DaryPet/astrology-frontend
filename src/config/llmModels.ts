@@ -1,6 +1,6 @@
 // src/config/llmModels.ts
-// Модели для «Прогноза дня». provider = ключ адаптера на бекенде
-// (claude/deepseek/gemini — существующие, openrouter — новый, model обязателен).
+// Models for the "Day forecast". provider = adapter key on the backend
+// (claude/deepseek/gemini — existing, openrouter — new, model is required).
 export interface LLMModelOption {
   provider: string;
   model: string | null;

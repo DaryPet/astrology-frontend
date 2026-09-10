@@ -23,11 +23,11 @@ const ASPECT_COLORS: Record<string, string> = {
   'Square': '#FF6347', 'Sextile': '#1E90FF', 'Quincunx': '#9370DB'
 };
 
-// На тач-устройствах `mouseenter` эмулируется при тапе, и приподнятая карточка
-// остаётся такой до нажатия в другом месте — выглядит как «выбрана». Отключить
-// это медиазапросом нельзя: обработчик пишет inline-стиль, а он специфичнее
-// любого CSS. Проверка разовая, внутри обработчика — это не подписка на
-// matchMedia (design.md, Non-Goals).
+// On touch devices `mouseenter` is emulated on tap, and the lifted card stays
+// lifted until a tap elsewhere — it reads as "selected". A media query cannot
+// switch this off: the handler writes an inline style, which outranks any CSS.
+// The check is one-shot, inside the handler — not a matchMedia subscription
+// (design.md, Non-Goals).
 const canHover = () =>
   typeof window !== 'undefined' && window.matchMedia('(hover: hover)').matches;
 

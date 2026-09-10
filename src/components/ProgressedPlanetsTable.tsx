@@ -7,7 +7,7 @@ interface ProgressedPlanetsTableProps {
   planets: Record<string, ProgressedPlanet> | undefined;
 }
 
-// Порядок вывода: личные планеты первыми (в прогрессиях они интерпретационно значимы)
+// Output order: personal planets first (they carry the interpretation in progressions)
 const PLANET_ORDER = [
   'Sun', 'Moon', 'Mercury', 'Venus', 'Mars',
   'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto',

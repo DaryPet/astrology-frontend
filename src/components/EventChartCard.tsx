@@ -1,6 +1,6 @@
 // src/components/EventChartCard.tsx
-// Полная карточка события (Event Astrology): Сигнификаторы / Планеты / Показания / Вывод.
-// Рисуем из significator_card — колесо пока не рендерим.
+// Full event card (Event Astrology): Significators / Planets / Testimonies / Verdict.
+// Rendered from significator_card — the wheel is not drawn yet.
 import React from 'react';
 
 export interface Showing {
@@ -81,7 +81,7 @@ interface Props {
   timezone?: string;
 }
 
-// Фоллбэки на случай, если бэкенд не прислал символ
+// Fallbacks for when the backend sends no symbol
 const SIGN_SYMBOLS: Record<string, string> = {
   Aries: '♈', Taurus: '♉', Gemini: '♊', Cancer: '♋',
   Leo: '♌', Virgo: '♍', Libra: '♎', Scorpio: '♏',
@@ -101,7 +101,7 @@ const planetSymbol = (o?: { planet?: string; planet_symbol?: string; symbol?: st
 
 const deg = (d?: number) => (typeof d === 'number' ? `${d.toFixed(2)}°` : '');
 
-// Красный чип = показание работает против кого-то, зелёный = за / нет проблем.
+// Red chip = the testimony works against someone, green = for / no problem.
 const effectTone = (s: Showing): 'bad' | 'good' | 'neutral' => {
   const text = (s.effect || '').toLowerCase();
   if (/против|минус|damage|against/.test(text)) return 'bad';
@@ -162,7 +162,7 @@ const chipStyle = (tone: 'bad' | 'good' | 'neutral'): React.CSSProperties => ({
   whiteSpace: 'nowrap',
 });
 
-// «♊ 14.57° · Дом 7 ⚠️ · Падение ⚠️»
+// Sample output: «♊ 14.57° · Дом 7 ⚠️ · Падение ⚠️»
 const lordPosition = (l: LordInfo) => {
   const parts: React.ReactNode[] = [];
   parts.push(`${signSymbol(l)} ${deg(l.degree)}`);
@@ -191,7 +191,7 @@ const EventChartCard: React.FC<Props> = ({ card, verdict, matchTypeLabel, place,
     ...chart_wide,
   ].filter(s => s && (s.label_ru || s.label));
 
-  // Ретро/сгорание: сводная строка по всем планетам карты
+  // Retrograde/combust: one summary line across all planets of the chart
   const flagged = [favourite, underdog, ...planets]
     .filter((p): p is LordInfo & PlanetInfo => Boolean(p))
     .filter(p => p.retrograde || p.combust)

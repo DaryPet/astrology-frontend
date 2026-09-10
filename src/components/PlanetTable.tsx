@@ -2,7 +2,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-// Цвета стихий
+// Element colors
 const ELEMENT_COLORS: Record<string, string> = {
   fire: '#FF6B35',
   earth: '#4CAF50',
@@ -10,14 +10,14 @@ const ELEMENT_COLORS: Record<string, string> = {
   water: '#FF9800'
 };
 
-// Стихии знаков
+// Sign elements
 const SIGN_ELEMENTS: Record<string, string> = {
   Aries: 'fire', Taurus: 'earth', Gemini: 'air', Cancer: 'water',
   Leo: 'fire', Virgo: 'earth', Libra: 'air', Scorpio: 'water',
   Sagittarius: 'fire', Capricorn: 'earth', Aquarius: 'air', Pisces: 'water'
 };
 
-// Цвета планет
+// Planet colors
 const PLANET_COLORS: Record<string, string> = {
   Sun: '#FFD700',
   Moon: '#C0C0C0',
@@ -68,11 +68,11 @@ interface PlanetItem {
   sign: string;
 }
 
-// На тач-устройствах `mouseenter` эмулируется при тапе, и приподнятая карточка
-// остаётся такой до нажатия в другом месте — выглядит как «выбрана». Отключить
-// это медиазапросом нельзя: обработчик пишет inline-стиль, а он специфичнее
-// любого CSS. Проверка разовая, внутри обработчика — это не подписка на
-// matchMedia (design.md, Non-Goals).
+// On touch devices `mouseenter` is emulated on tap, and the lifted card stays
+// lifted until a tap elsewhere — it reads as "selected". A media query cannot
+// switch this off: the handler writes an inline style, which outranks any CSS.
+// The check is one-shot, inside the handler — not a matchMedia subscription
+// (design.md, Non-Goals).
 const canHover = () =>
   typeof window !== 'undefined' && window.matchMedia('(hover: hover)').matches;
 
@@ -81,17 +81,17 @@ const PlanetTable = ({ planets, houses, onPlanetClick }: PlanetTableProps) => {
 
   if (!planets) return null;
 
-  // Знаки зодиака
+  // Zodiac signs
   const zodiacSigns = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
     'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
 
-  // Преобразуем объект планет в массив
+  // Turn the planets object into an array
   const planetList: PlanetItem[] = Object.entries(planets)
     .filter(([, data]) => data && data.full_degree !== undefined)
     .map(([name, data]) => {
       const degree = parseFloat(String(data.full_degree || 0));
 
-      // Защита от NaN
+      // NaN guard
       if (isNaN(degree)) {
         return null;
       }
@@ -101,11 +101,11 @@ const PlanetTable = ({ planets, houses, onPlanetClick }: PlanetTableProps) => {
       const degrees = Math.floor(signDegree);
       const minutes = Math.floor((signDegree - degrees) * 60);
 
-      // Используем sign из данных, если есть, иначе вычисляем
+      // Use sign from the data when present, otherwise compute it
       const signName = data.sign || zodiacSigns[signIndex];
       const signTranslated = t(`planets.signs.${signName}`);
 
-      // Определяем дом планеты - сначала проверяем, есть ли в данных, иначе вычисляем
+      // Resolve the planet's house — take it from the data when present, otherwise compute
       let house = data.house || null;
       if (!house && houses) {
         for (let i = 1; i <= 12; i++) {
@@ -142,7 +142,7 @@ const PlanetTable = ({ planets, houses, onPlanetClick }: PlanetTableProps) => {
     .filter(Boolean)
     .sort((a, b) => (a as PlanetItem).degree - (b as PlanetItem).degree) as PlanetItem[];
 
-  // Подсчет количества планет по стихиям
+  // Count planets per element
   const elementCounts = planetList.reduce((acc, planet) => {
     acc[planet.element] = (acc[planet.element] || 0) + 1;
     return acc;
@@ -157,8 +157,8 @@ const PlanetTable = ({ planets, houses, onPlanetClick }: PlanetTableProps) => {
         {t('planets.title')}
       </h3>
 
-      {/* Подсказка появляется только там, где клик реально что-то делает:
-          onPlanetClick — опциональный проп, без него карточки не кликабельны. */}
+      {/* The hint appears only where a click actually does something:
+          onPlanetClick is optional — without it the cards are not clickable. */}
       {onPlanetClick && (
         <p className="ui-hint-clickable">{t('planets.clickHint')}</p>
       )}

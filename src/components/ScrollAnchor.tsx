@@ -1,21 +1,21 @@
 import { useEffect, useRef } from 'react';
 
 interface ScrollAnchorProps {
-  /** Меняется — контейнер подматывается вниз. Строка/число, а не объект. */
+  /** Changes — the container scrolls to the bottom. A string or number, not an object. */
   watch: string | number;
-  /** На сколько пикселей можно отлистать вверх, не теряя автоскролл. */
+  /** How many pixels the user may scroll up without losing autoscroll. */
   threshold?: number;
 }
 
 /**
- * Держит скроллящегося родителя прижатым к низу, пока пользователь сам
- * не отлистает вверх. Хук живёт здесь, а не в Dashboard, чтобы не менять
- * порядок хуков Dashboard (см. openspec/changes/premium-design-system,
+ * Keeps the scrolling parent pinned to the bottom until the user scrolls
+ * up themselves. The hook lives here, not in Dashboard, so Dashboard's hook
+ * order stays unchanged (see openspec/changes/premium-design-system,
  * Decision 2).
  *
- * Скроллим `scrollTop` контейнера напрямую, а не через `scrollIntoView`:
- * тот подматывает все родительские скролл-контейнеры, включая окно, и
- * дёргал бы страницу под читающим пользователем.
+ * Scrolls the container's `scrollTop` directly instead of `scrollIntoView`:
+ * that one scrolls every parent scroll container including the window, and
+ * would yank the page under a reading user.
  */
 const ScrollAnchor = ({ watch, threshold = 120 }: ScrollAnchorProps) => {
   const anchorRef = useRef<HTMLDivElement | null>(null);

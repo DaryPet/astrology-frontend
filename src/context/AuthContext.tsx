@@ -53,13 +53,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   useEffect(() => {
-    // Проверяем текущую сессию при загрузке
+    // Check the current session on load
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       setLoading(false);
     });
 
-    // Слушаем изменения авторизации (вход/выход)
+    // Listen for auth changes (sign in / sign out)
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
 

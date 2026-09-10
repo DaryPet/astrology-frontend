@@ -19,10 +19,10 @@ interface ChartData {
   };
 }
 
-// Сквозной счётчик, а не Date.now(): полноэкранный просмотр (LiveSkyFrame)
-// рендерит ВТОРОЙ экземпляр колеса поверх первого, и при совпадении
-// миллисекунды оба контейнера получили бы один id — библиотека зовёт
-// getElementById и нарисовала бы второй чертёж внутрь первого.
+// A running counter rather than Date.now(): fullscreen view (LiveSkyFrame)
+// renders a SECOND copy of the wheel over the first, and on a millisecond
+// collision both containers would get the same id — the library calls
+// getElementById and would draw the second chart inside the first.
 let chartInstanceSeq = 0;
 
 const AstroChartComponent = ({ chartData, size = 700 }: { chartData: ChartData; size?: number }) => {
@@ -142,11 +142,11 @@ const AstroChartComponent = ({ chartData, size = 700 }: { chartData: ChartData; 
     return { planets, cusps };
   };
 
-  // `size` — эталонное разрешение рисунка, а не ширина на экране. Библиотека
-  // сама проставляет корню SVG `viewBox="0 0 size size"` (astrochart.js), а
-  // атрибуты width/height у неё в пикселях. Презентационные атрибуты имеют
-  // минимальную специфичность, поэтому их перебивает CSS-правило
-  // `.chart-wheel-fluid > svg` — перерисовывать библиотеку на ресайз не нужно.
+  // `size` is the drawing's reference resolution, not its on-screen width. The
+  // library sets viewBox="0 0 size size" on the SVG root itself (astrochart.js),
+  // while its width/height attributes are in pixels. Presentation attributes have
+  // the lowest specificity, so the CSS rule `.chart-wheel-fluid > svg` overrides
+  // them — no need to redraw the library on resize.
   return <div ref={containerRef} className="chart-wheel-fluid" />;
 };
 
