@@ -2,11 +2,11 @@ import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
 /**
- * Держит <html lang>, <title> и meta description в согласии с выбранным языком.
+ * Keeps <html lang>, <title> and meta description in sync with the chosen language.
  *
- * До этого в index.html было жёстко зашито lang="ru" и русский заголовок —
- * на английской и украинской версии это врало и скринридеру, и поисковику.
- * Ничего не рендерит.
+ * Before this, index.html hardcoded lang="ru" and a Russian title — on the
+ * English and Ukrainian versions that lied to both screen readers and search engines.
+ * Renders nothing.
  */
 const DocumentMeta = () => {
   const { i18n, t } = useTranslation();

@@ -1,120 +1,155 @@
-# Отрисовка астрологических колёс (карт)
+# Drawing the astrological wheels
 
-Документация по тому, **как в этом проекте рисуются астрологические колёса** (натал,
-синастрия, транзиты и т.д.), и на чём это построено.
+How the charts in this project are rendered, and what the drawing stack can and
+cannot do.
 
-## Коротко
+## In short
 
-- Колёса рисуются **на фронтенде, в браузере** — не на бэкенде.
-- Используется библиотека **[AstroChart](https://github.com/AstroDraw/AstroChart)** —
-  npm-пакет [`@astrodraw/astrochart`](https://www.npmjs.com/package/@astrodraw/astrochart)
-  версии **3.0.2**, лицензия **MIT**.
-- Бэкенд (`astrology_v2.py`) отдаёт **только JSON с позициями** (градусы планет,
-  куспиды домов). Геометрию круга строит клиент.
-- Юридически чисто: MIT на клиенте + свой расчётный бэкенд. Открывать код не обязаны.
+- Wheels are drawn **in the browser**, not on the backend.
+- There are **two independent rendering paths**, not one:
+  - **natal chart** — the [AstroChart](https://github.com/AstroDraw/AstroChart)
+    library ([`@astrodraw/astrochart`](https://www.npmjs.com/package/@astrodraw/astrochart)
+    3.0.2, MIT);
+  - **synastry** — hand-written d3, no library involved.
+- The backend returns **only JSON** — planet longitudes and house cusps. All
+  geometry is built client-side.
+- Licensing is clean: MIT on the client plus our own calculation backend. There
+  is no obligation to open the source.
 
-## Ссылки на оригинал
+## Files
 
-- Репозиторий (исходники, MIT): https://github.com/AstroDraw/AstroChart
-- npm: https://www.npmjs.com/package/@astrodraw/astrochart
-- Демо / примеры: https://github.com/AstroDraw/AstroChart#usage
-- Локально установленные типы (точный API):
-  `node_modules/@astrodraw/astrochart/dist/project/src/*.d.ts`
+| File | Role |
+|------|------|
+| `AstroChartComponent.tsx` | Natal wheel via AstroChart: `chart.radix(...)` plus aspects. Custom Vertex glyph through `CUSTOM_SYMBOL_FN`. |
+| `SynastryChartComponentV2.tsx` | Synastry bi-wheel, drawn with d3 from scratch. |
+| `LiveSkyFrame.tsx` | Decorative frame around a wheel (stars, comet) and the fullscreen view. Draws no chart itself. |
+| `PlanetTable.tsx` | Planet positions table — not a wheel. |
+| `AspectGrid.tsx` | Aspect list — not a wheel. |
 
-## Файлы отрисовки в этом проекте
+Used from: `pages/Home.tsx` (natal), `pages/Synastry.tsx` (synastry),
+`pages/Dashboard.tsx` (both).
 
-| Файл | Назначение |
-|------|-----------|
-| `AstroChartComponent.tsx` | Одиночное колесо (натал). `chart.radix(...)` + аспекты. Кастомный символ Вертекса через `CUSTOM_SYMBOL_FN`. |
-| `SynastryChartComponent.tsx` | Синастрия (двойная карта). Сейчас реализована **неполно** — см. ниже. |
-| `SynastryChartComponent-draft.tsx` | Черновой вариант синастрии. Свериться перед доработкой. |
-| `PlanetTable.tsx` | Таблица позиций планет (не колесо). |
-
-Используются в: `src/pages/Home.tsx` (натал), `src/pages/Synastry.tsx` (синастрия).
-
-## Как это работает
+## Natal wheel — the AstroChart library
 
 ```ts
-import('@astrodraw/astrochart').then(({ Chart }) => {
+import('@astrodraw/astrochart').then(({ Chart, AspectCalculator }) => {
   const chart = new Chart(containerId, size, size, settings)
-  const radix = chart.radix({ planets, cusps })   // рисует натал-круг
+  const radix = chart.radix({ planets, cusps })
   radix.addPointsOfInterest(planets)
-  radix.aspects(calculatedAspects)                // линии аспектов
+  radix.aspects(calculatedAspects)
 })
 ```
 
-Формат входных данных (`AstroData`):
+The import is dynamic, so the library is not part of the initial bundle.
+
+Input format (`AstroData`):
 
 ```js
 {
-  planets: { "Sun":[30], "Moon":[0, -1.2], ... },  // [градус] или [градус, скорость]
-  cusps:   [300, 340, 30, 60, 75, 90, 116, 172, 210, 236, 250, 274]  // ровно 12 куспидов
+  planets: { "Sun": [30], "Moon": [0, -1.2], ... },  // [degree] or [degree, speed]
+  cusps:   [300, 340, 30, 60, 75, 90, 116, 172, 210, 236, 250, 274]  // exactly 12
 }
 ```
 
-Второй элемент в `planets` (скорость) → библиотека сама помечает **ретроградность**.
+The second element (speed) is what marks a planet **retrograde** — the library
+derives it, there is no separate flag.
 
-## Возможности библиотеки (API)
+### Aspect settings used here
 
-Публичный экспорт: **`Chart`**, **`AspectCalculator`**, **`Settings`**.
+Orbs are widened against the library defaults, and sextile is added — the
+library does not ship one:
 
-### `Chart(elementId, width, height, settings?)`
-- `.radix(data)` → натал-колесо, возвращает `Radix`.
-- `.scale(factor)` → масштабирование.
-- `.calibrate()` → отладочная разметка осей.
+| Aspect | Degree | Orb (ours / default) | Color |
+|--------|--------|----------------------|-------|
+| conjunction | 0° | 12 / 10 | transparent |
+| sextile | 60° | 8 / — | `#1E90FF` |
+| square | 90° | 10 / 8 | `#FF4500` |
+| trine | 120° | 10 / 8 | `#27AE60` |
+| opposition | 180° | 12 / 10 | `#27AE60` |
 
-### `Radix` (внутренний круг / натал)
-- `.aspects(customAspects?)` → рисует линии аспектов.
-- `.addPointsOfInterest(points)` → добавить точки (As/Ds/Mc/Ic и пр.) в расчёт аспектов.
-- **`.transit(data)` → рисует ВТОРОЕ (внешнее) кольцо, возвращает `Transit`.**
-  Это и есть настоящий би-виил: натал + транзит/синастрия/прогрессия «одна на другую».
+Opposition being green, the same as trine, is the library's own default, not an
+oversight here.
 
-### `Transit` (внешнее кольцо)
-- `.drawPoints()`, `.drawCusps()`, `.drawRuler()`, `.drawCircles()`
-- `.aspects(customAspects)` → **межкартные** аспекты (натал ↔ транзит).
-- `.animate(data, duration, isReverse, callback)` → анимация движения планет во времени.
+`SHOW_DIGNITIES_TEXT` is turned off. `CUSTOM_SYMBOL_FN` draws one glyph the
+library has no symbol for — the Vertex (`Vx`), as a circle with a text label.
 
-### `AspectCalculator(toPoints, settings?)`
-- `.radix(points)` → аспекты внутри одной карты.
-- `.transit(points)` → аспекты между двумя картами (учитывает скорость).
-- Возвращает `FormedAspect[]`: `{ point, toPoint, aspect:{name,degree,color,orbit}, precision }`.
+### Two gotchas
 
-### `Zodiac` (утилита)
-- `.getSign(deg)`, `.getHouseNumber(deg)`, `.isRetrograde(speed)`, `.toDMS(deg)`
-- `.getDignities(planet)` → достоинства (обитель/изгнание/экзальтация/падение).
+- **The container id must be unique per instance.** It is generated from a
+  running counter, not `Date.now()`: the fullscreen view renders a *second*
+  copy of the wheel over the first, and on a millisecond collision both would
+  get the same id — the library resolves the container by `getElementById` and
+  would draw the second chart inside the first.
+- **`size` is the drawing's reference resolution, not its on-screen width.**
+  The library writes `viewBox="0 0 size size"` on the SVG root and sets
+  width/height in pixels. Those are presentation attributes with the lowest
+  specificity, so the CSS rule `.chart-wheel-fluid > svg` overrides them — the
+  wheel is fluid without redrawing on resize.
 
-## Настройки (`Settings`)
+## Synastry wheel — d3
 
-Аспекты и орбисы (дефолты библиотеки, полностью переопределяемы через `settings.ASPECTS`):
+`SynastryChartComponentV2.tsx` does not use AstroChart at all. It draws two
+full wheels on one zodiac, rotated to Partner 1's ASC:
 
-| Аспект | Угол | Орбис | Цвет |
-|--------|------|-------|------|
-| conjunction | 0° | 10° | transparent |
-| square | 90° | 8° | `#FF4500` |
-| trine | 120° | 8° | `#27AE60` |
+- **inner ring** — Partner 1: planets plus the full house grid (ASC/IC/DSC/MC);
+- **outer ring** — Partner 2: planets plus their own house ring;
+- **center** — inter-chart aspects, colored by type (red = hard, blue = soft,
+  green = conjunction), each with a hover tooltip.
 
-_(+ opposition / sextile в том же объекте `ASPECTS`.)_
+**Rule for any d3 or canvas component in this repository:** text inside a draw
+effect is baked into the d3 handler at draw time, not recomputed on React
+render. Any translated string there obliges you to add `t` and `i18n.language`
+to the effect's dependencies, otherwise the wheel keeps the old language after
+a switch.
 
-Другое, что настраивается:
-- **Геометрия:** `SYMBOL_SCALE`, `MARGIN`, `PADDING`, `RULER_RADIUS`,
-  `INNER_CIRCLE_RADIUS_RATIO`, `COLLISION_RADIUS` (разведение слипшихся планет),
-  `SHIFT_IN_DEGREES` (что слева; по умолчанию Asc слева), `STROKE_ONLY`, `ADD_CLICK_AREA`.
-- **Цвета:** фон, точки, знаки, круги, линии + отдельный цвет каждого из 12 знаков.
-- **Символы:** переопределяемые глифы всех планет (включая Chiron, Lilith, узлы,
-  Fortune) и осей As/Ds/Mc/Ic + куспидов 1–12.
-- **`CUSTOM_SYMBOL_FN(name, x, y, context)`** → свой SVG-глиф для любой точки
-  (в проекте так нарисован Вертекс `Vx`).
-- **Достоинства:** `SHOW_DIGNITIES_TEXT` и символы r/d/e/E/f.
+Aspect names live in two parallel lists — `ASPECT_STYLE` in this component and
+`planets.aspectNames` in the locale files. Adding a new aspect type means
+editing both.
 
-## Что уже умеет библиотека, но у нас НЕ задействовано
+## What the library offers and we do not use
 
-1. **Настоящее двойное кольцо** через `radix.transit()` — транзиты, синастрия,
-   прогрессии как наложение. Сейчас в `SynastryChartComponent.tsx` второй человек
-   добавлен через `addPointsOfInterest(planets2)` (точки поверх), а не как второе кольцо.
-2. **Межкартные аспекты** через `AspectCalculator.transit()` + `Transit.aspects()`.
-3. **Анимация** транзитов во времени (`Transit.animate`).
-4. В `Synastry.tsx` в компонент передаются пропсы `aspects`, `name1`, `name2`,
-   которых нет в сигнатуре `SynastryChartComponent` — они **игнорируются**.
+These apply to the natal path only; the synastry wheel is ours and unrelated.
 
-> Для полноценных двойных карт дорабатывать нужно только фронт: перевести
-> синастрию/транзиты на `radix.transit()` и прокинуть межкартные аспекты и имена.
+1. **A true double ring** via `radix.transit()` — transits, synastry or
+   progressions as one overlay, returning a `Transit` object.
+2. **Inter-chart aspects** via `AspectCalculator.transit()` and
+   `Transit.aspects()`.
+3. **Animation** of planets over time — `Transit.animate(data, duration,
+   isReverse, callback)`.
+4. **The `Zodiac` helper** — `getSign`, `getHouseNumber`, `isRetrograde`,
+   `toDMS`, and `getDignities` (rulership / detriment / exaltation / fall).
+
+## Library API reference
+
+Public exports: **`Chart`**, **`AspectCalculator`**, **`Settings`**.
+
+**`Chart(elementId, width, height, settings?)`**
+`.radix(data)` → the natal wheel, returns `Radix`; `.scale(factor)`;
+`.calibrate()` for debug axes.
+
+**`Radix`** — `.aspects(customAspects?)`, `.addPointsOfInterest(points)`,
+`.transit(data)` → the outer ring, returns `Transit`.
+
+**`Transit`** — `.drawPoints()`, `.drawCusps()`, `.drawRuler()`,
+`.drawCircles()`, `.aspects(customAspects)`, `.animate(...)`.
+
+**`AspectCalculator(toPoints, settings?)`** — `.radix(points)` for aspects
+within one chart, `.transit(points)` for aspects between two (speed-aware).
+Returns `FormedAspect[]`: `{ point, toPoint, aspect: { name, degree, color,
+orbit }, precision }`.
+
+### Configurable settings
+
+- **Geometry** — `SYMBOL_SCALE`, `MARGIN`, `PADDING`, `RULER_RADIUS`,
+  `INNER_CIRCLE_RADIUS_RATIO`, `COLLISION_RADIUS` (spreading overlapping
+  planets), `SHIFT_IN_DEGREES` (what sits on the left; ASC by default),
+  `STROKE_ONLY`, `ADD_CLICK_AREA`.
+- **Colors** — background, points, signs, circles, lines, and a separate color
+  per zodiac sign.
+- **Symbols** — every planet glyph (Chiron, Lilith, nodes, Fortune included),
+  the AS/DS/MC/IC axes and cusps 1–12.
+- **`CUSTOM_SYMBOL_FN(name, x, y, context)`** — your own SVG glyph for any
+  point.
+- **Dignities** — `SHOW_DIGNITIES_TEXT` and the r/d/e/E/f symbols.
+
+Exact typings: `node_modules/@astrodraw/astrochart/dist/project/src/*.d.ts`.

@@ -15,8 +15,8 @@ export interface UseStreamedTextResult {
 }
 
 /**
- * @param onDone вызывается ровно один раз, когда печать догнала final —
- *   сюда кладут сохранение в кэш/БД и снятие спиннера (как finishStreamRef у натала).
+ * @param onDone called exactly once, when the typing catches up with final —
+ *   this is where the cache/DB write and spinner teardown go (as finishStreamRef does for natal).
  */
 export function useStreamedText(onDone: (finalText: string) => void): UseStreamedTextResult {
   const [phase, setPhase] = useState<StreamPhase>('idle');

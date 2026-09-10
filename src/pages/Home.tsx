@@ -608,8 +608,8 @@ function Home() {
 
       {chartData && (
         <div style={{ padding: 'var(--space-5)', maxWidth: '1200px', margin: '0 auto' }}>
-          {/* Без карточки: колесо лежит прямо на звёздном фоне, как на
-              синастрии. Серый фон остаётся только у блока анализа планет. */}
+          {/* No card: the wheel sits directly on the starfield, as on the synastry
+              page. The grey background stays only on the planet analysis block. */}
           <div style={{ textAlign: 'center', margin: 'var(--space-8) 0' }}>
             <h2 className="ui-subtitle">
               {t('home.chart.title')}

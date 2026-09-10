@@ -13,12 +13,12 @@ interface LiveSkyFrameProps {
    */
   active: boolean;
   /**
-   * Предельная ширина сцены в пикселях — то же число, что передаётся колесу
-   * пропом `size`. Ниже неё сцена тянется по контейнеру, выше — не растёт.
-   * Ограничение стоит именно на сцене, а не на колесе: звёзды (`live-sky-sky`,
-   * `inset: -16px`) и орбита кометы позиционируются от её краёв, и если сцена
-   * станет шире колеса, всё небо расползётся по строке вместо того, чтобы
-   * обнимать чертёж.
+   * Maximum stage width in pixels — the same number passed to the wheel as the
+   * `size` prop. Below it the stage follows the container, above it it stops growing.
+   * The cap sits on the stage rather than the wheel: the stars (`live-sky-sky`,
+   * `inset: -16px`) and the comet orbit are positioned from the stage edges, so a
+   * stage wider than the wheel would scatter the sky across the row instead of
+   * hugging the drawing.
    */
   maxWidth?: number;
   children: React.ReactNode;
@@ -112,9 +112,9 @@ const LiveSkyFrame: React.FC<LiveSkyFrameProps> = ({ active, maxWidth = 700, chi
     setDragging(false);
   };
 
-  // Полноэкранный просмотр. Резина делает колесо видимым, но на 320px подписи
-  // в чертеже физически нечитаемы при любом честном масштабе — единственный
-  // честный способ их прочитать — развернуть и увеличить пальцами.
+  // Fullscreen view. Fluid sizing keeps the wheel visible, but at 320px the
+  // labels inside the drawing are physically unreadable at any honest scale —
+  // the only honest way to read them is to expand and pinch-zoom.
   const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
@@ -123,7 +123,7 @@ const LiveSkyFrame: React.FC<LiveSkyFrameProps> = ({ active, maxWidth = 700, chi
       if (e.key === 'Escape') setExpanded(false);
     };
     window.addEventListener('keydown', onKeyDown);
-    // Фон не должен уезжать под открытым просмотром.
+    // The background must not scroll away while the view is open.
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
@@ -173,8 +173,8 @@ const LiveSkyFrame: React.FC<LiveSkyFrameProps> = ({ active, maxWidth = 700, chi
           type="button"
           className="live-sky-expand"
           onClick={() => setExpanded(true)}
-          // Без этого нажатие на кнопку во время ожидания начинало бы
-          // вращение колеса: pointerdown всплыл бы до обработчика сцены.
+          // Without this, pressing the button while waiting would start the
+          // wheel spinning: pointerdown would bubble up to the stage handler.
           onPointerDown={e => e.stopPropagation()}
           aria-label={t('liveSky.expand')}
           title={t('liveSky.expand')}
@@ -186,13 +186,13 @@ const LiveSkyFrame: React.FC<LiveSkyFrameProps> = ({ active, maxWidth = 700, chi
         <div className="live-sky-drag-hint">{t('liveSky.dragHint')}</div>
       )}
 
-      {/* Портал в document.body обязателен, а не предпочтителен: колесо на
-          дашборде лежит внутри .db-planet-section с `animation … both`,
-          последний кадр которой навсегда оставляет transform — а это делает
-          блок containing block'ом для любого position: fixed внутри. Ровно так
-          шесть модалок уезжали вниз страницы (INSIGHTS.md, 2026-08-23).
-          Замена последнего кадра на `transform: none` там уже проверена и не
-          сработала — не повторять. */}
+      {/* The portal into document.body is mandatory, not preferred: on the
+          dashboard the wheel sits inside .db-planet-section, whose
+          `animation … both` leaves its last frame's transform applied forever —
+          which makes that block a containing block for any position: fixed
+          inside. Exactly how six modals drifted down the page (INSIGHTS.md,
+          2026-08-23). Replacing the last frame with `transform: none` was
+          already tried there and did not work — do not repeat it. */}
       {expanded && createPortal(
         <div
           className="chart-fullscreen"
@@ -208,8 +208,8 @@ const LiveSkyFrame: React.FC<LiveSkyFrameProps> = ({ active, maxWidth = 700, chi
           >
             <X size={20} strokeWidth={2} />
           </button>
-          {/* Клик по самому чертежу не должен закрывать просмотр — иначе
-              рассмотреть его пальцем невозможно. */}
+          {/* A click on the drawing itself must not close the view — otherwise
+              it is impossible to examine it with a finger. */}
           <div className="chart-fullscreen__stage" onClick={e => e.stopPropagation()}>
             {children}
           </div>

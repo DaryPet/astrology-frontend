@@ -49,8 +49,8 @@
   scrollbar-color: var(--border) transparent;
 }
 
-/* Бургер, оверлей и кнопка закрытия существуют только на мобильном —
-   на десктопе они скрыты, а .db-sidebar--open ни на что не влияет. */
+/* The burger, the overlay and the close button exist only on mobile — on desktop
+   they are hidden and .db-sidebar--open has no effect. */
 .db-sidebar-burger,
 .db-sidebar-overlay,
 .db-sidebar__close {
@@ -219,28 +219,28 @@
 .db-sidebar__icon-btn:hover { opacity: 1; background: var(--bg-secondary); }
 .db-sidebar__icon-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
-/* --- Действия с картой на устройствах без курсора --------------------------
-   До этого правила переименовать или удалить карту с телефона было НЕВОЗМОЖНО:
-   `.db-sidebar__chart-actions` имеет opacity: 0 и проявляется только по :hover,
-   а на тач-устройстве события hover не существует — кнопки оставались
-   невидимыми (у активной карты — на 55%, то есть угадываемыми, но не
-   очевидными). Это функциональная дыра, а не косметика.
+/* --- Chart actions on pointerless devices ---------------------------------
+   Before this rule, renaming or deleting a chart from a phone was IMPOSSIBLE:
+   `.db-sidebar__chart-actions` has opacity: 0 and only appears on :hover, and on
+   a touch device hover events do not exist — the buttons stayed invisible (on the
+   active chart, at 55%: guessable, but not obvious). A functional hole, not
+   cosmetics.
 
-   Условие по указателю, а не по ширине экрана (design.md, Decision 8): узкое
-   окно на десктопе мышь не теряет, а планшет 1024 работает пальцем. */
+   The condition keys off the pointer, not the screen width (design.md, Decision 8):
+   a narrow desktop window still has a mouse, and a 1024 tablet is used by finger. */
 @media (hover: none) {
   .db-sidebar__chart-actions,
   .db-sidebar__chart-item--active .db-sidebar__chart-actions {
     opacity: 1;
   }
 
-  /* Тач-таргет вместо 21×17px. 40px, а не 44: внутри строки шириной 224px две
-     кнопки по 44 плюс зазор съели бы 92px и оставили имени карты 132. 40 — тот
-     же размер, что у уже существующего .db-sidebar-burger в этом файле, так что
-     это ещё и единственный размер иконочной кнопки на весь дашборд.
-     Расширять область попадания псевдоэлементом нельзя: кнопки стоят вплотную
-     (gap: 1px), их зоны наложились бы, и промах по «переименовать» попадал бы
-     в «удалить» — это разрушающее действие. Поэтому зазор тоже увеличен. */
+  /* A touch target instead of 21×17px. 40px, not 44: inside a 224px-wide row two
+     44px buttons plus the gap would eat 92px and leave the chart name 132. 40 is
+     also the size of the existing .db-sidebar-burger in this file, which makes it
+     the only icon-button size on the whole dashboard.
+     Enlarging the hit area with a pseudo-element is not an option: the buttons sit
+     flush (gap: 1px), their zones would overlap, and a miss on rename would land
+     on delete — a destructive action. So the gap was widened too. */
   .db-sidebar__chart-actions {
     gap: var(--space-1);
   }
@@ -516,9 +516,9 @@
   overflow-anchor: none;
 }
 
-/* Нулевой якорь в конце истории — ScrollAnchor.tsx подматывает по нему
-   контейнер. `scroll-behavior: smooth` здесь намеренно НЕ задан: при
-   потоковой печати он переприцеливал бы анимацию на каждый токен. */
+/* A zero-height anchor at the end of the history — ScrollAnchor.tsx scrolls the
+   container to it. `scroll-behavior: smooth` is deliberately NOT set here: during
+   streaming output it would re-aim the animation on every token. */
 .db-scroll-anchor {
   height: 0;
   flex-shrink: 0;
@@ -761,13 +761,13 @@
 }
 
 /* ---------------------------------------------------------------------------
-   13.5 Планшет: сайдбар уже вернулся, но места ещё мало
+   13.5 Tablet: the sidebar is back, but space is still tight
    --------------------------------------------------------------------------- */
 
-/* В диапазоне 900–1199 сайдбар (268px) снова прибит, и десктопные поля по 40px
-   отнимают у контента последнее: на 900px ему остаётся 552. Сужаем ПОЛЯ, а не
-   саму колонку — её ширина (.db-content-inner, 900px) подобрана под читаемость
-   и на планшете всё равно не достигается. */
+/* Between 900 and 1199 the sidebar (268px) is pinned again, and the 40px desktop
+   padding takes the last of the content's room: at 900px it is left with 552.
+   Narrow the PADDING, not the column — its width (.db-content-inner, 900px) was
+   chosen for readability and is never reached on a tablet anyway. */
 @media (min-width: 900px) and (max-width: 1199px) {
   .db-content {
     padding-left: var(--space-6);
@@ -780,8 +780,8 @@
    --------------------------------------------------------------------------- */
 
 @media (max-width: 899px) {
-  /* Слот больше не display:none — иначе вместе с сайдбаром прятался бы
-     и бургер. Вместо этого сайдбар уезжает за левый край. */
+  /* The slot is no longer display:none — that would hide the burger along with
+     the sidebar. Instead the sidebar slides off the left edge. */
   .db-sidebar-slot { width: 0; }
   .db-content {
     margin-left: 0;
@@ -790,7 +790,7 @@
     padding-right: max(var(--gutter), env(safe-area-inset-right));
   }
   .db-planet-section { padding: 18px var(--gutter); }
-  /* На iPhone с «домашней полоской» кнопка вставала прямо под ней. */
+  /* On an iPhone with a home indicator the button sat right under it. */
   .db-scroll-top {
     bottom: calc(20px + env(safe-area-inset-bottom));
     right: calc(16px + env(safe-area-inset-right));
@@ -831,10 +831,10 @@
   }
   .db-sidebar-burger:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-  /* Открытый сайдбар накрыл бы бургер, поэтому он убирается флагом из JSX
-     (комбинатора «предыдущий соседний элемент» в CSS нет). Закрытие — через
-     ✕ внутри сайдбара или тап по оверлею. Правило идёт после базового,
-     специфичность та же — побеждает порядок. */
+  /* An open sidebar would cover the burger, so it is removed via a flag in JSX
+     (CSS has no "previous sibling" combinator). Closing happens through the ✕
+     inside the sidebar or a tap on the overlay. This rule comes after the base
+     one with the same specificity — order wins. */
   .db-sidebar-burger--hidden { display: none; }
 
   .db-sidebar-overlay {

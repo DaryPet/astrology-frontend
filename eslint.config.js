@@ -57,7 +57,7 @@ export default [
       'react-hooks': reactHooks,
     },
     rules: {
-      // Базовые правила
+      // Base rules
       'semi': ['error', 'always'],
       'quotes': ['error', 'single', { avoidEscape: true }],
       'indent': ['error', 2],

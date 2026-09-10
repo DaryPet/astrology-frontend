@@ -1,7 +1,7 @@
 // src/components/EventAnalysisPanel.tsx
-// Анализ события: дата+время+место события, выбор LLM.
-// Без натальных данных — payload строго по контракту /api/daily-forecast.
-// Самодостаточная панель: своё состояние и запрос, пропсов нет.
+// Event analysis: event date+time+place, LLM choice.
+// No natal data — the payload follows the /api/daily-forecast contract exactly.
+// Self-contained panel: its own state and request, no props.
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import LocationInput from './LocationInput';
@@ -19,8 +19,8 @@ type MatchType =
   | 'underdog_edge'
   | 'underdog_win_likely';
 
-// Отображаем только анализ и ответ; остальные поля ответа
-// (key_aspects, strength_breakdown, moon_report и пр.) не рендерим.
+// Only the analysis and the answer are shown; the remaining response fields
+// (key_aspects, strength_breakdown, moon_report, etc.) are not rendered.
 interface EventAnalysisResult {
   score?: number;
   category?: 'critical' | 'challenging' | 'neutral' | 'favorable' | 'excellent';
@@ -60,8 +60,8 @@ const EventAnalysisPanel: React.FC = () => {
   const [result, setResult] = useState<EventAnalysisResult | null>(null);
 
   const handleLocationSelect = async (loc: Location) => {
-    // Таймзона всегда должна быть таймзоной места события; фоллбэк 'UTC'
-    // из LocationInput недопустим — уточняем по координатам.
+    // The timezone must always be the event place's timezone; the 'UTC' fallback
+    // from LocationInput is not acceptable here — resolve it from the coordinates.
     if ((!loc.timezone || loc.timezone === 'UTC') && Number.isFinite(loc.lat) && Number.isFinite(loc.lon)) {
       try {
         const detected = await geocodeAPI.detectTimezone(loc.lat, loc.lon);
@@ -69,7 +69,7 @@ const EventAnalysisPanel: React.FC = () => {
           loc = { ...loc, timezone: detected };
         }
       } catch {
-        // оставляем как есть — валидация ниже не пропустит без таймзоны
+        // leave as is — validation below rejects a missing timezone anyway
       }
     }
     setLocation(loc);
@@ -132,12 +132,12 @@ const EventAnalysisPanel: React.FC = () => {
     : CATEGORY_COLORS.neutral;
   const catLabel = result?.category ? t(`eventAnalysis.categories.${result.category}`) : '';
 
-  // Полная карточка приоритетнее короткой прозы favorite/opponent/verdict
+  // The full card takes precedence over the short favorite/opponent/verdict prose
   const hasCard = Boolean(result?.significator_card);
   const hasTexts = Boolean(result?.favorite || result?.opponent || result?.verdict);
 
-  // maxWidth: 'none' перебивает глобальный .hero p { max-width: 600px },
-  // иначе абзацы обрезаются посреди контейнера
+  // maxWidth: 'none' overrides the global .hero p { max-width: 600px },
+  // otherwise paragraphs get clipped mid-container
   const sectionTitleStyle: React.CSSProperties = {
     margin: 0,
     maxWidth: 'none',
@@ -157,7 +157,7 @@ const EventAnalysisPanel: React.FC = () => {
 
   return (
     <div className="event-analysis-panel">
-      {/* Форма события — тот же дизайн, что форма расчёта карты */}
+      {/* Event form — same design as the chart calculation form */}
       <div className="form-card">
         {error && <div className="error">{error}</div>}
 
@@ -234,7 +234,7 @@ const EventAnalysisPanel: React.FC = () => {
         </div>
       )}
 
-      {/* Результат */}
+      {/* Result */}
       {result && !loading && (
         <div
           style={{

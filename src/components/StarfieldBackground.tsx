@@ -1,24 +1,24 @@
 /**
- * Декоративное небо на фон страницы: мерцающие звёзды, комета по орбите
- * и падающая звезда.
+ * Decorative page-background sky: twinkling stars, an orbiting comet
+ * and a shooting star.
  *
- * Почему отдельный компонент, а не LiveSkyFrame: тот спроектирован как
- * рамка вокруг колеса карты — его звёзды намеренно прижаты к краям и углам
- * квадратной сцены, чтобы не ложиться на линии чертежа. На полной странице
- * такая раскладка собрала бы всё по периметру.
+ * Why a separate component and not LiveSkyFrame: that one is designed as a
+ * frame around the chart wheel — its stars are deliberately pushed to the edges
+ * and corners of a square stage so they never sit on the drawing's lines. On a
+ * full page that layout would pile everything around the perimeter.
  *
- * Анимации переиспользуются из index.css (live-sky-twinkle, -orbit-spin,
- * -shoot) — свои keyframes здесь не заводятся. Всё движение идёт через
- * transform и opacity, то есть композитится на GPU; filter и box-shadow
- * не анимируются нигде (см. plans/home-synastry-design.md).
+ * Animations are reused from index.css (live-sky-twinkle, -orbit-spin,
+ * -shoot) — no keyframes are declared here. All motion goes through
+ * transform and opacity, i.e. composited on the GPU; filter and box-shadow
+ * are never animated (see plans/home-synastry-design.md).
  *
- * Ничего не рендерит в светлой теме и не двигается при prefers-reduced-motion
- * — и то и другое решается в CSS, без JS.
+ * Renders nothing in the light theme and stays still under prefers-reduced-motion
+ * — both handled in CSS, without JS.
  */
 
-// Детерминированные позиции — как в LiveSkyFrame, чтобы небо не «прыгало»
-// между рендерами. Первые 20 покрывают экран и сами по себе: на мобильном
-// CSS прячет остальные, поэтому порядок здесь не случайный.
+// Deterministic positions — as in LiveSkyFrame, so the sky does not jump
+// between renders. The first 20 cover the screen on their own: on mobile
+// CSS hides the rest, so the order here is not arbitrary.
 const STARS: Array<{ top: string; left: string; size: number; delay: number }> = [
   { top: '8%', left: '12%', size: 3, delay: 0 },
   { top: '17%', left: '78%', size: 2, delay: 1.4 },
@@ -40,7 +40,7 @@ const STARS: Array<{ top: string; left: string; size: number; delay: number }> =
   { top: '22%', left: '93%', size: 3, delay: 0.6 },
   { top: '47%', left: '71%', size: 2, delay: 2.1 },
   { top: '71%', left: '44%', size: 3, delay: 1.8 },
-  // Дальше — уплотнение для больших экранов, на мобильном скрыто
+  // Below — densification for large screens, hidden on mobile
   { top: '3%', left: '33%', size: 2, delay: 2.3 },
   { top: '14%', left: '61%', size: 3, delay: 0.5 },
   { top: '20%', left: '4%', size: 2, delay: 3.0 },

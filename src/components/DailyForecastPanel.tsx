@@ -118,7 +118,7 @@ const DailyForecastPanel: React.FC<DailyForecastPanelProps> = ({ natalChart }) =
 
   return (
     <div style={{ marginTop: 'var(--space-6)' }}>
-      {/* Форма */}
+      {/* Form */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'flex-end' }}>
         <label className="ui-stack ui-meta">
           {t('dailyForecast.dateLabel')}
@@ -231,9 +231,9 @@ const DailyForecastPanel: React.FC<DailyForecastPanelProps> = ({ natalChart }) =
             {showAspects ? t('dailyForecast.aspectsHide') : t('dailyForecast.aspectsShow')}
           </button>
 
-          {/* Пять колонок на 320 не помещаются; --plain — потому что своей рамки
-              у этой таблицы не было, а обычный .ui-table-wrap добавил бы её и
-              на десктопе. */}
+          {/* Five columns do not fit at 320; --plain because this table had no
+              border of its own, and a plain .ui-table-wrap would add one on
+              desktop too. */}
           {showAspects && (
             <div className="ui-table-wrap ui-table-wrap--plain">
               <table style={{ borderCollapse: 'collapse', fontSize: '13px', width: '100%' }}>

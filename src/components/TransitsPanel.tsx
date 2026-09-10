@@ -47,7 +47,7 @@ interface TransitsPanelProps {
   history?: TransitsHistoryEntry[];
   viewingCacheKey?: string | null;
   onSelectHistoryEntry?: (entry: TransitsHistoryEntry) => void;
-  // Pinned "Текущий" row — the live slot (whatever's currently generating
+  // Pinned "Current" row — the live slot (whatever is currently generating
   // or was last completed for the picked date), always present in the list
   // so it's never lost while browsing older entries. null = nothing live
   // yet (fresh chart, never run).
@@ -55,7 +55,7 @@ interface TransitsPanelProps {
   onSelectCurrent?: () => void;
 }
 
-// Порядок вывода: Луна и быстрые первыми (день), потом медленные (фон)
+// Output order: Moon and fast planets first (the day), then slow ones (the background)
 const PLANET_ORDER = [
   'Moon', 'Sun', 'Mercury', 'Venus', 'Mars',
   'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto',
@@ -115,7 +115,7 @@ const TransitsPanel: React.FC<TransitsPanelProps> = ({
         <h3 className="ui-subtitle" style={{ marginBottom: 0 }}>
           {t('dashboard.transits.title')}
         </h3>
-        {/* Выбор дня: по умолчанию сегодня, любой день прошлого/будущего */}
+        {/* Day picker: today by default, any past or future day is allowed */}
         <input
           type="date"
           value={selectedDate}
@@ -133,7 +133,7 @@ const TransitsPanel: React.FC<TransitsPanelProps> = ({
         </button>
       </div>
 
-      {/* Выбор места для транзитов */}
+      {/* Location picker for the transits */}
       <div className="ui-field">
         <label className="ui-label">
           {t('dashboard.transits.locationTitle')}
@@ -162,7 +162,7 @@ const TransitsPanel: React.FC<TransitsPanelProps> = ({
         </p>
       </div>
 
-      {/* Запуск AI-анализа: явная кнопка + остаток дневного лимита — сразу после выбора даты/места, до расчётов */}
+      {/* Start of the AI analysis: an explicit button + the remaining daily limit — right after the date/location pickers, before any calculation */}
       <div className="ui-row" style={{ marginBottom: 'var(--space-4)' }}>
         <button
           type="button"
@@ -179,9 +179,9 @@ const TransitsPanel: React.FC<TransitsPanelProps> = ({
         )}
       </div>
 
-      {/* На что рассчитан показанный анализ: если он уже готов (или ещё
-          стримится) — дата/место заморожены на момент запуска, иначе —
-          текущий выбор в форме выше. */}
+      {/* What the shown analysis was computed for: once it is ready (or still
+          streaming) the date/location are frozen at launch time, otherwise it
+          reflects the current choice in the form above. */}
       <div className="ui-meta ui-row ui-row--tight" style={{ marginBottom: 'var(--space-3)' }}>
         <Calendar size={13} strokeWidth={2} />
         <span>{t('dashboard.transits.calculatedFor')}: {(analysis && analysisDate) ? analysisDate : selectedDate}</span>
@@ -195,13 +195,13 @@ const TransitsPanel: React.FC<TransitsPanelProps> = ({
               : t('dashboard.transits.birthLocation')}
       </div>
 
-      {/* Список готовых анализов этой карты — клик подставляет текст из
-          localStorage без похода в сеть и не трогает форму выбора даты/
-          места и уж тем более фоновую генерацию, если она сейчас идёт.
-          Не дропдаун — обычные кликабельные строки. "Текущий" — закреплённая
-          первая строка, ведущая обратно к живому слоту (спиннер/стриминг/
-          готовый текст — что сейчас реально происходит для выбранной даты),
-          даже пока просматривается какая-то из более старых записей. */}
+      {/* This chart's finished analyses — a click pulls the text from
+          localStorage with no network call, and touches neither the date/location
+          form nor, above all, a background generation currently in progress.
+          Not a dropdown — plain clickable rows. "Current" is the pinned first
+          row leading back to the live slot (spinner / streaming / finished text
+          — whatever is actually happening for the picked date), even while an
+          older entry is being browsed. */}
       {(currentEntry || history.length > 0) && (
         <div style={{ marginBottom: 'var(--space-4)' }}>
           <h4 className="ui-label">
@@ -284,7 +284,7 @@ const TransitsPanel: React.FC<TransitsPanelProps> = ({
 
       {data && (
         <>
-          {/* Ключевые точки дня: лунная фаза + Луна */}
+          {/* Key points of the day: lunar phase + Moon */}
           <div className="ui-row" style={{ marginTop: 'var(--space-4)', alignItems: 'stretch' }}>
             {data.lunar_phase && (
               <div className="ui-card ui-card--tight" style={{ flex: '1 1 220px' }}>
@@ -315,13 +315,13 @@ const TransitsPanel: React.FC<TransitsPanelProps> = ({
             )}
           </div>
 
-          {/* Таблица транзитных планет */}
+          {/* Transiting planets table */}
           <div style={{ marginTop: 'var(--space-5)' }}>
             <h4 className="ui-subtitle">
               {t('dashboard.transits.planetsTitle')}
             </h4>
-            {/* Обёртка обязательна: без неё таблица растягивает страницу по
-                горизонтали на узком экране (ui.css:213, эталон применения —
+            {/* The wrapper is mandatory: without it the table stretches the page
+                horizontally on a narrow screen (ui.css:213, reference usage —
                 ProgressedPlanetsTable.tsx). */}
             <div className="ui-table-wrap">
               <table className="ui-table">
@@ -355,7 +355,7 @@ const TransitsPanel: React.FC<TransitsPanelProps> = ({
             </div>
           </div>
 
-          {/* Аспекты: медленные = темы периода */}
+          {/* Aspects: slow = themes of the period */}
           <div style={{ marginTop: 'var(--space-5)' }}>
             <h4 className="ui-subtitle">
               {t('dashboard.transits.slowAspectsTitle')}
@@ -369,7 +369,7 @@ const TransitsPanel: React.FC<TransitsPanelProps> = ({
             )}
           </div>
 
-          {/* Аспекты: быстрые = окраска дня */}
+          {/* Aspects: fast = flavour of the day */}
           <div style={{ marginTop: 'var(--space-4)' }}>
             <h4 className="ui-subtitle">
               {t('dashboard.transits.fastAspectsTitle')}

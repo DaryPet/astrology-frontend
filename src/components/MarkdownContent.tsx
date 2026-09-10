@@ -30,9 +30,9 @@ const MarkdownContent = ({ content }: MarkdownContentProps) => {
   const flushTable = () => {
     if (tableRows.length > 0) {
       elements.push(
-        // Таблицы регулярно приходят в ответах LLM, поэтому это переполнение
-        // прилетает на любой странице с разбором. У .markdown-table своя рамка
-        // и border-radius, обычный .ui-table-wrap дал бы вторую — отсюда --plain.
+        // Tables show up regularly in LLM answers, so this overflow hits any
+        // page with an analysis. .markdown-table has its own border and
+        // border-radius; a plain .ui-table-wrap would add a second one — hence --plain.
         <div key={`table-${elements.length}`} className="ui-table-wrap ui-table-wrap--plain">
           <table className="markdown-table">
             <thead>

@@ -444,7 +444,7 @@ const Dashboard = () => {
   const [transitsReady, setTransitsReady] = useState(false);
   // Persistent "is a transits generation for THIS chart running somewhere in
   // the background" flag — independent of the currently-picked date/location
-  // in the form, so the "Дать анализ" button stays disabled even if the user
+  // in the form, so the "Get analysis" button stays disabled even if the user
   // moves the date picker away from the in-flight job's date. See
   // plans/transits-date-location-persistence.md.
   const [transitsGenerationLocked, setTransitsGenerationLocked] = useState<boolean>(
@@ -462,7 +462,7 @@ const Dashboard = () => {
   // typing, full text once done, exactly as before). Non-null = a specific
   // past history entry's static text, browsed via the list — clicking a
   // history row only ever sets this, it never touches the live slot, so the
-  // live generation keeps progressing untouched underneath and "Текущий" in
+  // live generation keeps progressing untouched underneath and "Current" in
   // the list always leads back to it.
   const [historyViewOverride, setHistoryViewOverride] = useState<string | null>(null);
   const transitsFinishRef = useRef<((analysis: string) => void) | null>(null);
@@ -1484,7 +1484,7 @@ const Dashboard = () => {
             // browser) or the component has unmounted — so if that happens
             // while the stream is still running, doing this there would
             // leave registryKey stuck "in flight" until the next visit times
-            // out 80s later with a false "Не вдалося розрахувати прогресії"
+            // out 80s later with a false "Failed to calculate progressions"
             // error, even though the backend finished successfully (see
             // inFlightRegistry.ts).
             // Clear the in-flight marker only once the row is actually in the DB:
@@ -1621,9 +1621,9 @@ const Dashboard = () => {
     // within the current mount and also guards mutual exclusion with
     // loadTransitsData above.
     const registryKey = `transits:${savedChartId}:${day}:${locKey}:${mode}`;
-    // Lets a fresh mount (chart reload, or just returning to the Транзити
+    // Lets a fresh mount (chart reload, or just returning to the Transits
     // tab) discover that a background run is still going WITHOUT the user
-    // having to re-enter the same city/date and click "Дати аналіз" again —
+    // having to re-enter the same city/date and click "Get analysis" again —
     // see the pendingKey-driven reconnect effect below. isInFlight(registryKey)
     // alone only says THAT something is running, not what params to rebuild
     // it with, since transitsLocation/transitsDate don't survive a remount.
@@ -1745,8 +1745,8 @@ const Dashboard = () => {
           transitsStream.handleFinal(result);
           // The instance that actually owned the request already recorded
           // usage in Supabase (persistTransitsResult) — this instance just
-          // needs to re-ask for the current count so its own "Залишилось
-          // X з Y" isn't stuck at whatever it showed before reconnecting.
+          // needs to re-ask for the current count so its own "N of M
+          // analyses left today" is not stuck at whatever it showed before reconnecting.
           refreshTransitsRemaining();
         } else {
           transitsStream.handleError();
@@ -1877,7 +1877,7 @@ const Dashboard = () => {
         // Raw planetary positions for this day+location — lets a browsed
         // history entry show its own matching table/lunar-phase cards
         // instead of always whatever's currently in transitsData. See
-        // the "а записывать в локал сторедж вместе с анализом?" fix.
+        // the "write it to localStorage together with the analysis?" fix.
         localStorage.setItem(dataKey, JSON.stringify(data));
         // Add to the browsable history list (plans/transits-analysis-history-list.md)
         // — caps + evicts the oldest entry (and its full text) past
@@ -2000,7 +2000,7 @@ const Dashboard = () => {
   }, [loadTransitsData]);
 
   // Selects what the panel displays: a specific past entry from the list
-  // (by cacheKey), or null to go back to the live slot ("Текущий" row).
+  // (by cacheKey), or null to go back to the live slot ("Current" row).
   // Never touches transitsAnalysis/transitsReady/etc — the live generation
   // (if any) keeps progressing untouched underneath, so it's always there
   // to come back to. See plans/transits-analysis-history-list.md.
@@ -2014,7 +2014,7 @@ const Dashboard = () => {
     setHistoryViewOverride(entry.cacheKey);
   }, [transitsViewingCacheKey]);
 
-  // "Текущий" — the pinned row in the history list that always leads back
+  // "Current" — the pinned row in the history list that always leads back
   // to the live slot. Derived fresh on every render (not stored state): the
   // date/location picker can be moved around while a DIFFERENT job is
   // locked/generating (the guard in runTransitsAnalysis only blocks
@@ -2080,7 +2080,7 @@ const Dashboard = () => {
   // The planet table / lunar phase cards below the text — same live-vs-
   // browsing split as the analysis text above, but for the raw positions
   // (transits_positions|... written by persistTransitsResult, see the
-  // "а записывать в локал сторедж вместе с анализом?" fix). Entries saved
+  // "write it to localStorage together with the analysis?" fix). Entries saved
   // before this existed just won't have a table when browsed — data stays
   // null, TransitsPanel already renders nothing for that case.
   let transitsPanelData = transitsData;
@@ -2120,7 +2120,7 @@ const Dashboard = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [transitsLocation]);
 
-  // Returning to the Транзити tab while a background analysis from a
+  // Returning to the Transits tab while a background analysis from a
   // previous visit is still running (see the pendingKey writes in
   // runTransitsAnalysis) restores the params it was started with — city and
   // date don't survive a remount on their own — so the effect below can
@@ -3136,14 +3136,14 @@ const Dashboard = () => {
               <ProcessingMessage size="sm" />
             </div>
           )}
-          {/* Пустое состояние показывается всегда, когда не рендерится ни один
-              из трёх блоков ниже — условие зеркалит их, а не описывает свой
-              случай. Раньше здесь стояло !chartIdFromUrl && !chartDataForAnalysis,
-              и при возврате на дашборд получался пустой экран: chartDataForAnalysis
-              и savedChartId восстанавливаются из localStorage, а showFullAnalysis
-              сбрасывается в false, потому что Dashboard размонтируется при любой
-              навигации (key={location.key} в App.tsx). Все три блока оказывались
-              выключены одновременно. */}
+          {/* The empty state shows whenever none of the three blocks below
+              render — the condition mirrors them rather than describing its own
+              case. It used to read !chartIdFromUrl && !chartDataForAnalysis, and
+              returning to the dashboard produced a blank screen: chartDataForAnalysis
+              and savedChartId are restored from localStorage while showFullAnalysis
+              resets to false, because Dashboard unmounts on any navigation
+              (key={location.key} in App.tsx). All three blocks ended up off
+              at once. */}
           {!showFullAnalysis
             && !(chartLoading && chartIdFromUrl)
             && !(chartDataForAnalysis && isAuthenticated && !fullAnalysis && !savedChartId)

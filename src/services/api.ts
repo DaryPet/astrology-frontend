@@ -10,10 +10,10 @@ const api = axios.create({
   }
 });
 
-// Прикрепляем Supabase-токен: защищённые эндпоинты (chat, progressions, analysis)
-// требуют Authorization: Bearer (см. get_current_user на бэкенде).
-// Берём токен из живой сессии Supabase (он сам себя рефрешит), а не из ручной
-// копии в localStorage — чтобы нельзя было отправить протухший/рассинхронизированный токен.
+// Attach the Supabase token: protected endpoints (chat, progressions, analysis)
+// require Authorization: Bearer (see get_current_user on the backend).
+// Read it from the live Supabase session (which refreshes itself), not from a
+// hand-made localStorage copy — that copy can go stale or out of sync.
 api.interceptors.request.use(async (config) => {
   try {
     const { data } = await supabase.auth.getSession();
@@ -75,11 +75,11 @@ export interface ProgressedPlanet {
   natal_house?: number | null;
   changed_sign?: boolean;
   natal_sign?: string;
-  // дом натальной планеты и факт перехода прогрессивной планеты в другой дом
+  // natal house of the planet, and whether the progressed planet changed house
   natal_planet_house?: number | null;
   changed_house?: boolean;
   natal_degree?: number;
-  // через сколько лет планета сменит знак (считается для Солнца и Луны)
+  // years until the planet changes sign (computed for Sun and Moon)
   years_to_next_sign?: number;
 }
 
@@ -92,7 +92,7 @@ export interface ProgressionAspect {
   aspect_ru?: string; aspect_uk?: string;
   orb: number;
   exactness?: number;
-  // сходящийся (true) / расходящийся (false)
+  // applying (true) / separating (false)
   applying?: boolean;
   natal_house?: number | null;
   progressed_house?: number | null;
@@ -122,7 +122,7 @@ export interface ProgressionsData {
   meta?: Record<string, unknown>;
 }
 
-// Форма аспекта, единая по всему фронту (см. AspectGrid.Aspect, AspectAnalysisModal.AspectData)
+// Aspect shape shared across the frontend (see AspectGrid.Aspect, AspectAnalysisModal.AspectData)
 export interface SynastryAspectItem {
   planet1: string;
   planet2: string;
@@ -170,7 +170,7 @@ export interface TransitPlanet {
   full_degree: number;
   speed?: number;
   is_retrograde?: boolean;
-  // натальный дом, по которому идёт транзитная планета — ключ интерпретации
+  // natal house the transiting planet moves through — key to the interpretation
   natal_house?: number | null;
   is_slow?: boolean;
   natal_sign?: string;
@@ -206,12 +206,12 @@ export interface TransitsData {
   meta?: Record<string, unknown>;
 }
 
-// Геокодинг API методы
+// Geocoding API methods
 export const geocodeAPI = {
   /**
-   * Автокомплит городов по частичному вводу
-   * @param {string} query - Часть названия города (например, "барс")
-   * @returns {Promise<Array>} Список городов с координатами и таймзоной
+   * City autocomplete from a partial input
+   * @param {string} query - Part of the city name (e.g. "barce")
+   * @returns {Promise<Array>} Cities with coordinates and timezone
    */
   autocomplete: async (query: string): Promise<LocationInfo[]> => {
     if (!query || query.trim().length < 2) {
@@ -232,10 +232,10 @@ export const geocodeAPI = {
   },
 
   /**
-   * Получение информации о месте по координатам (обратное геокодирование)
-   * @param {number} lat - Широта
-   * @param {number} lon - Долгота
-   * @returns {Promise<Object>} Информация о месте (адрес, таймзона и т.д.)
+   * Place info by coordinates (reverse geocoding)
+   * @param {number} lat - Latitude
+   * @param {number} lon - Longitude
+   * @returns {Promise<Object>} Place info (address, timezone, etc.)
    */
   getLocationInfo: async (lat: number, lon: number): Promise<LocationInfo> => {
     if (lat == null || lon == null) {
@@ -252,27 +252,27 @@ export const geocodeAPI = {
   },
 
   /**
-   * Определение таймзоны по координатам (обёртка над getLocationInfo)
-   * @param {number} lat - Широта
-   * @param {number} lon - Долгота
-   * @returns {Promise<string>} Таймзона в формате IANA (например, "Europe/Moscow")
+   * Timezone by coordinates (wrapper over getLocationInfo)
+   * @param {number} lat - Latitude
+   * @param {number} lon - Longitude
+   * @returns {Promise<string>} Timezone in IANA format (e.g. "Europe/Moscow")
    */
   detectTimezone: async (lat: number, lon: number): Promise<string> => {
     try {
       const locationInfo = await geocodeAPI.getLocationInfo(lat, lon);
       return locationInfo.timezone || 'UTC';
     } catch {
-      return 'UTC'; // Fallback на UTC если не удалось определить
+      return 'UTC'; // Fallback to UTC when detection fails
     }
   }
 };
 
-// Основные API методы для астрологических расчетов
+// Core API methods for astrological calculations
 export const astrologyAPI = {
   /**
-   * Расчет натальной карты
-   * @param {Object} data - Данные для расчета
-   * @returns {Promise<Object>} Результаты расчета
+   * Natal chart calculation
+   * @param {Object} data - Calculation input
+   * @returns {Promise<Object>} Calculation result
    */
   calculateChart: async (data: ChartData): Promise<ChartData> => {
     try {
@@ -284,9 +284,9 @@ export const astrologyAPI = {
   },
 
   /**
-   * Расчет синастрии
-   * @param {Object} data - Данные двух карт для синастрии
-   * @returns {Promise<Object>} Результаты синастрии
+   * Synastry calculation
+   * @param {Object} data - Both charts for the synastry
+   * @returns {Promise<Object>} Synastry result
    */
   calculateSynastry: async (data: SynastryData): Promise<SynastryData> => {
     try {
@@ -369,8 +369,8 @@ export const astrologyAPI = {
   },
 
   /**
-   * Расчёт вторичных прогрессий («день за год»). Требует авторизацию —
-   * доступно только для сохранённых карт (как чат).
+   * Secondary progressions ("a day for a year"). Requires auth —
+   * available only for saved charts (same as chat).
    */
   calculateProgressions: async (data: Record<string, unknown>): Promise<ProgressionsData> => {
     const response = await api.post('/progressions', data);
@@ -378,7 +378,7 @@ export const astrologyAPI = {
   },
 
   /**
-   * AI-анализ вторичных прогрессий (RAG по книгам + LLM).
+   * AI analysis of secondary progressions (RAG over books + LLM).
    * @param payload - { natal_chart, progression_data, language }
    * @param mode - 'simple' | 'advanced'
    */
@@ -394,8 +394,8 @@ export const astrologyAPI = {
   },
 
   /**
-   * Расчёт прогрессивной синастрии: прогрессии обоих партнёров + кросс-наложения
-   * (прогрессия одного на натал другого) + динамика (новые/угасшие аспекты периода).
+   * Progressed synastry: progressions of both partners + cross-overlays
+   * (one partner's progressions on the other's natal) + period dynamics (new/faded aspects).
    */
   calculateProgressedSynastry: async (data: Record<string, unknown>): Promise<ProgressedSynastryData> => {
     const response = await api.post('/progressed-synastry', data);
@@ -403,8 +403,8 @@ export const astrologyAPI = {
   },
 
   /**
-   * AI-анализ прогрессивной синастрии (RAG по книгам + LLM).
-   * @param payload - предпочтительно { progressed_synastry_data: <результат calculateProgressedSynastry>, language }
+   * AI analysis of progressed synastry (RAG over books + LLM).
+   * @param payload - preferably { progressed_synastry_data: <result of calculateProgressedSynastry>, language }
    * @param mode - 'simple' | 'advanced'
    */
   getProgressedSynastryAnalysis: async (
@@ -419,7 +419,7 @@ export const astrologyAPI = {
   },
 
   /**
-   * Транзиты на конкретный день (по умолчанию — сегодня; можно любой день).
+   * Transits for a specific day (today by default; any day is allowed).
    * @param data - { birth_date, birth_time, birth_place, latitude, longitude, timezone, target_date? }
    */
   calculateTransits: async (data: Record<string, unknown>): Promise<TransitsData> => {
@@ -428,7 +428,7 @@ export const astrologyAPI = {
   },
 
   /**
-   * AI-анализ транзитов дня (RAG по книгам + LLM).
+   * AI analysis of the day's transits (RAG over books + LLM).
    * @param payload - { natal_chart, transit_data, language }
    * @param mode - 'simple' | 'advanced'
    */
@@ -444,7 +444,7 @@ export const astrologyAPI = {
   },
 
   /**
-   * Прогноз дня: score 1-10, категория, summary; аспекты к планетам, углам, Фортуне.
+   * Day forecast: score 1-10, category, summary; aspects to planets, angles, Fortune.
    * @param payload - { birth_*, natal_chart, target_date, transit_*, language, llm_provider, llm_model }
    */
   getDailyForecast: async (

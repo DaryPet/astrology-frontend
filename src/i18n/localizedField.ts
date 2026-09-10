@@ -1,6 +1,6 @@
-// Выбирает локализованное значение поля (знак/аспект/фаза) по текущему языку интерфейса.
-// Бэкенд присылает base-поле (en) плюс необязательные _ru и _uk варианты; если перевода
-// для текущего языка нет, откатываемся на английское значение, а не молчим.
+// Picks the localized value of a field (sign/aspect/phase) for the current UI language.
+// The backend sends a base field (en) plus optional _ru and _uk variants; when the current
+// language has no translation, fall back to the English value rather than rendering nothing.
 export function pickLocalized(
   language: string | undefined,
   base?: string,

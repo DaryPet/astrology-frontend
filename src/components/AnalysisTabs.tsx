@@ -36,9 +36,9 @@ const AnalysisTabs: React.FC<AnalysisTabsProps> = ({ active, onChange, showProgr
       role="tablist"
       style={{
         display: 'flex',
-        // Без переноса три вкладки («Натальная карта / Прогрессии / Транзиты»)
-        // дают min-content ≈370px при доступных на 320 экране 288 — то есть
-        // горизонтальный скролл всей страницы.
+        // Without wrapping, three tabs ("Natal chart / Progressions / Transits")
+        // give min-content ≈370px against the 288px available on a 320 screen —
+        // i.e. horizontal scroll for the whole page.
         flexWrap: 'wrap',
         gap: '4px',
         marginTop: '28px',
@@ -59,8 +59,8 @@ const AnalysisTabs: React.FC<AnalysisTabsProps> = ({ active, onChange, showProgr
             onClick={() => onChange(tab.id)}
             style={{
               flex: '1 1 auto',
-              // min-width: auto у flex-элемента запрещает сжиматься ниже
-              // min-content, поэтому одного flexWrap на родителе мало.
+              // min-width: auto on a flex item forbids shrinking below
+              // min-content, so flexWrap on the parent alone is not enough.
               minWidth: 0,
               padding: '8px 16px',
               border: 'none',

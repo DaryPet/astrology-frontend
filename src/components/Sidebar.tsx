@@ -72,9 +72,9 @@ const Sidebar = ({
   const { t } = useTranslation();
   const currentLang = lang || i18n.language || 'ru';
   const [historyOpen, setHistoryOpen] = useState(true);
-  // Drawer живёт здесь, а не в Dashboard: так Dashboard.tsx не меняется вовсе
-  // (openspec/changes/premium-design-system, Decision 5). На десктопе класс
-  // ни на что не влияет — вся мобильная механика внутри @media.
+  // The drawer lives here, not in Dashboard, so Dashboard.tsx stays untouched
+  // (openspec/changes/premium-design-system, Decision 5). On desktop the class
+  // does nothing — all the mobile mechanics are inside @media.
   const [drawerOpen, setDrawerOpen] = useState(false);
   const closeDrawer = () => setDrawerOpen(false);
 

@@ -101,7 +101,7 @@ export function getFullAnalysis(
   const chartType = (chartData.type as string) ?? 'chart';
   const key = `${chartType}-${chartName}-${mode}`;
 
-  // Если запрос уже идёт — возвращаем тот же промис, новый к LLM не уходит
+  // A request already in flight — return the same promise, no second LLM call
   const existing = analysisCache.get(key);
   if (existing) return existing.promise;
 
@@ -136,8 +136,8 @@ export function getFullAnalysis(
       }
       return { analysis: result.analysis };
     } catch (err) {
-      // Успешный результат оставляем в кэше (не дублируем LLM-ответ),
-      // но упавший запрос нужно удалить — иначе повтор невозможен без reload
+      // A successful result stays cached (no duplicate LLM answer),
+      // but a failed one must be dropped — otherwise a retry needs a reload
       analysisCache.delete(key);
       throw err;
     }

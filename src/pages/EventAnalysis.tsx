@@ -1,5 +1,5 @@
 // src/pages/EventAnalysis.tsx
-// Страница «Анализ события»: форма события без натальных данных.
+// "Event analysis" page: an event form with no natal data.
 import { useTranslation } from 'react-i18next';
 import Header from '../components/Header';
 import EventAnalysisPanel from '../components/EventAnalysisPanel';

@@ -28,14 +28,14 @@ const Header: React.FC<HeaderProps> = ({ hasUnsavedAnalysis = false, onProtected
   const { t, i18n } = useTranslation();
   const { lang } = useParams();
   const [langOpen, setLangOpen] = useState(false);
-  // Мобильное меню живёт здесь, а не в App/Dashboard — по образцу drawer'а
-  // сайдбара (openspec/changes/premium-design-system, Decision 5). На ≥900px
-  // класс ни на что не влияет: вся механика внутри @media.
+  // The mobile menu lives here, not in App/Dashboard — modelled on the sidebar
+  // drawer (openspec/changes/premium-design-system, Decision 5). At ≥900px the
+  // class does nothing: all the mechanics are inside @media.
   const [menuOpen, setMenuOpen] = useState(false);
   const closeMenu = () => setMenuOpen(false);
 
-  // Esc закрывает меню. Слушатель вешается только пока оно открыто, поэтому
-  // на десктопе и на закрытом меню его нет вообще.
+  // Esc closes the menu. The listener is attached only while it is open, so on
+  // desktop and with the menu closed it does not exist at all.
   useEffect(() => {
     if (!menuOpen) return;
     const onKeyDown = (e: KeyboardEvent) => {
@@ -74,27 +74,16 @@ const Header: React.FC<HeaderProps> = ({ hasUnsavedAnalysis = false, onProtected
         <div className="logo" onClick={() => navigate(`/${currentLangCode}/`)} style={{ cursor: 'pointer' }}>
           {t('chart.logo')}
         </div>
-        {/* Одна и та же разметка на всех ширинах. На ≥900px обёртка объявлена
-            `display: contents`, поэтому .nav и .language-dropdown остаются
-            прямыми flex-детьми .header-content — раскладка десктопа не меняется
-            ни на пиксель. Ниже 900px эта же обёртка становится выездной
-            панелью. Дублировать навигацию в двух местах не требуется. */}
-        {/* Клиппер выездной панели. Первопричина обреза модалок анализа
-            (2026-08-24): анимация открытия ниже стартует с `transform:
-            translateX(100%)` — панель в первом кадре целиком за экраном.
-            По спецификации трансформированный блок всё равно засчитывается
-            в scrollable overflow ближайшего предка без своего overflow —
-            а такого предка на пути до документа не было. На время анимации
-            `window.innerWidth` раздувался с 430 до 750, и это НЕ схлопывалось
-            обратно само — держалось до настоящего resize/поворота экрана.
-            Всё, что позиционируется от вьюпорта (`position: fixed` — оверлей
-            и окно модалок анализа аспектов/планет), занимало эти же 750,
-            из-за чего окно резалось по правому краю экрана.
-            `.header-panel-clip` — статичная коробка без transform, с
-            `overflow: hidden` ровно по месту панели; она поглощает
-            overflow-вклад анимируемого потомка на месте, не давая ему
-            всплыть выше по дереву. Видимо снаружи ничего не меняется —
-            панель всё так же выезжает справа, тем же таймингом. */}
+        {/* One markup for every width. At ≥900px this wrapper is `display:
+            contents`, so .nav and .language-dropdown stay direct flex children of
+            .header-content and the desktop layout is unchanged; below 900px the
+            same wrapper becomes the slide-out panel. No duplicated navigation. */}
+        {/* Drawer clipper. The animation below starts at `transform:
+            translateX(100%)`, and a transformed block still counts towards the
+            scrollable overflow of the nearest ancestor that has none — which
+            inflated window.innerWidth from 430 to 750 and clipped the fixed
+            analysis modals. This static, transform-free box with `overflow:
+            hidden` absorbs that contribution in place. See INSIGHTS.md 2026-08-24. */}
         <div className={`header-panel-clip${menuOpen ? ' header-panel-clip--open' : ''}`}>
           <div
             id="header-menu"
@@ -151,10 +140,10 @@ const Header: React.FC<HeaderProps> = ({ hasUnsavedAnalysis = false, onProtected
               🌐 {currentLang.name}
                 <span style={{ fontSize: '10px' }}>▼</span>
               </button>
-              {/* Стили переехали в класс .language-menu значение-в-значение.
-                  Причина та же, что у кнопки темы: inline не переопределить в
-                  @media, а внутри drawer'а (overflow-y: auto) выпадающее вниз
-                  absolute-меню обрезалось бы по нижнему краю панели. */}
+              {/* Styles moved into the .language-menu class value-for-value. Same
+                  reason as the theme button: inline styles cannot be overridden in
+                  @media, and inside the drawer (overflow-y: auto) an absolute menu
+                  dropping downwards would be clipped by the panel's bottom edge. */}
               {langOpen && (
                 <div className="language-menu">
                   {languages.map(lang => (
@@ -188,12 +177,11 @@ const Header: React.FC<HeaderProps> = ({ hasUnsavedAnalysis = false, onProtected
           </div>
         </div>
 
-        {/* Оверлей и панель — потомки .header (position: sticky), то есть
-            позиционируются от неё, а не от экрана. Это сделано намеренно:
-            у .header есть backdrop-filter, а он, как и transform, создаёт
-            containing block для fixed-потомков (та же механика, что сломала
-            шесть модалок — INSIGHTS.md, 2026-08-23). Явный `absolute` от
-            sticky-предка не зависит от того, останется ли backdrop-filter. */}
+        {/* The overlay and the panel are children of .header (position: sticky),
+            so they position against it, not the viewport. Deliberate: .header has
+            a backdrop-filter, which — like transform — creates a containing block
+            for fixed descendants (the mechanism that broke six modals, INSIGHTS.md
+            2026-08-23). An explicit `absolute` does not depend on that filter staying. */}
         {menuOpen && (
           <div className="header-overlay" onClick={closeMenu} aria-hidden="true" />
         )}

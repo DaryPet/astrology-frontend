@@ -87,7 +87,7 @@ const ProgressionsPanel: React.FC<ProgressionsPanelProps> = ({ data, analysis, d
 
       {data && (
         <>
-          {/* Ключевые точки: лунная фаза + прогрессивные Луна и Солнце */}
+          {/* Key points: lunar phase + progressed Moon and Sun */}
           <div className="ui-row" style={{ marginTop: 'var(--space-4)', alignItems: 'stretch' }}>
             {data.lunar_phase && (
               <div style={{
@@ -150,7 +150,7 @@ const ProgressionsPanel: React.FC<ProgressionsPanelProps> = ({ data, analysis, d
             )}
           </div>
 
-          {/* Таблица прогрессивных планет */}
+          {/* Progressed planets table */}
           <div style={{ marginTop: 'var(--space-5)' }}>
             <h4 className="ui-subtitle">
               {t('dashboard.progressions.planetsTitle')}
@@ -158,7 +158,7 @@ const ProgressionsPanel: React.FC<ProgressionsPanelProps> = ({ data, analysis, d
             <ProgressedPlanetsTable planets={data.progressed_planets} />
           </div>
 
-          {/* Аспекты прогрессий к наталу */}
+          {/* Aspects of the progressions to the natal chart */}
           <div style={{ marginTop: 'var(--space-5)' }}>
             <h4 className="ui-subtitle">
               {t('dashboard.progressions.aspectsTitle')}
