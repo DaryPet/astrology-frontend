@@ -25,7 +25,6 @@ i18n
       order: ['path', 'localStorage', 'navigator'],
       lookupFromPathIndex: 0,
       lookupLocalStorage: 'language',
-      cacheUserLanguage: true,
     },
 
     interpolation: {
