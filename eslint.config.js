@@ -63,7 +63,8 @@ export default [
       'indent': ['error', 2],
       'no-mixed-spaces-and-tabs': 'error',
       'no-trailing-spaces': 'error',
-      'no-console': 'warn',
+      // Logging goes through src/utils/logger.ts, which is exempt below.
+      'no-console': 'error',
       'no-debugger': 'error',
 
       // TypeScript
@@ -81,6 +82,12 @@ export default [
       react: {
         version: 'detect',
       },
+    },
+  },
+  {
+    files: ['src/utils/logger.ts'],
+    rules: {
+      'no-console': 'off',
     },
   },
 ]

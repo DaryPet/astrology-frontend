@@ -16,6 +16,7 @@ import AstroChartComponent from '../components/AstroChartComponent';
 import LiveSkyFrame from '../components/LiveSkyFrame';
 import ProcessingMessage from '../components/ProcessingMessage';
 import AnalysisModeToggle from '../components/AnalysisModeToggle';
+import { logger } from '../utils/logger';
 // v1.2: daily forecast temporarily hidden from the natal chart, do not delete
 // import DailyForecastPanel from '../components/DailyForecastPanel';
 
@@ -148,7 +149,7 @@ function Home() {
         const parsed = JSON.parse(savedChartData);
         setChartData(parsed);
       } catch (e) {
-        console.error('Error parsing saved chart data:', e);
+        logger.error('Error parsing saved chart data:', e);
       }
     }
   }, [chartData]);
@@ -214,7 +215,7 @@ function Home() {
     };
 
     const reportPlanetError = (err: unknown) => {
-      console.error('Planet analysis error:', err);
+      logger.error('Planet analysis error:', err);
       const errorDetail = (err as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
       if (typeof errorDetail === 'string') {
         setAnalysisError(errorDetail);
@@ -468,7 +469,6 @@ function Home() {
 
     try {
       const response = await astrologyAPI.calculateChart(apiData);
-      console.log('🔮 Natal chart data from backend:', JSON.stringify(response, null, 2));
 
       const enhancedPlanets: Record<string, any> = {
         ...(response.planets || {}),
@@ -523,7 +523,7 @@ function Home() {
       localStorage.setItem('savedChartData', JSON.stringify(chartDataToSave));
       localStorage.removeItem('savedChartId');
     } catch (err) {
-      console.error('Ошибка API:', (err as { response?: { data?: unknown } })?.response?.data);
+      logger.error('Ошибка API:', (err as { response?: { data?: unknown } })?.response?.data);
       setError((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || t('home.errors.calcError'));
     } finally {
       setLoading(false);

@@ -14,6 +14,7 @@ import LiveSkyFrame from '../components/LiveSkyFrame';
 import AspectGrid from '../components/AspectGrid';
 import AspectAnalysisModal from '../components/AspectAnalysisModal';
 import AnalysisModeToggle from '../components/AnalysisModeToggle';
+import { logger } from '../utils/logger';
 
 interface PersonFormData {
   name: string;
@@ -98,7 +99,7 @@ function Synastry() {
         const parsed = JSON.parse(savedSynastry);
         setSynastry(parsed);
       } catch (e) {
-        console.error('Error parsing saved synastry:', e);
+        logger.error('Error parsing saved synastry:', e);
       }
     }
 
@@ -106,7 +107,7 @@ function Synastry() {
       try {
         setPersonNames(JSON.parse(savedNames));
       } catch (e) {
-        console.error('Error parsing saved names:', e);
+        logger.error('Error parsing saved names:', e);
       }
     }
   }, [synastry, personNames]);
@@ -120,7 +121,7 @@ function Synastry() {
       try {
         const detected = await geocodeAPI.detectTimezone(lat, lon);
         if (detected && detected !== 'UTC') timezone = detected;
-      } catch (e) { console.warn('Timezone detection warning:', e); }
+      } catch (e) { logger.warn('Timezone detection warning:', e); }
     }
 
     const key = personNum === 1 ? 'person1' : 'person2';
@@ -254,7 +255,7 @@ function Synastry() {
               localStorage.setItem(storageKey, result.analysis);
               if (isStillOpen()) setAspectAnalysis(result.analysis);
             } catch (err) {
-              if (isStillOpen()) console.error('Aspect analysis error:', err);
+              if (isStillOpen()) logger.error('Aspect analysis error:', err);
             } finally {
               clearLive();
               if (isStillOpen()) setAspectLoading(false);
@@ -263,7 +264,7 @@ function Synastry() {
           }
           clearLive();
           if (isStillOpen()) {
-            console.error('Aspect analysis error:', detail);
+            logger.error('Aspect analysis error:', detail);
             setAspectLoading(false);
           }
         },

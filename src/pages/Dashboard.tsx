@@ -50,6 +50,7 @@ import { appendStreamText, getStreamText, clearStreamText } from '../utils/strea
 import { Sparkles, Users, Orbit, Table2, ArrowUp, Calendar } from 'lucide-react';
 import ChatPanel from '../components/ChatPanel';
 import '../styles/dashboard.css';
+import { logger } from '../utils/logger';
 
 const MAX_TRANSITS_ANALYSIS_PER_DAY = 5;
 // Cap on how many completed transits analyses per chart we keep browsable
@@ -490,7 +491,7 @@ const Dashboard = () => {
       if (Number(savedChartIdRef.current) !== Number(chartId)) return;
       setChatHistory(dbMessages as ChatMessage[]);
     } catch (err) {
-      console.error('Failed to load chat history:', err);
+      logger.error('Failed to load chat history:', err);
     }
 
     // A question sent before a Dashboard remount (navigating away and back —
@@ -533,7 +534,7 @@ const Dashboard = () => {
           setChatHistory(dbMessages as ChatMessage[]);
         }
       } catch (err) {
-        console.error('Failed to reload chat history:', err);
+        logger.error('Failed to reload chat history:', err);
       } finally {
         setPendingChatCharts(prev => {
           const next = new Set(prev);
@@ -648,13 +649,13 @@ const Dashboard = () => {
         // Load chat history from database (clearing it first — no leakage between charts)
         setChatHistory([]);
         loadChatForChart(chart.id).catch(err => {
-          console.error('Failed to load chat history:', err);
+          logger.error('Failed to load chat history:', err);
         });
         progressionsChat.load(chart.id).catch(err => {
-          console.error('Failed to load progressions chat history:', err);
+          logger.error('Failed to load progressions chat history:', err);
         });
         progressedSynastryChat.load(chart.id).catch(err => {
-          console.error('Failed to load progressed synastry chat history:', err);
+          logger.error('Failed to load progressed synastry chat history:', err);
         });
         setChatInput('');
 
@@ -694,7 +695,7 @@ const Dashboard = () => {
           restoreTransitsFromCache(chart.id);
         }
       } catch (error) {
-        console.error('Failed to load chart from URL:', error);
+        logger.error('Failed to load chart from URL:', error);
       } finally {
         setChartLoading(false);
       }
@@ -712,9 +713,7 @@ const Dashboard = () => {
     const registryKey = targetChartId ? `full:${targetChartId}:${mode}` : null;
     try {
       const { analysis } = await getFullAnalysis(chartDataForAnalysis, mode, i18n.language);
-      console.log('analysis received:', analysis?.substring(0, 50));
       setFullAnalysis(analysis);
-      console.log('setFullAnalysis called');
       if (mode === 'simple') setSimpleAnalysis(analysis);
       else setAdvancedAnalysis(analysis);
 
@@ -1064,7 +1063,7 @@ const Dashboard = () => {
       const usedToday = await chartsApi.getTransitsUsageToday(user.id);
       setTransitsRemaining(Math.max(0, MAX_TRANSITS_ANALYSIS_PER_DAY - usedToday));
     } catch (err) {
-      console.error('Failed to load transits usage:', err);
+      logger.error('Failed to load transits usage:', err);
     }
   }, [user?.id]);
 
@@ -1117,7 +1116,6 @@ const Dashboard = () => {
     // unlike a plain useRef, so a background request that's still running
     // after the component unmounted won't get duplicated on return.
     const registryKey = `${isSynastry ? 'progressed-synastry' : 'progressions'}:${savedChartId}:${mode}`;
-    console.log('[DEBUG] loadProgressions', registryKey, 'inFlight=', isInFlight(registryKey), new Error().stack);
 
     // Pure ephemeris calculation (no LLM, no in-flight tracking of its own) —
     // shared by the reconnect branch below and the first-run branch further
@@ -1186,13 +1184,13 @@ const Dashboard = () => {
       // only a spinner/typewriter with everything else blank.
       fetchProgressedSynastryData()
         .then((restored) => { if (restored) setProgressedSynastryData(restored); })
-        .catch((err) => console.error('Progressed synastry: failed to restore data on reconnect:', err));
+        .catch((err) => logger.error('Progressed synastry: failed to restore data on reconnect:', err));
       // Same story for natal progressions: progressionsData never survived
       // the remount either, and nothing on this path restored it — leaving
       // the panel with only the spinner, no carousel and no aspects list.
       fetchNatalProgressionsData()
         .then((restored) => { if (restored) setProgressionsData(restored); })
-        .catch((err) => console.error('Progressions: failed to restore data on reconnect:', err));
+        .catch((err) => logger.error('Progressions: failed to restore data on reconnect:', err));
       let seenLength = 0;
       const replay = () => {
         const current = getStreamText(registryKey);
@@ -1234,13 +1232,13 @@ const Dashboard = () => {
             // The background attempt cleared without saving anything (it
             // failed) — surface that instead of silently starting another
             // real generation.
-            console.error(`${isSynastry ? 'Progressed synastry' : 'Progressions'}: reconnect found no cached result after registry cleared.`);
+            logger.error(`${isSynastry ? 'Progressed synastry' : 'Progressions'}: reconnect found no cached result after registry cleared.`);
             progressionsStream.handleError();
             setProgressionsLoading(false);
             setProgressionsError(t(isSynastry ? 'dashboard.progressedSynastry.error' : 'dashboard.progressions.error'));
           }
         } catch (err) {
-          console.error(`${isSynastry ? 'Progressed synastry' : 'Progressions'}: reconnect cache lookup failed:`, err);
+          logger.error(`${isSynastry ? 'Progressed synastry' : 'Progressions'}: reconnect cache lookup failed:`, err);
           progressionsStream.handleError();
           setProgressionsLoading(false);
           setProgressionsError(t(isSynastry ? 'dashboard.progressedSynastry.error' : 'dashboard.progressions.error'));
@@ -1253,7 +1251,7 @@ const Dashboard = () => {
         intervalMs: 5000,
         maxAttempts: 150,
         onTimeout: () => {
-          console.error(`${isSynastry ? 'Progressed synastry' : 'Progressions'}: reconnect gave up waiting for the background request to clear.`);
+          logger.error(`${isSynastry ? 'Progressed synastry' : 'Progressions'}: reconnect gave up waiting for the background request to clear.`);
           window.clearInterval(replayInterval);
           progressionsStream.handleError();
           setProgressionsLoading(false);
@@ -1344,14 +1342,12 @@ const Dashboard = () => {
               // persist here, not gated behind the typewriter catch-up which
               // stalls whenever the tab is backgrounded or the component has
               // unmounted.
-              console.log('[DEBUG] progressed synastry onFinal, saving', `progressed_synastry_${mode}`, cachePeriod, 'chart=', savedChartId, 'len=', result.analysis?.length);
               // Clear the in-flight marker only once the row is actually in the DB:
               // a reconnected instance reads it the moment this key clears, and a
               // still-in-flight save leaves it reading an empty result.
               chartsApi.saveProgressedSynastryAnalysis(Number(savedChartId), mode, cachePeriod, result.analysis)
-                .then(() => console.log('[DEBUG] progressed synastry SAVED OK', `progressed_synastry_${mode}`, cachePeriod))
                 .catch(err => {
-                  console.error('[DEBUG] Failed to save progressed synastry analysis:', err?.message, err);
+                  logger.error('[DEBUG] Failed to save progressed synastry analysis:', err?.message, err);
                 })
                 .finally(() => {
                   clearStreamText(registryKey);
@@ -1371,11 +1367,11 @@ const Dashboard = () => {
                   if (mode === 'simple') setProgressedSynastrySimpleAnalysis(result.analysis);
                   else setProgressedSynastryAdvancedAnalysis(result.analysis);
                   chartsApi.saveProgressedSynastryAnalysis(Number(savedChartId), mode, cachePeriod, result.analysis).catch(err => {
-                    console.error('Failed to save progressed synastry analysis:', err);
+                    logger.error('Failed to save progressed synastry analysis:', err);
                   });
                 } catch (err) {
                   const errorDetail = (err as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
-                  console.error('Progressed synastry: fallback fetch failed after empty stream error:', detail, err);
+                  logger.error('Progressed synastry: fallback fetch failed after empty stream error:', detail, err);
                   setProgressionsError(typeof errorDetail === 'string' ? errorDetail : t('dashboard.progressedSynastry.error'));
                 } finally {
                   setProgressionsLoading(false);
@@ -1394,7 +1390,7 @@ const Dashboard = () => {
               // branch above, but self-driven since nothing will ever flip
               // isInFlight(registryKey) back to false on its own — the fetch
               // that would have cleared it is the one that just errored).
-              console.error('Progressed synastry stream dropped after partial text, polling DB before giving up:', detail);
+              logger.error('Progressed synastry stream dropped after partial text, polling DB before giving up:', detail);
               const deadline = Date.now() + 3 * 60 * 1000; // ~3 min, matches remaining generation time
               const poll = async () => {
                 try {
@@ -1410,10 +1406,10 @@ const Dashboard = () => {
                     return;
                   }
                 } catch (err) {
-                  console.error('Progressed synastry: DB poll after stream drop failed, retrying:', err);
+                  logger.error('Progressed synastry: DB poll after stream drop failed, retrying:', err);
                 }
                 if (Date.now() >= deadline) {
-                  console.error('Progressed synastry: gave up polling DB after stream drop, original detail:', detail);
+                  logger.error('Progressed synastry: gave up polling DB after stream drop, original detail:', detail);
                   progressionsStream.handleError();
                   setProgressionsError(detail || t('dashboard.progressedSynastry.error'));
                   setProgressionsLoading(false);
@@ -1511,7 +1507,7 @@ const Dashboard = () => {
             // still-in-flight save leaves it reading an empty result.
             chartsApi.saveProgressionsAnalysis(Number(savedChartId), mode, period, result.analysis)
               .catch(err => {
-                console.error('Failed to save progressions analysis:', err);
+                logger.error('Failed to save progressions analysis:', err);
               })
               .finally(() => {
                 clearStreamText(registryKey);
@@ -1531,7 +1527,7 @@ const Dashboard = () => {
                 if (mode === 'simple') setProgressionsSimpleAnalysis(result.analysis);
                 else setProgressionsAdvancedAnalysis(result.analysis);
                 chartsApi.saveProgressionsAnalysis(Number(savedChartId), mode, period, result.analysis).catch(err => {
-                  console.error('Failed to save progressions analysis:', err);
+                  logger.error('Failed to save progressions analysis:', err);
                 });
               } catch (err) {
                 const errorDetail = (err as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
@@ -1890,7 +1886,7 @@ const Dashboard = () => {
         try {
           await chartsApi.recordTransitsUsage(user.id, savedChartId);
         } catch (err) {
-          console.error('Failed to record transits usage:', err);
+          logger.error('Failed to record transits usage:', err);
         }
         await refreshTransitsRemaining();
         // Raw planetary positions for this day+location — lets a browsed
@@ -2195,7 +2191,7 @@ const Dashboard = () => {
     const userMessage = { role: 'user' as const, content: questionText };
     setChatHistory(prev => [...prev, userMessage]);
     chartsApi.appendChatMessages(chartIdAtSend, userId, 'natal', [userMessage]).catch(err => {
-      console.error('Failed to save chat message:', err);
+      logger.error('Failed to save chat message:', err);
     });
     setChatInput('');
 
@@ -2258,7 +2254,7 @@ const Dashboard = () => {
           // clears, and a still-in-flight save leaves it without this answer.
           chartsApi.appendChatMessages(chartIdAtSend, userId, 'natal', [botMessage])
             .catch(err => {
-              console.error('Failed to save chat message:', err);
+              logger.error('Failed to save chat message:', err);
             })
             .finally(finishPending);
           if (Number(savedChartIdRef.current) === chartIdAtSend) {
@@ -2275,7 +2271,7 @@ const Dashboard = () => {
                 relevant_chunks: (response as { data?: { relevant_chunks?: unknown[] } })?.data?.relevant_chunks || []
               };
               chartsApi.appendChatMessages(chartIdAtSend, userId, 'natal', [botMessage]).catch(err => {
-                console.error('Failed to save chat message:', err);
+                logger.error('Failed to save chat message:', err);
               });
               if (Number(savedChartIdRef.current) === chartIdAtSend) {
                 setChatHistory(prev => [...prev, botMessage]);
@@ -2414,7 +2410,7 @@ const Dashboard = () => {
         try {
           await chartsApi.saveChatMessages(Number(saved.id), user.id, 'natal', chatHistory);
         } catch (err) {
-          console.error('Failed to save chat history:', err);
+          logger.error('Failed to save chat history:', err);
         }
       }
       localStorage.removeItem('pendingAnalysisJob');
@@ -2466,7 +2462,7 @@ const Dashboard = () => {
         try {
           await chartsApi.saveChatMessages(Number(saved.id), user.id, 'natal', chatHistory);
         } catch (err) {
-          console.error('Failed to save chat history:', err);
+          logger.error('Failed to save chat history:', err);
         }
       }
 
@@ -2644,7 +2640,7 @@ const Dashboard = () => {
       setPlanetAnalysisLoading(false);
       if (chartId) {
         chartsApi.savePlanetAnalysis(chartId, planetData.name ?? '', savedAnalysis)
-          .catch(err => console.error('DB save error:', err));
+          .catch(err => logger.error('DB save error:', err));
       }
       return;
     }
@@ -2669,7 +2665,7 @@ const Dashboard = () => {
       }
       if (chartId) {
         chartsApi.savePlanetAnalysis(chartId, planetData.name ?? '', analysis)
-          .catch(err => console.error('DB save error:', err));
+          .catch(err => logger.error('DB save error:', err));
       }
     };
 
@@ -2935,13 +2931,13 @@ const Dashboard = () => {
         // Chat: clear + load the selected chart's history from the DB
         setChatHistory([]);
         loadChatForChart(chart.id).catch(err => {
-          console.error('Failed to load chat history:', err);
+          logger.error('Failed to load chat history:', err);
         });
         progressionsChat.load(chart.id).catch(err => {
-          console.error('Failed to load progressions chat history:', err);
+          logger.error('Failed to load progressions chat history:', err);
         });
         progressedSynastryChat.load(chart.id).catch(err => {
-          console.error('Failed to load progressed synastry chat history:', err);
+          logger.error('Failed to load progressed synastry chat history:', err);
         });
         setShowPlanetTable(false);
         setSimpleAnalysis(null);
@@ -2976,7 +2972,7 @@ const Dashboard = () => {
               }
             });
           }).catch(err => {
-            console.error('Failed to load planet analyses:', err);
+            logger.error('Failed to load planet analyses:', err);
           });
           restoreTransitsFromCache(chart.id);
         }
@@ -2994,13 +2990,13 @@ const Dashboard = () => {
     savedChartIdRef.current = chart.id;
     setChatHistory([]);
     loadChatForChart(chart.id).catch(err => {
-      console.error('Failed to load chat history:', err);
+      logger.error('Failed to load chat history:', err);
     });
     progressionsChat.load(chart.id).catch(err => {
-      console.error('Failed to load progressions chat history:', err);
+      logger.error('Failed to load progressions chat history:', err);
     });
     progressedSynastryChat.load(chart.id).catch(err => {
-      console.error('Failed to load progressed synastry chat history:', err);
+      logger.error('Failed to load progressed synastry chat history:', err);
     });
     setChatInput('');
     setShowPlanetTable(false);
@@ -3036,7 +3032,7 @@ const Dashboard = () => {
           }
         });
       }).catch(err => {
-        console.error('Failed to load planet analyses:', err);
+        logger.error('Failed to load planet analyses:', err);
       });
       restoreTransitsFromCache(chart.id);
     }
@@ -3147,7 +3143,6 @@ const Dashboard = () => {
     return null;
   }
 
-  console.log('render: fullAnalysis=', !!fullAnalysis, 'showFullAnalysis=', showFullAnalysis, 'analysisLoading=', analysisLoading, 'chartData=', !!chartDataForAnalysis, 'savedChartId=', savedChartId);
 
   return (
     <div className="dashboard">
