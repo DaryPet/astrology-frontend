@@ -1,5 +1,10 @@
 import { supabase } from '../lib/supabase';
 
+// Which analysis a chat thread belongs to — see chat_messages.context_type.
+// Independent threads on the same chart_id: a chart's natal/synastry chat
+// never mixes with its progressions or progressed-synastry chat.
+export type ChatContextType = 'natal' | 'progressions' | 'progressed_synastry';
+
 export interface ChartResponse {
   id: string | number;
   name?: string;
@@ -371,40 +376,44 @@ export const chartsApi = {
   },
 
   // Maps a chat message to a chat_messages table row
-  _toChatRow(chartId: number, userId: string, msg: { role: string; content: string; relevant_chunks?: unknown[] }) {
+  _toChatRow(chartId: number, userId: string, contextType: ChatContextType, msg: { role: string; content: string; relevant_chunks?: unknown[] }) {
     return {
       chart_id: chartId,
       user_id: userId,
+      context_type: contextType,
       role: msg.role,
       content: msg.content,
       relevant_chunks: msg.relevant_chunks?.length ? JSON.stringify(msg.relevant_chunks) : null,
     };
   },
 
-  // Appends ONLY new messages (one per exchange) — no history duplication
-  async appendChatMessages(chartId: number, userId: string, newMessages: Array<{ role: string; content: string; relevant_chunks?: unknown[] }>) {
+  // Appends ONLY new messages (one per exchange) — no history duplication.
+  // contextType keeps a chart's natal/synastry chat, progressions chat, and
+  // progressed-synastry chat as independent threads (chat_messages.context_type).
+  async appendChatMessages(chartId: number, userId: string, contextType: ChatContextType, newMessages: Array<{ role: string; content: string; relevant_chunks?: unknown[] }>) {
     if (!chartId || !userId || !newMessages?.length) return;
 
     const { error } = await supabase
       .from('chat_messages')
-      .insert(newMessages.map(msg => this._toChatRow(chartId, userId, msg)));
+      .insert(newMessages.map(msg => this._toChatRow(chartId, userId, contextType, msg)));
 
     if (error) throw error;
   },
 
   // One-off write of the entire accumulated history (used on first chart save)
-  async saveChatMessages(chartId: number, userId: string, messages: Array<{ role: string; content: string; relevant_chunks?: unknown[] }>) {
+  async saveChatMessages(chartId: number, userId: string, contextType: ChatContextType, messages: Array<{ role: string; content: string; relevant_chunks?: unknown[] }>) {
     if (!chartId || !userId || !messages?.length) return;
-    await this.appendChatMessages(chartId, userId, messages);
+    await this.appendChatMessages(chartId, userId, contextType, messages);
   },
 
-  async getChatMessages(chartId: number): Promise<Array<{ role: 'user' | 'assistant'; content: string; relevant_chunks?: unknown[] }>> {
+  async getChatMessages(chartId: number, contextType: ChatContextType): Promise<Array<{ role: 'user' | 'assistant'; content: string; relevant_chunks?: unknown[] }>> {
     if (!chartId) return [];
 
     const { data, error } = await supabase
       .from('chat_messages')
       .select('role, content, relevant_chunks')
       .eq('chart_id', chartId)
+      .eq('context_type', contextType)
       .order('created_at', { ascending: true });
 
     if (error) throw error;

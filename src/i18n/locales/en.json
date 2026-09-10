@@ -186,6 +186,8 @@
       "title": "Chart Chat",
       "start": "Start chat",
       "open": "Open chat",
+      "openNatal": "Open chart chat",
+      "openProgressions": "Open progressions chat",
       "send": "Send",
       "placeholder": "Ask a question about your chart above",
       "user": "You",
