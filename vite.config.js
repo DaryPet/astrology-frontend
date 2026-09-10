@@ -9,6 +9,8 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     base: '/',
+    // Strip console.* and debugger from production only; dev keeps them.
+    esbuild: { drop: ['console', 'debugger'] },
     build: {
       rollupOptions: {
         output: {

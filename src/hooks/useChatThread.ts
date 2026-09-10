@@ -7,6 +7,7 @@ import { useStreamedText } from './useStreamedText';
 import { isInFlight, markInFlight, clearInFlight, waitForClear } from '../utils/inFlightRegistry';
 import { appendStreamText, getStreamText, clearStreamText } from '../utils/streamTextRegistry';
 import type { ChatMessage } from '../services/chatStorage';
+import { logger } from '../utils/logger';
 
 interface SendParams {
   chartId: number | string;
@@ -63,7 +64,7 @@ export function useChatThread(contextType: ChatContextType, savedChartIdRef: Ref
       if (Number(savedChartIdRef.current) !== chartId) return;
       setHistory(dbMessages as ChatMessage[]);
     } catch (err) {
-      console.error(`Failed to load ${contextType} chat history:`, err);
+      logger.error(`Failed to load ${contextType} chat history:`, err);
     }
 
     // A question sent before a Dashboard remount (navigating away and back)
@@ -99,7 +100,7 @@ export function useChatThread(contextType: ChatContextType, savedChartIdRef: Ref
           setHistory(dbMessages as ChatMessage[]);
         }
       } catch (err) {
-        console.error(`Failed to reload ${contextType} chat history:`, err);
+        logger.error(`Failed to reload ${contextType} chat history:`, err);
       } finally {
         setPendingChartIds(prev => {
           const next = new Set(prev);
@@ -142,7 +143,7 @@ export function useChatThread(contextType: ChatContextType, savedChartIdRef: Ref
     const userMessage = { role: 'user' as const, content: question };
     setHistory(prev => [...prev, userMessage]);
     chartsApi.appendChatMessages(chartId, params.userId, contextType, [userMessage]).catch(err => {
-      console.error(`Failed to save ${contextType} chat message:`, err);
+      logger.error(`Failed to save ${contextType} chat message:`, err);
     });
     setInput('');
 
@@ -194,7 +195,7 @@ export function useChatThread(contextType: ChatContextType, savedChartIdRef: Ref
           };
           chartsApi.appendChatMessages(chartId, params.userId, contextType, [botMessage])
             .catch(err => {
-              console.error(`Failed to save ${contextType} chat message:`, err);
+              logger.error(`Failed to save ${contextType} chat message:`, err);
             })
             .finally(finishPending);
           if (Number(savedChartIdRef.current) === chartId) {
@@ -211,7 +212,7 @@ export function useChatThread(contextType: ChatContextType, savedChartIdRef: Ref
                 relevant_chunks: (response as { data?: { relevant_chunks?: unknown[] } })?.data?.relevant_chunks || [],
               };
               chartsApi.appendChatMessages(chartId, params.userId, contextType, [botMessage]).catch(err => {
-                console.error(`Failed to save ${contextType} chat message:`, err);
+                logger.error(`Failed to save ${contextType} chat message:`, err);
               });
               if (Number(savedChartIdRef.current) === chartId) {
                 setHistory(prev => [...prev, botMessage]);

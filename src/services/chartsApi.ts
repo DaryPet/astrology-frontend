@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { logger } from '../utils/logger';
 
 // Which analysis a chat thread belongs to — see chat_messages.context_type.
 // Independent threads on the same chart_id: a chart's natal/synastry chat
@@ -274,7 +275,7 @@ export const chartsApi = {
       .eq('name', day)
       .maybeSingle();
     if (error) {
-      console.error('Failed to load transits analysis:', error);
+      logger.error('Failed to load transits analysis:', error);
       return null;
     }
     return data?.interpretation ?? null;
